@@ -9,6 +9,7 @@ from .http import cached_head
 
 BASE_KAKO = "https://idsc.niid.go.jp/idwr/CDROM/Kako/"
 BASE_YDATA = "https://id-info.jihs.go.jp/niid/images/idwr/ydata/"
+BASE_ANNUAL = "https://id-info.jihs.go.jp/surveillance/idwr/annual/"
 
 
 @dataclass
@@ -20,17 +21,20 @@ class ConfirmedRule:
 
 
 RULES_SEX = [
-    ConfirmedRule(1999, 2006, BASE_KAKO, "H{h_year:02d}/Syuukei/Syu_01_1.xls"),
-    ConfirmedRule(2007, 2010, BASE_KAKO, "H{h_year:02d}/Syuukei/Syu_01_1.xlsx"),
-    ConfirmedRule(2011, 2013, BASE_YDATA, "{year}/H{h_year:02d}-01-1.xlsx"),
-    ConfirmedRule(2014, 9999, BASE_YDATA, "{year}/Syu_01_1.xlsx"),
+    ConfirmedRule(
+        1999, 2000, BASE_KAKO, "H{h_year:02d}/Syuukei/Syu_11.xls"
+    ),  # R uses Syu_11 for 99-00
+    ConfirmedRule(2001, 2010, BASE_KAKO, "H{h_year:02d}/Syuukei/Syu_01_1.xls"),
+    ConfirmedRule(2011, 2013, BASE_YDATA, "{year}/Syuukei/Syu_01_1.xls"),
+    ConfirmedRule(2014, 2020, BASE_YDATA, "{year}/Syuukei/Syu_01_1.xlsx"),
+    ConfirmedRule(2021, 9999, BASE_ANNUAL, "{year}/syulist/Syu_01_1.xlsx"),
 ]
 
 RULES_PLACE = [
-    ConfirmedRule(2001, 2006, BASE_KAKO, "H{h_year:02d}/Syuukei/Syu_02_1.xls"),
-    ConfirmedRule(2007, 2010, BASE_KAKO, "H{h_year:02d}/Syuukei/Syu_02_1.xlsx"),
-    ConfirmedRule(2011, 2013, BASE_YDATA, "{year}/H{h_year:02d}-02-1.xlsx"),
-    ConfirmedRule(2014, 9999, BASE_YDATA, "{year}/Syu_02_1.xlsx"),
+    ConfirmedRule(2001, 2010, BASE_KAKO, "H{h_year:02d}/Syuukei/Syu_02_1.xls"),
+    ConfirmedRule(2011, 2013, BASE_YDATA, "{year}/Syuukei/Syu_02_1.xls"),
+    ConfirmedRule(2014, 2020, BASE_YDATA, "{year}/Syuukei/Syu_02_1.xlsx"),
+    ConfirmedRule(2021, 9999, BASE_ANNUAL, "{year}/syulist/Syu_02_1.xlsx"),
 ]
 
 
@@ -50,18 +54,8 @@ def url_confirmed(year: int, type: Literal["sex", "place"] = "sex") -> str:
             path = rule.pattern.format(year=year, h_year=h_year)
             return f"{rule.base}{path}"
 
-    # Default fallback (should match last rule usually, but essentially 2014+)
-    # If no rule matches (e.g. very old years not covered), raise/return?
-    # Current implementation raises for place <= 2000,
-    # but for sex it implicitly handles others?
-    # Actually sex defined 1999 as start.
-    # Let's assume the rules cover all valid ranges.
-
-    # If we fall through, it's likely a year not supported or covered by logic
-    # defaulting to newest format might be safe or raising error.
-    # Given previous code had "else" for > 2021, we use 9999 as end.
-
-    return ""
+    # Fallback/Fail safe
+    raise ValueError(f"No URL rule found for year {year} and type {type}")
 
 
 def url_bullet(
@@ -91,7 +85,6 @@ def url_bullet(
             base = "https://id-info.jihs.go.jp/surveillance/idwr/en/rapid/"
             path = f"{year}/{w:02d}/zensu{w:02d}.csv"
         else:
-            # JP Logic
             if year >= 2025 and w >= 11:
                 base = "https://id-info.jihs.go.jp/surveillance/idwr/jp/rapid/"
             else:
@@ -106,7 +99,6 @@ def url_bullet(
                 if int(content_length) > 0:
                     urls.append(url)
         except Exception:
-            # Maybe verify if we want to suppress ALL exceptions
             continue
 
     return urls
