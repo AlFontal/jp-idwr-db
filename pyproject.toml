@@ -39,10 +39,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/your-org/jpinfectpy"
-Repository = "https://github.com/your-org/jpinfectpy"
-Documentation = "https://your-org.github.io/jpinfectpy"
-"Bug Tracker" = "https://github.com/your-org/jpinfectpy/issues"
+Homepage = "https://github.com/AlFontal/jpinfectpy"
+Repository = "https://github.com/AlFontal/jpinfectpy"
+Documentation = "https://AlFontal.github.io/jpinfectpy"
+"Bug Tracker" = "https://github.com/AlFontal/jpinfectpy/issues"
 
 [build-system]
 requires = ["hatchling>=1.21"]
