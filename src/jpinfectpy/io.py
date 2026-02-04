@@ -10,35 +10,10 @@ import polars as pl
 from platformdirs import user_cache_dir
 
 from .config import get_config
-from .datasets import load_prefecture_en
 from .http import download_urls
 from .types import AnyFrame, DatasetName, ReturnType
 from .urls import url_bullet, url_confirmed
 from .utils import resolve_return_type, to_pandas
-
-
-def _col_rename(names: list[str], rep_each: int = 1) -> list[str]:
-    cleaned: list[str] = []
-    for name in names:
-        name = re.sub(r"^.*[\r\n]+", "", str(name))
-        name = re.sub(r"^.*[\r\n]+", "", name)
-        name = re.sub(r"^\.\.\.[0-9]+$", "", name)
-        name = name.replace("Ｉ", "I")  # noqa: RUF001
-        name = name.replace("（", "(").replace("）", ")")  # noqa: RUF001
-        if name == "Pandemic influenza (A/H1N1)":
-            name = "(Pandemic influenza (A/H1N1))"
-        name = name.strip()
-        name = re.sub(r"^\(", "", name)
-        name = re.sub(r"\)$", "", name)
-        name = re.sub(r"([a-zA-Z])\(", r"\1 (", name)
-        if name:
-            cleaned.append(name)
-    if rep_each > 1:
-        expanded: list[str] = []
-        for item in cleaned:
-            expanded.extend([item] * rep_each)
-        return expanded
-    return cleaned
 
 
 def _col_rename_bullet(names: list[str]) -> list[str]:
@@ -57,34 +32,215 @@ def _col_rename_bullet(names: list[str]) -> list[str]:
     return cleaned
 
 
+def _clean_cell_text(text: str | None) -> str | None:
+    if not text:
+        return None
+    # Remove null bytes (1999 issue)
+    t = text.replace("\x00", "")
+    # Remove newlines/tabs
+    t = t.replace("\r", " ").replace("\n", " ").replace("\t", " ")
+    # Extract English text in parens if present
+    match = re.search(r"\(([\x20-\x7E]+)\)", t)
+    if match:
+        return match.group(1).strip()
+    return t.strip()
+
+
+def _resolve_headers(
+    cols: list[str | None], row2: list[str | None], row3: list[str | None]
+) -> list[str]:
+    # row2: Disease names (merged, sparse)
+    # row3: Categories (Total/Male/Female etc)
+    headers = []
+    current_disease = "Unknown"
+
+    # First column is always prefecture
+    headers.append("prefecture")
+
+    # Iterate from col 1 (since col 0 is prefecture)
+    for i in range(1, len(cols)):
+        r2 = _clean_cell_text(row2[i])
+        r3 = _clean_cell_text(row3[i])
+
+        if r2:
+            current_disease = r2
+
+        cat = r3 if r3 else "total"
+        # Normalize category
+        cat_lower = cat.lower()
+        if "total" in cat_lower:
+            cat = "total"
+        elif "male" in cat_lower:
+            cat = "male"
+        elif "female" in cat_lower:
+            cat = "female"
+        elif "japan" in cat_lower:
+            cat = "japan"
+        elif "others" in cat_lower:
+            cat = "others"
+        elif "unknown" in cat_lower:
+            cat = "unknown"
+
+        base_header = f"{current_disease}||{cat}"
+
+        # Deduplicate
+        count = 1
+        new_header = base_header
+        while new_header in headers:
+            new_header = f"{base_header}_{count}"
+            count += 1
+
+        headers.append(new_header)
+
+    return headers
+
+
 def _read_excel_sheets(
     file_path: Path, sheet_range: Iterable[int]
 ) -> list[tuple[int, pl.DataFrame]]:
     frames: list[tuple[int, pl.DataFrame]] = []
-    # Convert path to string for fastexcel compatibility/safety
     path_str = str(file_path)
 
+    # Pre-calculate sheet indices we need
+    # Note: sheet_range is 1-based index usually?
+    # In io.py originally: `range(2, 41)` for 1999.
+    # In my debug: 1999 Sheet 2 was Week 14.
+    # If standard is Week 1 starts at logical index X.
+    # We should trust existing ranges but adapt how we call read_excel.
+
     for sheet in sheet_range:
-        df = None
         try:
-            # Polars read_excel uses 0-based sheet_id by default when int is passed.
-            # Our sheet_range contains 0-based indices (e.g. 2 means 3rd sheet).
-            # We use infer_schema_length=0 to read as UTF8/Strings initially for safety
-            # similar to pandas behavior of reading mixed types, then cast later.
-            # But pl.read_excel is stricter. Let's try default inference first.
-            df = pl.read_excel(path_str, sheet_id=sheet)
-        except Exception:
-            # Sheet might not exist or other error
+            # Read headerless
+            df = pl.read_excel(path_str, sheet_id=sheet, has_header=False)
+
+            if df.height < 5:
+                continue
+
+            # Parse Rows
+            # Polars rows() returns values. row(i) returns tuple.
+            # Row 0,1: Skip
+            # Row 2: Disease
+            # Row 3: Category
+            # Row 4+: Data
+
+            row2 = [str(x) if x is not None else None for x in df.row(2)]
+            row3 = [str(x) if x is not None else None for x in df.row(3)]
+
+            # Check if this looks like a valid header row?
+            # heuristic: row3 has "Total" or "total"
+            # Cleaning null bytes before check
+            row3_clean = [_clean_cell_text(x) for x in row3]
+            if not any("total" in str(x).lower() for x in row3_clean if x):
+                # Fallback or skip?
+                # Maybe offset by 1 if title varies?
+                print(f"Skipping Sheet {sheet}: No 'total' in Row 3.")
+                continue
+
+            headers = _resolve_headers(df.columns, row2, row3)
+
+            # Slice data
+            data_df = df.slice(4)
+            data_df.columns = headers
+
+            # Clean prefecture column
+            if "prefecture" in data_df.columns:
+                data_df = data_df.with_columns(
+                    pl.col("prefecture").map_elements(
+                        lambda x: _clean_cell_text(str(x)), return_dtype=pl.Utf8
+                    )
+                )
+                # Remove "Total" rows in data
+                data_df = data_df.filter(
+                    ~pl.col("prefecture").str.to_lowercase().str.contains("total")
+                )
+
+            if not data_df.is_empty():
+                frames.append((sheet, data_df))
+
+        except Exception as e:
+            print(f"Error reading sheet {sheet}: {e}")
             continue
 
-        # Drop columns/rows that are all null?
-        # Polars doesn't have dropna(how='all') directly for cols/rows easily in one call.
-        # But usually we filter empty frames.
-        if df.is_empty():
-            continue
-
-        frames.append((sheet, df))
     return frames
+
+
+def _read_confirmed_pl(
+    path: Path,
+    *,
+    type: DatasetName | None = None,
+) -> pl.DataFrame:
+    if path.is_dir():
+        if type == "sex":
+            pattern = re.compile(r"(Syu_01_1|01_1)\.(xls|xlsx)$")
+        elif type == "place":
+            pattern = re.compile(r"(Syu_02_1|02_1)\.(xls|xlsx)$")
+        else:
+            pattern = re.compile(r"Syu_0[12]_1\.(xls|xlsx)$")
+        files = [p for p in path.iterdir() if pattern.search(p.name)]
+    else:
+        files = [path]
+
+    frames: list[pl.DataFrame] = []
+    for file_path in sorted(files):
+        year = _infer_year_from_path(file_path) or 0
+        if year == 0:
+            continue
+        sheet_range = _sheet_range_for_year(year)
+        excel_frames = _read_excel_sheets(file_path, sheet_range)
+        week_offset = 12 if year == 1999 else -1
+        combined = _combine_confirmed_frames(excel_frames, year, week_offset=week_offset)
+        # _ensure_prefecture_column is redundant now as we parsed it
+        frames.append(combined)
+
+    if not frames:
+        return pl.DataFrame()
+
+    df = pl.concat(frames, how="diagonal_relaxed")
+
+    # Calculate Date
+    if "date" not in df.columns and "year" in df.columns and "week" in df.columns:
+        df = df.with_columns(
+            pl.struct(["year", "week"])
+            .map_elements(
+                lambda x: _iso_week_date(x["year"], x["week"]),
+                return_dtype=pl.Date,
+            )
+            .alias("date")
+        )
+
+    # Deduplicate columns (remove _1, _2 suffixes which are artifacts of bad headers)
+    # We assume the first occurrence was the correct/primary one.
+    cols_to_drop = [c for c in df.columns if re.search(r"_[0-9]+$", c) and "||" in c]
+    if cols_to_drop:
+        df = df.drop(cols_to_drop)
+
+    # Melton to Long Format
+    # ID vars: prefecture, year, week, date
+    id_vars = [c for c in df.columns if c in {"prefecture", "year", "week", "date"}]
+    # Value vars: contains "||"
+    value_vars = [c for c in df.columns if "||" in c]
+
+    if not value_vars:
+        return df
+
+    long_df = df.unpivot(  # unpivot is melt in recent polars
+        index=id_vars, on=value_vars, variable_name="variable", value_name="count"
+    )
+
+    # Split variable into disease and category
+    long_df = long_df.with_columns(
+        [
+            pl.col("variable").str.split("||").list.get(0).alias("disease"),
+            pl.col("variable").str.split("||").list.get(1).alias("category"),
+        ]
+    ).drop("variable")
+
+    # Cast count to int (handle nulls)
+    long_df = long_df.with_columns(
+        pl.col("count").cast(pl.Float64, strict=False).fill_null(0).cast(pl.Int64)
+    )
+
+    return long_df
 
 
 def _infer_year_from_path(path: Path) -> int | None:
@@ -130,105 +286,11 @@ def _combine_confirmed_frames(
     return pl.concat(combined, how="diagonal_relaxed")
 
 
-def _ensure_prefecture_column(df: pl.DataFrame) -> pl.DataFrame:
-    if df.is_empty():
-        return df
-    if df.columns[0] != "prefecture":
-        df = df.rename({df.columns[0]: "prefecture"})
-    prefecture = df.get_column("prefecture")
-    if prefecture.dtype == pl.Utf8:
-        return df
-    try:
-        prefecture_list = load_prefecture_en()
-    except Exception:
-        return df
-    block = len(prefecture_list) + 1
-    if df.height % block == 0:
-        repeats = df.height // block
-        names = ["Total", *prefecture_list] * repeats
-        return df.with_columns(pl.Series("prefecture", names))
-    return df
-
-
 def _iso_week_date(year: int, week: int) -> dt.date | None:
     try:
         return dt.date.fromisocalendar(int(year), int(week), 7)
     except Exception:
         return None
-
-
-def _read_confirmed_pl(
-    path: Path,
-    *,
-    type: DatasetName | None = None,
-) -> pl.DataFrame:
-    if path.is_dir():
-        if type == "sex":
-            pattern = re.compile(r"(Syu_01_1|01_1)\.(xls|xlsx)$")
-        elif type == "place":
-            pattern = re.compile(r"(Syu_02_1|02_1)\.(xls|xlsx)$")
-        else:
-            pattern = re.compile(r"Syu_0[12]_1\.(xls|xlsx)$")
-        files = [p for p in path.iterdir() if pattern.search(p.name)]
-    else:
-        files = [path]
-
-    frames: list[pl.DataFrame] = []
-    for file_path in sorted(files):
-        year = _infer_year_from_path(file_path) or 0
-        if year == 0:
-            continue
-        sheet_range = _sheet_range_for_year(year)
-        excel_frames = _read_excel_sheets(file_path, sheet_range)
-        week_offset = 12 if year == 1999 else -1
-        combined = _combine_confirmed_frames(excel_frames, year, week_offset=week_offset)
-        combined = _ensure_prefecture_column(combined)
-        frames.append(combined)
-
-    if not frames:
-        return pl.DataFrame()
-
-    df = pl.concat(frames, how="vertical")
-    if df.columns[0] != "prefecture":
-        df = df.rename({df.columns[0]: "prefecture"})
-
-    cleaned_names = _col_rename(df.columns)
-    if len(cleaned_names) == len(df.columns):
-        df = df.rename(dict(zip(df.columns, cleaned_names, strict=True)))
-    else:
-        key_cols = ["prefecture", "year", "week"]
-        for key in key_cols:
-            if key not in df.columns:
-                continue
-        df.columns = [str(c) for c in df.columns]
-
-    if "date" not in df.columns and "year" in df.columns and "week" in df.columns:
-        df = df.with_columns(
-            pl.struct(["year", "week"])
-            .map_elements(
-                lambda x: _iso_week_date(x["year"], x["week"]),
-                return_dtype=pl.Date,
-            )
-            .alias("date")
-        )
-
-    df = df.with_columns(
-        [
-            pl.col(col).cast(pl.Float64, strict=False)
-            for col in df.columns
-            if col not in {"prefecture", "year", "week", "date"}
-        ]
-    )
-    df = df.select(
-        [
-            "prefecture",
-            "year",
-            "week",
-            "date",
-            *[c for c in df.columns if c not in {"prefecture", "year", "week", "date"}],
-        ]
-    )
-    return df
 
 
 def _read_bullet_pl(
