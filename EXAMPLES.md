@@ -747,7 +747,7 @@ if cache_dir.exists():
 ## Additional Resources
 
 - **API Reference**: See docstrings in the code or use `help(jp.load)`, etc.
-- **AGENTS.md**: Comprehensive development guide
+- **CONTRIBUTING.md**: Development setup, code standards, and project architecture
 - **DATASETS.md**: Detailed dataset descriptions
 - **README.md**: Quick start and installation
 
@@ -755,6 +755,7 @@ if cache_dir.exists():
 
 If you encounter issues:
 
-1. Check the [AGENTS.md](./AGENTS.md) troubleshooting section
-2. Review function docstrings with `help(jp.function_name)`
-3. File an issue at [github.com/AlFontal/jpinfectpy/issues](https://github.com/AlFontal/jpinfectpy/issues)
+1. Check function docstrings with `help(jp.function_name)`
+2. Review the troubleshooting tips in [CONTRIBUTING.md](./CONTRIBUTING.md)
+3. Search existing issues at [github.com/AlFontal/jpinfectpy/issues](https://github.com/AlFontal/jpinfectpy/issues)
+4. File a new issue with a reproducible example

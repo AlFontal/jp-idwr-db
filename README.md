@@ -257,7 +257,7 @@ uv run ruff check .
 uv run mypy src
 ```
 
-See [AGENTS.md](./AGENTS.md) for comprehensive development documentation.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed development guidelines and project architecture.
 
 ## Citation
 
