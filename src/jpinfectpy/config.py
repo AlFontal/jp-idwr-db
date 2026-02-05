@@ -27,7 +27,7 @@ class Config:
         retries: Number of retry attempts for failed requests.
     """
 
-    return_type: ReturnType = "pandas"
+    return_type: ReturnType = "polars"
     cache_dir: Path = Path(user_cache_dir("jpinfectpy"))
     rate_limit_per_minute: int = 20
     user_agent: str = "jpinfectpy/0.1.0 (+https://github.com/AlFontal/jpinfectpy)"
