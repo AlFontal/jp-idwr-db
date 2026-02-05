@@ -6,12 +6,12 @@ jpinfectpy is a Python port of the R package [`jpinfect`](https://github.com/Tom
 
 ## Features
 
-- 📊 **Bundled Historical Data**: Pre-processed datasets (1999-2023) for instant analysis
-- 🌐 **Live Data Downloads**: Fetch latest weekly bulletins from NIID automatically
-- 🔄 **Dual DataFrame Support**: Returns Polars or Pandas DataFrames (your choice)
-- 💾 **Smart Caching**: Disk cache with ETag support to avoid redundant downloads
-- 🚦 **Rate Limiting**: Polite HTTP client with configurable rate limits
-- 🔧 **Data Transformations**: Merge and pivot utilities for common analysis tasks
+- **Bundled Historical Data**: Pre-processed datasets (1999-2023) for instant analysis
+- **Live Data Downloads**: Fetch latest weekly bulletins from NIID automatically
+- **Dual DataFrame Support**: Returns Polars or Pandas DataFrames (your choice)
+- **Smart Caching**: Disk cache with ETag support to avoid redundant downloads
+- **Rate Limiting**: Polite HTTP client with configurable rate limits
+- **Data Transformations**: Merge and pivot utilities for common analysis tasks
 
 ## Installation
 
@@ -165,11 +165,13 @@ df = jp.load("sex")  # Now returns Polars by default
 ```
 
 **Why Polars?**
+
 - Faster processing (especially for large datasets)
 - Lower memory usage
 - Better performance for transformations
 
 **Why Pandas?**
+
 - More familiar API for many users
 - Broader ecosystem compatibility
 - Better for interactive analysis in Jupyter
@@ -177,6 +179,7 @@ df = jp.load("sex")  # Now returns Polars by default
 ## Data Sources
 
 Data is sourced from the National Institute of Infectious Diseases (NIID):
+
 - **Historical confirmed cases**: [NIID IDWR Archives](https://www.niid.go.jp/niid/ja/idwr.html)
 - **Weekly bulletins**: [JIHS Infectious Disease Surveillance](https://id-info.jihs.go.jp/)
 
@@ -184,7 +187,7 @@ Data is sourced from the National Institute of Infectious Diseases (NIID):
 
 - **`sex`**: Sex-disaggregated surveillance data (1999-2023)
   - Columns: prefecture, year, week, date, disease, category (total/male/female), count
-- **`place`**: Place of infection surveillance data (2001-2023)  
+- **`place`**: Place of infection surveillance data (2001-2023)
   - Columns: prefecture, year, week, date, disease, category (domestic/imported/unknown), count
 - **`bullet`**: Weekly bulletins (2024+)
   - Columns: prefecture, year, week, date, disease, count
@@ -194,6 +197,7 @@ For detailed dataset descriptions, see [DATASETS.md](./DATASETS.md).
 ## Examples
 
 See [EXAMPLES.md](./EXAMPLES.md) for comprehensive usage examples including:
+
 - Loading and exploring data
 - Time series analysis
 - Geographic analysis
@@ -204,17 +208,17 @@ See [EXAMPLES.md](./EXAMPLES.md) for comprehensive usage examples including:
 
 This package mirrors the API of the upstream R package [`jpinfect`](https://github.com/TomonoriHoshi/jpinfect):
 
-| R Function | Python Function | Notes |
-|------------|----------------|-------|
-| `data()` | `load()` | Load bundled datasets |
-| `jpinfect_get_confirmed()` | `download()` | Unified download function |
-| `jpinfect_get_bullet()` | `download()` | Use `type="bullet"` |
-| `jpinfect_read_confirmed()` | `read()` | Unified read function |
-| `jpinfect_read_bullet()` | `read()` | Auto-detects CSV files |
-| `jpinfect_merge()` | `merge()` | Merge multiple datasets |
-| `jpinfect_pivot()` | `pivot()` | Wide/long conversion |
-| `jpinfect_url_confirmed()` | `url_confirmed()` | Generate download URLs |
-| `jpinfect_url_bullet()` | `url_bullet()` | Generate bulletin URLs |
+| R Function                    | Python Function     | Notes                     |
+| ----------------------------- | ------------------- | ------------------------- |
+| `data()`                    | `load()`          | Load bundled datasets     |
+| `jpinfect_get_confirmed()`  | `download()`      | Unified download function |
+| `jpinfect_get_bullet()`     | `download()`      | Use `type="bullet"`     |
+| `jpinfect_read_confirmed()` | `read()`          | Unified read function     |
+| `jpinfect_read_bullet()`    | `read()`          | Auto-detects CSV files    |
+| `jpinfect_merge()`          | `merge()`         | Merge multiple datasets   |
+| `jpinfect_pivot()`          | `pivot()`         | Wide/long conversion      |
+| `jpinfect_url_confirmed()`  | `url_confirmed()` | Generate download URLs    |
+| `jpinfect_url_bullet()`     | `url_bullet()`    | Generate bulletin URLs    |
 
 ## Polite Usage
 
@@ -281,7 +285,7 @@ If you use this package in research, please cite both this package and the upstr
 
 ## License
 
-GPL-3.0-or-later - See [LICENSE](./LICENSE) for details.
+GPL-3.0-or-later. See [LICENSE](./LICENSE) for details.
 
 This project includes attribution to the upstream R package [`jpinfect`](https://github.com/TomonoriHoshi/jpinfect).
 
