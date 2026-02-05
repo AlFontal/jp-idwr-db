@@ -124,7 +124,7 @@ def url_bullet(
 
     Example:
         >>> url_bullet(2024, week=1, lang="en")
-        ['https://id-info.jihs.go.jp/surveillance/idwr/en/rapid/2024/01/zensu01.csv']
+        ['https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/2024/01/zensu01.csv']
     """
     if year <= 2023:
         raise ValueError("Year must be > 2023 for bullet data.")
@@ -138,16 +138,16 @@ def url_bullet(
         weeks = list(week)
 
     # Validate week range
-    weeks = [w for w in weeks if 1 <= w <= 53]
+    weeks = [w for w in weeks if 1 <= w <= 52]
     if not weeks:
-        raise ValueError("Week must be between 1 and 53.")
+        raise ValueError("Week must be between 1 and 52.")
 
     urls: list[str] = []
     config = get_config()
 
     for w in weeks:
         if lang == "en":
-            base = "https://id-info.jihs.go.jp/surveillance/idwr/en/rapid/"
+            base = "https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/"
             path = f"{year}/{w:02d}/zensu{w:02d}.csv"
         else:
             # Japanese URL structure changed in 2025 week 11
