@@ -3,7 +3,7 @@ from __future__ import annotations
 from .config import Config, configure, get_config
 from .datasets import load_all
 from .datasets import load_dataset as load
-from .io import download, download_recent, read
+from .io import download, download_recent, get_disease_name_mappings, read
 from .transform import merge, pivot
 from .types import AnyFrame, DatasetName, ReturnType
 from .utils import to_pandas, to_polars
@@ -17,6 +17,7 @@ __all__ = [
     "download",
     "download_recent",
     "get_config",
+    "get_disease_name_mappings",
     "load",
     "load_all",
     "merge",

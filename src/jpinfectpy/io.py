@@ -31,6 +31,36 @@ from .utils import resolve_return_type, to_pandas
 
 logger = logging.getLogger(__name__)
 
+# Disease name mappings to standardize variants and duplicates
+_DISEASE_NAME_MAPPINGS = {
+    # AIDS variants
+    "Acquired immunodeficiency syndrome (AIDS)": "AIDS",
+    "HIV/AIDS": "AIDS",
+    # Carbapenem-resistant infections
+    "Carbapenem-resistant enterobacteriaceae infection": "Carbapenem-resistant Enterobacterales infection",
+    # E. coli variants
+    "Enterohemorrhagic E. coli infection": "Enterohemorrhagic Escherichia coli infection",
+    # Typhus variants
+    "Epidemic louse-borne typhus": "Epidemic typhus",
+    # B virus
+    "Herpes B virus infection": "B virus disease",
+    # Scrub typhus / Tsutsugamushi
+    "Scrub typhus(Tsutsugamushi disease)": "Scrub typhus",
+    "Tsutsugamushi disease": "Scrub typhus",
+    # Severe invasive streptococcal
+    "Severe invasive streptococcal infections(TSLS)": "Severe invasive streptococcal infections",
+    # VRE
+    "VRE infection": "Vancomycin-resistant Enterococcus infection",
+    # West Nile fever
+    "West Nile fever(including West Nile encephalitis)": "West Nile fever",
+    # Avian influenza duplicates (malformed will be handled by normalization)
+    "Avian influenza H5N1": "Avian influenza H5N1",
+    "Avian influenza H7N9": "Avian influenza H7N9",
+}
+
+# Track original -> cleaned disease names (populated during data reading)
+_disease_name_tracker: dict[str, str] = {}
+
 
 def _col_rename_bullet(names: list[str]) -> list[str]:
     """Clean and normalize column names from bullet CSV files.
@@ -69,6 +99,7 @@ def _clean_cell_text(text: str | None) -> str | None:
 
     Excel files from 1999-2000 contain null bytes. Bilingual cells have
     Japanese text followed by English in parentheses - we extract the English.
+    Handles both half-width () and full-width （）parentheses.  # noqa: RUF001
 
     Args:
         text: Raw cell text.
@@ -82,11 +113,69 @@ def _clean_cell_text(text: str | None) -> str | None:
     clean = text.replace("\x00", "")
     # Normalize whitespace
     clean = clean.replace("\r", " ").replace("\n", " ").replace("\t", " ")
-    # Extract English text from bilingual cells like "日本語 (English)"
-    match = re.search(r"\(([\x20-\x7E]+)\)", clean)
-    if match:
-        return match.group(1).strip()
+
+    # Extract English text from bilingual cells like "日本語 (English)" or "日本語 （English）"  # noqa: RUF001
+    # Support both half-width () and full-width （）parentheses  # noqa: RUF001
+    # Use findall to get all matches, then take the LAST one (which is usually the English)
+    matches = re.findall(r"[（(]([^\)）]+)[)）]", clean)  # noqa: RUF001
+    if matches:
+        # Take the last match (English is typically at the end)
+        english = matches[-1].strip()
+        # Normalize full-width ASCII characters to half-width
+        english = _normalize_fullwidth(english)
+        return english
+
+    # Normalize any full-width characters in the result
+    clean = _normalize_fullwidth(clean)
     return clean.strip()
+
+
+def _normalize_fullwidth(text: str) -> str:
+    """Normalize full-width ASCII characters to half-width.
+
+    Args:
+        text: Text potentially containing full-width characters.
+
+    Returns:
+        Text with full-width ASCII normalized to half-width.
+    """
+    # Common full-width letters and characters seen in the data
+    replacements = {
+        "Ｉ": "I",
+        "ｎ": "n",
+        "Ａ": "A",
+        "Ｅ": "E",
+        "Ｏ": "O",
+        "　": " ",  # Full-width space
+    }
+    for fw, hw in replacements.items():
+        text = text.replace(fw, hw)
+    return text
+
+
+def _normalize_disease_name(name: str) -> str:
+    """Normalize disease names for consistency.
+
+    Fixes common issues:
+    - Malformed parentheses (e.g., "H5N1) (Avian influenza H5N1")
+    - Redundant text in parentheses
+    - Standardizes to preferred naming
+
+    Args:
+        name: Raw disease name.
+
+    Returns:
+        Normalized disease name.
+    """
+    # Fix malformed parentheses like "H5N1) (Avian influenza H5N1" -> "Avian influenza H5N1"
+    malformed_match = re.match(r"^[^\(]*\)\s*\((.+)$", name)
+    if malformed_match:
+        name = malformed_match.group(1).strip()
+
+    # Apply known disease name mappings for duplicates/variants
+    name = _DISEASE_NAME_MAPPINGS.get(name, name)
+
+    return name
 
 
 def _resolve_headers(
@@ -118,6 +207,14 @@ def _resolve_headers(
         # Update current disease if row2 has a value (merged cells span multiple columns)
         if r2:
             current_disease = r2
+
+        # Filter out Japanese-only category text
+        # If r3 contains Japanese characters, it's likely a note/modifier, not a category
+        if r3 and any(
+            "\u3040" <= c <= "\u309f" or "\u30a0" <= c <= "\u30ff" or "\u4e00" <= c <= "\u9fff"
+            for c in r3
+        ):
+            r3 = None  # Treat as empty, will default to "total"
 
         # Normalize category name
         cat = r3 if r3 else "total"
@@ -399,10 +496,24 @@ def _read_confirmed_pl(
     # Split "Disease||Category" into separate columns
     long_df = long_df.with_columns(
         [
-            pl.col("variable").str.split("||").list.get(0).alias("disease"),
+            pl.col("variable").str.split("||").list.get(0).alias("disease_raw"),
             pl.col("variable").str.split("||").list.get(1).alias("category"),
         ]
     ).drop("variable")
+
+    # Normalize disease names and track mappings
+    disease_mappings = {}
+    for raw_name in long_df["disease_raw"].unique():
+        if raw_name:
+            normalized = _normalize_disease_name(raw_name)
+            disease_mappings[raw_name] = normalized
+            # Update global tracker
+            if raw_name not in _disease_name_tracker:
+                _disease_name_tracker[raw_name] = normalized
+
+    long_df = long_df.with_columns(
+        pl.col("disease_raw").replace(disease_mappings).alias("disease")
+    ).drop("disease_raw")
 
     # Clean count column (convert to int, treating errors as 0)
     long_df = long_df.with_columns(
@@ -696,3 +807,23 @@ def read(
     if resolve_return_type(return_type) == "pandas":
         return to_pandas(df)
     return df
+
+
+def get_disease_name_mappings() -> dict[str, str]:
+    """Get the tracker of original -> cleaned disease name mappings.
+
+    This function returns a dictionary mapping original disease names (as they
+    appear in the raw data) to their cleaned/normalized versions. The tracker
+    is populated during data reading operations.
+
+    Returns:
+        Dictionary mapping original disease names to normalized names.
+
+    Example:
+        >>> import jpinfectpy as jp
+        >>> df = jp.load("sex")  # Populates the tracker
+        >>> mappings = jp.get_disease_name_mappings()
+        >>> print(mappings.get("H5N1) (Avian influenza H5N1"))
+        'Avian influenza H5N1'
+    """
+    return _disease_name_tracker.copy()
