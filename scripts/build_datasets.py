@@ -9,7 +9,6 @@ import logging
 import polars as pl
 from pathlib import Path
 from jpinfectpy._internal import download, read, validation
-from jpinfectpy import io  # Still need for _read_sentinel_pl
 from datetime import datetime
 
 # Configure logging
@@ -46,6 +45,33 @@ def build_sex():
 
     if dfs:
         full_df = pl.concat(dfs, how="diagonal_relaxed")
+
+        # Some source years only provide total + male. Derive female when possible.
+        categories = set(full_df["category"].drop_nulls().unique().to_list())
+        if "female" not in categories and {"total", "male"}.issubset(categories):
+            key_cols = ["prefecture", "year", "week", "date", "disease"]
+            if "source" in full_df.columns:
+                key_cols.append("source")
+
+            sex_wide = (
+                full_df.select(key_cols + ["category", "count"])
+                .group_by(key_cols + ["category"])
+                .agg(pl.col("count").sum().alias("count"))
+                .pivot(values="count", index=key_cols, on="category")
+            )
+
+            female_df = (
+                sex_wide.filter(pl.col("total").is_not_null() & pl.col("male").is_not_null())
+                .with_columns(
+                    (pl.col("total") - pl.col("male")).cast(pl.Int64, strict=False).alias("count")
+                )
+                .with_columns(pl.lit("female").alias("category"))
+                .select(key_cols + ["category", "count"])
+            )
+
+            full_df = pl.concat([full_df, female_df], how="diagonal_relaxed")
+            logger.info(f"  ✓ Derived female rows: {female_df.height:,}")
+
         out_path = DATA_DIR / "sex_prefecture.parquet"
         full_df.write_parquet(out_path)
         logger.info(f"Saved to {out_path.name} ({full_df.height} rows, {success_count} years)")
@@ -250,41 +276,25 @@ def build_unified():
     
     all_dfs = []
     
-    # 3. Load historical sex data (EXCLUDING years already in modern data)
+    # 3. Load historical sex data (EXCLUDING years already in modern data).
+    # Unified keeps only total category for consistency with modern weekly sources.
     sex_path = DATA_DIR / "sex_prefecture.parquet"
     if sex_path.exists():
         logger.info(f"\nLoading historical sex data from {sex_path.name}...")
         sex_df = pl.read_parquet(sex_path)
         if modern_years:
             sex_df = sex_df.filter(~pl.col("year").is_in(list(modern_years)))
-            logger.info(f"  ✓ Loaded {sex_df.height:,} rows (filtered to exclude modern years: {sorted(list(modern_years))})")
-        else:
-            logger.info(f"  ✓ Loaded {sex_df.height:,} rows")
+        if "category" in sex_df.columns:
+            sex_df = sex_df.filter(pl.col("category") == "total")
+        logger.info(
+            f"  ✓ Loaded {sex_df.height:,} rows "
+            f"(total-only; excluded modern years: {sorted(list(modern_years)) if modern_years else 'none'})"
+        )
         all_dfs.append(sex_df)
     else:
         logger.warning(f"  ! Sex data file not found: {sex_path}")
-    
-    # 4. Load historical place data (EXCLUDING years already in modern data)
-    # Also EXCLUDE 'total' category to avoid duplicates with sex data
-    place_path = DATA_DIR / "place_prefecture.parquet"
-    if place_path.exists():
-        logger.info(f"Loading historical place data from {place_path.name}...")
-        place_df = pl.read_parquet(place_path)
-        if modern_years:
-            place_df = place_df.filter(~pl.col("year").is_in(list(modern_years)))
-        
-        # Filter out 'total' category - this is already in sex data
-        # Keep only place-specific categories: 'unknown', 'others', 'japan'
-        if "category" in place_df.columns:
-            place_df = place_df.filter(pl.col("category") != "total")
-            logger.info(f"  ✓ Loaded {place_df.height:,} rows (filtered to exclude modern years and 'total' category)")
-        else:
-            logger.info(f"  ✓ Loaded {place_df.height:,} rows (filtered to exclude modern years)")
-        all_dfs.append(place_df)
-    else:
-        logger.warning(f"  ! Place data file not found: {place_path}")
-    
-    # 5. Smart merge modern data (prefer zensu, only sentinel-exclusive from teiten)
+
+    # 4. Smart merge modern data (prefer zensu, only sentinel-exclusive from teiten)
     if zensu_df is not None and teiten_df is not None:
         logger.info("\nApplying smart merge (prefer confirmed, sentinel-only from teiten)...")
         merged_modern = validation.smart_merge(zensu_df, teiten_df)
@@ -298,7 +308,7 @@ def build_unified():
         logger.info("\nOnly sentinel data available (no zensu data to merge)")
         all_dfs.append(teiten_df)
     
-    # 6. Combine all dataframes
+    # 5. Combine all dataframes
     if not all_dfs:
         logger.error("No data files found! Cannot build unified dataset.")
         return
@@ -306,25 +316,32 @@ def build_unified():
     logger.info(f"\nCombining {len(all_dfs)} datasets...")
     unified_df = pl.concat(all_dfs, how="diagonal_relaxed")
     logger.info(f"  ✓ Combined to {unified_df.height:,} total rows")
-    
-    # 6.5. Deduplicate - the source data itself may have duplicates
-    logger.info("\nDeduplicating records...")
-    dedup_keys = ["prefecture", "year", "week", "disease"]
+
+    # Fill modern rows with category=total for a consistent schema.
     if "category" in unified_df.columns:
-        dedup_keys.append("category")
-    
+        unified_df = unified_df.with_columns(
+            pl.when(pl.col("category").is_null())
+            .then(pl.lit("total"))
+            .otherwise(pl.col("category"))
+            .alias("category")
+        )
+
+    # 5.5. Deduplicate - the source data itself may have duplicates
+    logger.info("\nDeduplicating records...")
+    dedup_keys = ["prefecture", "year", "week", "disease", "category"]
+
     rows_before = unified_df.height
     unified_df = unified_df.unique(subset=dedup_keys, keep="first")
     rows_after = unified_df.height
     rows_removed = rows_before - rows_after
-    
+
     if rows_removed > 0:
         logger.info(f"  ✓ Removed {rows_removed:,} duplicate rows")
         logger.info(f"  ✓ Deduplicated to {rows_after:,} unique rows")
     else:
         logger.info(f"  ✓ No duplicates found")
-    
-    # 7. Validate schema
+
+    # 6. Validate schema
     logger.info("\nValidating schema...")
     try:
         validation.validate_schema(unified_df)
@@ -332,8 +349,8 @@ def build_unified():
     except ValueError as e:
         logger.error(f"  ✗ Schema validation failed: {e}")
         return
-    
-    # 8. Validate no duplicates
+
+    # 7. Validate no duplicates
     logger.info("Checking for duplicates...")
     try:
         validation.validate_no_duplicates(unified_df)
@@ -341,8 +358,8 @@ def build_unified():
     except ValueError as e:
         logger.error(f"  ✗ Duplicate validation failed: {e}")
         return
-    
-    # 9. Validate date ranges
+
+    # 8. Validate date ranges
     logger.info("Validating date ranges...")
     try:
         validation.validate_date_ranges(unified_df)
@@ -350,12 +367,12 @@ def build_unified():
     except ValueError as e:
         logger.error(f"  ✗ Date range validation failed: {e}")
         return
-    
-    # 10. Save unified dataset
+
+    # 9. Save unified dataset
     out_path = DATA_DIR / "unified.parquet"
     logger.info(f"\nSaving unified dataset to {out_path.name}...")
     unified_df.write_parquet(out_path)
-    
+
     # Summary statistics
     logger.info("\n" + "="*60)
     logger.info("UNIFIED DATASET SUMMARY")
