@@ -54,7 +54,7 @@ def _make_release_assets(tmp_path: Path, bad_checksum: bool = False) -> tuple[Pa
 
 
 def test_ensure_data_downloads_and_extracts_assets(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     archive_path, manifest_path = _make_release_assets(tmp_path)
     cache_dir = tmp_path / "cache"
@@ -75,6 +75,9 @@ def test_ensure_data_downloads_and_extracts_assets(
     assert data_dir.exists()
     assert (data_dir / ".complete").exists()
     assert all((data_dir / name).exists() for name in data_manager.EXPECTED_DATASETS)
+    captured = capsys.readouterr()
+    assert "local data cache" in captured.err
+    assert str(data_dir) in captured.err
 
 
 def test_ensure_data_checksum_mismatch_raises(

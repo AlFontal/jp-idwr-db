@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import shutil
+import sys
 import zipfile
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as package_version
@@ -128,6 +129,15 @@ def ensure_data(version: str | None = None, force: bool = False) -> Path:
     if force and data_dir.exists():
         shutil.rmtree(data_dir)
     data_dir.mkdir(parents=True, exist_ok=True)
+    action = "Refreshing" if force else "Building"
+    print(
+        f"[jp_idwr_db] {action} local data cache for {resolved} at {data_dir}.",
+        file=sys.stderr,
+    )
+    print(
+        "[jp_idwr_db] This happens on first use and may take a moment.",
+        file=sys.stderr,
+    )
 
     archive_path, manifest_path = download_release_assets(resolved, data_dir)
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -159,4 +169,5 @@ def ensure_data(version: str | None = None, force: bool = False) -> Path:
         raise ValueError(f"Missing required datasets in cache: {sorted(missing_expected)}")
 
     marker.write_text("ok\n", encoding="utf-8")
+    print("[jp_idwr_db] Data cache ready.", file=sys.stderr)
     return data_dir

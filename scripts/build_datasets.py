@@ -50,6 +50,22 @@ def _format_number(value: int | float | None) -> str:
     return f"{as_float:,.2f}"
 
 
+def _sort_for_output(df: pl.DataFrame) -> pl.DataFrame:
+    """Sort output dataframes consistently for stable parquet ordering.
+
+    Primary intent is chronological ordering with prefecture/category grouping:
+    date -> prefecture -> category, with additional keys for deterministic ties.
+    """
+    sort_keys: list[str] = []
+    for key in ["date", "year", "week", "prefecture", "category", "disease", "source"]:
+        if key in df.columns:
+            sort_keys.append(key)
+
+    if not sort_keys:
+        return df
+    return df.sort(sort_keys, nulls_last=True)
+
+
 def _write_diseases_markdown(unified_df: pl.DataFrame) -> None:
     """Write disease temporal coverage and totals to DISEASES.md."""
     summary = (
@@ -147,6 +163,7 @@ def build_sex():
             logger.info(f"  ✓ Derived female rows: {female_df.height:,}")
 
         out_path = DATA_DIR / "sex_prefecture.parquet"
+        full_df = _sort_for_output(full_df)
         full_df.write_parquet(out_path)
         logger.info(f"Saved to {out_path.name} ({full_df.height} rows, {success_count} years)")
 
@@ -174,6 +191,7 @@ def build_place():
 
     if dfs:
         full_df = pl.concat(dfs, how="diagonal_relaxed")
+        full_df = _sort_for_output(full_df)
         out_path = DATA_DIR / "place_prefecture.parquet"
         full_df.write_parquet(out_path)
         logger.info(f"Saved to {out_path.name} ({full_df.height} rows, {success_count} years)")
@@ -244,6 +262,7 @@ def build_bullet():
 
     if dfs:
         full_df = pl.concat(dfs, how="diagonal_relaxed")
+        full_df = _sort_for_output(full_df)
         out_path = DATA_DIR / "bullet.parquet"
         full_df.write_parquet(out_path)
         logger.info(f"Saved to {out_path.name} ({full_df.height} rows, {total_weeks} weeks total)")
@@ -315,6 +334,7 @@ def build_sentinel():
 
     if dfs:
         full_df = pl.concat(dfs, how="diagonal_relaxed")
+        full_df = _sort_for_output(full_df)
         out_path = DATA_DIR / "sentinel.parquet"
         full_df.write_parquet(out_path)
         logger.info(f"Saved to {out_path.name} ({full_df.height} rows, {total_weeks} weeks total)")
@@ -463,6 +483,7 @@ def build_unified():
     # 9. Save unified dataset
     out_path = DATA_DIR / "unified.parquet"
     logger.info(f"\nSaving unified dataset to {out_path.name}...")
+    unified_df = _sort_for_output(unified_df)
     unified_df.write_parquet(out_path)
     _write_diseases_markdown(unified_df)
 
