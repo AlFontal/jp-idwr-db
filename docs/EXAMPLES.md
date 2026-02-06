@@ -13,6 +13,17 @@ print(df.columns)
 print(df.select(["year", "week"]).max())
 ```
 
+```text
+(5370477, 9)
+['prefecture', 'year', 'week', 'date', 'count', 'category', 'disease', 'source', 'per_sentinel']
+shape: (1, 2)
+┌──────┬──────┐
+│ year ┆ week │
+╞══════╪══════╡
+│ 2026 ┆ 53   │
+└──────┴──────┘
+```
+
 ## 2. Basic Disease Filter
 
 ```python
@@ -24,6 +35,11 @@ df = jp.load("unified")
 measles = df.filter(pl.col("disease") == "Measles")
 print(measles.shape)
 print(measles["year"].min(), measles["year"].max())
+```
+
+```text
+(44478, 9)
+2008 2026
 ```
 
 ## 3. Annual Trend (Polars Group By)
@@ -43,6 +59,19 @@ tb_annual = (
 
 print(tb_annual.head(5))
 print(tb_annual.tail(5))
+```
+
+```text
+shape: (5, 2)
+┌──────┬─────────┐
+│ year ┆ cases   │
+╞══════╪═════════╡
+│ 2007 ┆ 21946.0 │
+│ 2008 ┆ 28459.0 │
+│ 2009 ┆ 26996.0 │
+│ 2010 ┆ 24465.0 │
+│ 2011 ┆ 22943.0 │
+└──────┴─────────┘
 ```
 
 ## 4. Recent Sentinel Surveillance Slice
@@ -70,6 +99,18 @@ weekly = (
 print(weekly.head(10))
 ```
 
+```text
+shape: (10, 4)
+┌──────┬──────┬────────────────┬───────────────────┐
+│ year ┆ week ┆ reported_cases ┆ mean_per_sentinel │
+╞══════╪══════╪════════════════╪═══════════════════╡
+│ 2024 ┆ 1    ┆ 131.0          ┆ 0.056897          │
+│ 2024 ┆ 2    ┆ 343.0          ┆ 0.106977          │
+│ 2024 ┆ 3    ┆ 567.0          ┆ 0.181591          │
+│ ...  ┆ ...  ┆ ...            ┆ ...               │
+└──────┴──────┴────────────────┴───────────────────┘
+```
+
 ## 5. Source-Aware Comparison in Unified
 
 ```python
@@ -85,6 +126,17 @@ source_counts = (
 )
 
 print(source_counts)
+```
+
+```text
+shape: (3, 2)
+┌───────────────────────┬─────────┐
+│ source                ┆ rows    │
+╞═══════════════════════╪═════════╡
+│ Confirmed cases       ┆ 4317843 │
+│ Sentinel surveillance ┆ 593274  │
+│ All-case reporting    ┆ 459360  │
+└───────────────────────┴─────────┘
 ```
 
 ## 6. Prefecture-Level Comparison for One Disease
@@ -108,6 +160,18 @@ by_prefecture = (
 print(by_prefecture.head(10))
 ```
 
+```text
+shape: (10, 2)
+┌────────────┬────────────┐
+│ prefecture ┆ cases      │
+╞════════════╪════════════╡
+│ Tokyo      ┆ 1.150637e6 │
+│ Kanagawa   ┆ 929832.0   │
+│ Saitama    ┆ 805643.0   │
+│ ...        ┆ ...        │
+└────────────┴────────────┘
+```
+
 ## 7. Category-Based Historical Analysis
 
 ```python
@@ -124,6 +188,18 @@ male_vs_total = (
 )
 
 print(male_vs_total.head(10))
+```
+
+```text
+shape: (10, 3)
+┌──────┬──────────┬───────┐
+│ year ┆ category ┆ cases │
+╞══════╪══════════╪═══════╡
+│ 2007 ┆ female   ┆ 8347  │
+│ 2007 ┆ male     ┆ 13599 │
+│ 2007 ┆ total    ┆ 21946 │
+│ ...  ┆ ...      ┆ ...   │
+└──────┴──────────┴───────┘
 ```
 
 ## 8. Build a Compact Yearly Summary
@@ -143,6 +219,19 @@ summary = (
 print(summary.head())
 ```
 
+```text
+shape: (5, 2)
+┌──────┬─────────────┐
+│ year ┆ cases       │
+╞══════╪═════════════╡
+│ 2020 ┆ 5.5199732e7 │
+│ 2021 ┆ 2.608384e7  │
+│ 2022 ┆ 2.8533745e7 │
+│ 2023 ┆ 3.2401803e7 │
+│ 2024 ┆ 4.3879899e7 │
+└──────┴─────────────┘
+```
+
 ## 9. Add ISO Prefecture IDs Only When Needed
 
 ```python
@@ -152,6 +241,18 @@ df = jp.load("unified")
 df_with_ids = jp.attach_prefecture_id(df)
 
 print(df_with_ids.select(["prefecture", "prefecture_id"]).head(10))
+```
+
+```text
+shape: (10, 2)
+┌────────────┬───────────────┐
+│ prefecture ┆ prefecture_id │
+╞════════════╪═══════════════╡
+│ Tochigi    ┆ JP-09         │
+│ Kochi      ┆ JP-39         │
+│ Hokkaido   ┆ JP-01         │
+│ ...        ┆ ...           │
+└────────────┴───────────────┘
 ```
 
 ## Notes
