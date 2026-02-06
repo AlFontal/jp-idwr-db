@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.3 - 2026-02-06
+
+- Refreshed release data assets from sorted parquet datasets (date/prefecture/category ordering).
+- Improved README motivation and practical example narrative.
+- Expanded examples with research-oriented `get_data()` workflows.
+
 ## 0.2.2 - 2026-02-06
 
 - Fixed PyPI publish command in release workflow for current `uv` (`uv publish dist/*`).
