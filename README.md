@@ -25,12 +25,12 @@ Prefetch explicitly:
 
 ```bash
 python -m jp_idwr_db data download
-python -m jp_idwr_db data download --version v0.1.0 --force
+python -m jp_idwr_db data download --version v0.2.2 --force
 ```
 
 Environment overrides:
 
-- `JPINFECT_DATA_VERSION`: choose a specific release tag (example: `v0.1.0`)
+- `JPINFECT_DATA_VERSION`: choose a specific release tag (example: `v0.2.2`)
 - `JPINFECT_DATA_BASE_URL`: override asset host base URL
 - `JPINFECT_CACHE_DIR`: override local cache root
 
@@ -38,49 +38,39 @@ Environment overrides:
 
 ```python
 import jp_idwr_db as jp
+import polars as pl
 
 # Full unified dataset (recommended)
-df = jp.load("unified")
-print(df.select(["prefecture", "disease", "year", "week", "count", "source"]).head(8))
+pl.Config.set_tbl_rows(10)
+
+df = (
+    jp.load("unified")
+    .select(["date", "prefecture", "category", "disease", "count", "source"])
+    .sort(["date", "prefecture", "category", "disease"])
+)
+print(df)
 ```
 
 ```text
-shape: (8, 6)
-┌────────────┬─────────────────────────────────┬──────┬──────┬───────┬───────────────────────┐
-│ prefecture ┆ disease                         ┆ year ┆ week ┆ count ┆ source                │
-│ ---        ┆ ---                             ┆ ---  ┆ ---  ┆ ---   ┆ ---                   │
-│ str        ┆ str                             ┆ i32  ┆ i32  ┆ f64   ┆ str                   │
-╞════════════╪═════════════════════════════════╪══════╪══════╪═══════╪═══════════════════════╡
-│ Tochigi    ┆ Lyme disease                    ┆ 2011 ┆ 24   ┆ 0.0   ┆ Confirmed cases       │
-│ Kochi      ┆ Avian influenza H5N1            ┆ 2008 ┆ 51   ┆ 0.0   ┆ Confirmed cases       │
-│ Hokkaido   ┆ Dengue fever                    ┆ 1999 ┆ 28   ┆ 0.0   ┆ Confirmed cases       │
-│ Tokyo      ┆ Congenital rubella syndrome     ┆ 2014 ┆ 41   ┆ 0.0   ┆ Confirmed cases       │
-│ Nagasaki   ┆ Severe Acute Respiratory Syndr… ┆ 2018 ┆ 4    ┆ 0.0   ┆ Confirmed cases       │
-│ Fukushima  ┆ Infectious gastroenteritis (on… ┆ 2019 ┆ 25   ┆ 145.0 ┆ Sentinel surveillance │
-│ Nara       ┆ Severe invasive streptococcal … ┆ 2003 ┆ 10   ┆ 0.0   ┆ Confirmed cases       │
-│ Mie        ┆ Plague                          ┆ 2006 ┆ 37   ┆ 0.0   ┆ Confirmed cases       │
-└────────────┴─────────────────────────────────┴──────┴──────┴───────┴───────────────────────┘
-```
-
-```python
-import jp_idwr_db as jp
-
-# Optional: attach ISO prefecture IDs (JP-01 ... JP-47) only when needed
-df_with_ids = jp.attach_prefecture_id(df, prefecture_col="prefecture", id_col="prefecture_id")
-print(df_with_ids.select(["prefecture", "prefecture_id"]).head())
-```
-
-```text
-shape: (5, 2)
-┌────────────┬───────────────┐
-│ prefecture ┆ prefecture_id │
-╞════════════╪═══════════════╡
-│ Tochigi    ┆ JP-09         │
-│ Kochi      ┆ JP-39         │
-│ Hokkaido   ┆ JP-01         │
-│ Tokyo      ┆ JP-13         │
-│ Nagasaki   ┆ JP-42         │
-└────────────┴───────────────┘
+shape: (5_370_477, 6)
+┌────────────┬────────────┬──────────┬─────────────────────────────┬───────┬────────────────────┐
+│ date       ┆ prefecture ┆ category ┆ disease                     ┆ count ┆ source             │
+│ ---        ┆ ---        ┆ ---      ┆ ---                         ┆ ---   ┆ ---                │
+│ date       ┆ str        ┆ str      ┆ str                         ┆ f64   ┆ str                │
+╞════════════╪════════════╪══════════╪═════════════════════════════╪═══════╪════════════════════╡
+│ 1999-04-11 ┆ Aichi      ┆ total    ┆ AIDS                        ┆ 0.0   ┆ Confirmed cases    │
+│ 1999-04-11 ┆ Aichi      ┆ total    ┆ Acute poliomyelitis         ┆ 0.0   ┆ Confirmed cases    │
+│ 1999-04-11 ┆ Aichi      ┆ total    ┆ Acute viral hepatitis       ┆ 4.0   ┆ Confirmed cases    │
+│ 1999-04-11 ┆ Aichi      ┆ total    ┆ Amebiasis                   ┆ 0.0   ┆ Confirmed cases    │
+│ 1999-04-11 ┆ Aichi      ┆ total    ┆ Anthrax                     ┆ 0.0   ┆ Confirmed cases    │
+│ …          ┆ …          ┆ …        ┆ …                           ┆ …     ┆ …                  │
+│ 2026-02-09 ┆ Yamanashi  ┆ total    ┆ Viral hepatitis(excluding   ┆ 0.0   ┆ All-case reporting │
+│            ┆            ┆          ┆ hepa…                       ┆       ┆                    │
+│ 2026-02-09 ┆ Yamanashi  ┆ total    ┆ West Nile fever             ┆ 0.0   ┆ All-case reporting │
+│ 2026-02-09 ┆ Yamanashi  ┆ total    ┆ Western equine encephalitis ┆ 0.0   ┆ All-case reporting │
+│ 2026-02-09 ┆ Yamanashi  ┆ total    ┆ Yellow fever                ┆ 0.0   ┆ All-case reporting │
+│ 2026-02-09 ┆ Yamanashi  ┆ total    ┆ Zika virus infection        ┆ 0.0   ┆ All-case reporting │
+└────────────┴────────────┴──────────┴─────────────────────────────┴───────┴────────────────────┘
 ```
 
 ## Main API
@@ -101,54 +91,72 @@ Top-level API exported by `jp_idwr_db`:
 
 ```python
 import jp_idwr_db as jp
+import polars as pl
 
 # Tuberculosis rows for a year range
-tb = jp.get_data(disease="Tuberculosis", year=(2018, 2023))
-print(tb.select(["prefecture", "disease", "year", "week", "count", "source"]).head(8))
+pl.Config.set_tbl_rows(10)
+
+tb = (
+    jp.get_data(disease="Tuberculosis", year=2024, prefecture=["Tokyo", "Osaka", "Hokkaido"])
+    .select(["date", "prefecture", "disease", "count", "source"])
+    .sort(["date", "prefecture"])
+)
+print(tb)
 ```
 
 ```text
-shape: (8, 6)
-┌────────────┬──────────────┬──────┬──────┬───────┬─────────────────┐
-│ prefecture ┆ disease      ┆ year ┆ week ┆ count ┆ source          │
-│ ---        ┆ ---          ┆ ---  ┆ ---  ┆ ---   ┆ ---             │
-│ str        ┆ str          ┆ i32  ┆ i32  ┆ f64   ┆ str             │
-╞════════════╪══════════════╪══════╪══════╪═══════╪═════════════════╡
-│ Hokkaido   ┆ Tuberculosis ┆ 2020 ┆ 12   ┆ 5.0   ┆ Confirmed cases │
-│ Oita       ┆ Tuberculosis ┆ 2023 ┆ 38   ┆ 6.0   ┆ Confirmed cases │
-│ Fukuoka    ┆ Tuberculosis ┆ 2021 ┆ 8    ┆ 12.0  ┆ Confirmed cases │
-│ Kagawa     ┆ Tuberculosis ┆ 2020 ┆ 19   ┆ 2.0   ┆ Confirmed cases │
-│ Chiba      ┆ Tuberculosis ┆ 2020 ┆ 19   ┆ 9.0   ┆ Confirmed cases │
-│ Kanagawa   ┆ Tuberculosis ┆ 2022 ┆ 17   ┆ 25.0  ┆ Confirmed cases │
-│ Okinawa    ┆ Tuberculosis ┆ 2021 ┆ 11   ┆ 4.0   ┆ Confirmed cases │
-│ Gifu       ┆ Tuberculosis ┆ 2018 ┆ 23   ┆ 7.0   ┆ Confirmed cases │
-└────────────┴──────────────┴──────┴──────┴───────┴─────────────────┘
+shape: (156, 5)
+┌────────────┬────────────┬──────────────┬───────┬────────────────────┐
+│ date       ┆ prefecture ┆ disease      ┆ count ┆ source             │
+│ ---        ┆ ---        ┆ ---          ┆ ---   ┆ ---                │
+│ date       ┆ str        ┆ str          ┆ f64   ┆ str                │
+╞════════════╪════════════╪══════════════╪═══════╪════════════════════╡
+│ 2024-01-01 ┆ Hokkaido   ┆ Tuberculosis ┆ 2.0   ┆ All-case reporting │
+│ 2024-01-01 ┆ Osaka      ┆ Tuberculosis ┆ 3.0   ┆ All-case reporting │
+│ 2024-01-01 ┆ Tokyo      ┆ Tuberculosis ┆ 15.0  ┆ All-case reporting │
+│ 2024-01-08 ┆ Hokkaido   ┆ Tuberculosis ┆ 4.0   ┆ All-case reporting │
+│ 2024-01-08 ┆ Osaka      ┆ Tuberculosis ┆ 17.0  ┆ All-case reporting │
+│ …          ┆ …          ┆ …            ┆ …     ┆ …                  │
+│ 2024-12-16 ┆ Osaka      ┆ Tuberculosis ┆ 17.0  ┆ All-case reporting │
+│ 2024-12-16 ┆ Tokyo      ┆ Tuberculosis ┆ 41.0  ┆ All-case reporting │
+│ 2024-12-23 ┆ Hokkaido   ┆ Tuberculosis ┆ 5.0   ┆ All-case reporting │
+│ 2024-12-23 ┆ Osaka      ┆ Tuberculosis ┆ 16.0  ┆ All-case reporting │
+│ 2024-12-23 ┆ Tokyo      ┆ Tuberculosis ┆ 53.0  ┆ All-case reporting │
+└────────────┴────────────┴──────────────┴───────┴────────────────────┘
 ```
 
 ```python
 import jp_idwr_db as jp
+import polars as pl
 
 # Sentinel-only diseases from recent years
-sentinel = jp.get_data(source="sentinel", year=(2023, 2026))
-print(sentinel.select(["prefecture", "disease", "year", "week", "count", "source"]).head(8))
+rsv = (
+    jp.get_data(source="sentinel", disease="Respiratory syncytial virus infection", year=2024)
+    .select(["date", "prefecture", "disease", "count", "per_sentinel"])
+    .sort(["date", "prefecture"])
+)
+print(rsv)
 ```
 
 ```text
-shape: (8, 6)
-┌────────────┬─────────────────────────────────┬──────┬──────┬───────┬───────────────────────┐
-│ prefecture ┆ disease                         ┆ year ┆ week ┆ count ┆ source                │
-│ ---        ┆ ---                             ┆ ---  ┆ ---  ┆ ---   ┆ ---                   │
-│ str        ┆ str                             ┆ i32  ┆ i32  ┆ f64   ┆ str                   │
-╞════════════╪═════════════════════════════════╪══════╪══════╪═══════╪═══════════════════════╡
-│ Ishikawa   ┆ Respiratory syncytial virus in… ┆ 2024 ┆ 42   ┆ 813.0 ┆ Sentinel surveillance │
-│ Nara       ┆ Erythema infection              ┆ 2025 ┆ 31   ┆ 823.0 ┆ Sentinel surveillance │
-│ Saga       ┆ Mumps                           ┆ 2024 ┆ 26   ┆ 14.0  ┆ Sentinel surveillance │
-│ Hyogo      ┆ Pharyngoconjunctival fever      ┆ 2023 ┆ 19   ┆ 468.0 ┆ Sentinel surveillance │
-│ Miyazaki   ┆ Infectious gastroenteritis      ┆ 2026 ┆ 3    ┆ 339.0 ┆ Sentinel surveillance │
-│ Kagoshima  ┆ Infectious gastroenteritis (on… ┆ 2024 ┆ 9    ┆ null  ┆ Sentinel surveillance │
-│ Osaka      ┆ Mumps                           ┆ 2024 ┆ 49   ┆ 404.0 ┆ Sentinel surveillance │
-│ Aomori     ┆ Erythema infection              ┆ 2024 ┆ 10   ┆ 5.0   ┆ Sentinel surveillance │
-└────────────┴─────────────────────────────────┴──────┴──────┴───────┴───────────────────────┘
+shape: (2_444, 5)
+┌────────────┬────────────┬─────────────────────────────────┬────────┬──────────────┐
+│ date       ┆ prefecture ┆ disease                         ┆ count  ┆ per_sentinel │
+│ ---        ┆ ---        ┆ ---                             ┆ ---    ┆ ---          │
+│ date       ┆ str        ┆ str                             ┆ f64    ┆ f64          │
+╞════════════╪════════════╪═════════════════════════════════╪════════╪══════════════╡
+│ 2024-01-07 ┆ Aichi      ┆ Respiratory syncytial virus in… ┆ 1.0    ┆ 0.01         │
+│ 2024-01-07 ┆ Akita      ┆ Respiratory syncytial virus in… ┆ null   ┆ null         │
+│ 2024-01-07 ┆ Aomori     ┆ Respiratory syncytial virus in… ┆ 1.0    ┆ 0.03         │
+│ 2024-01-07 ┆ Chiba      ┆ Respiratory syncytial virus in… ┆ 8.0    ┆ 0.06         │
+│ 2024-01-07 ┆ Ehime      ┆ Respiratory syncytial virus in… ┆ null   ┆ null         │
+│ …          ┆ …          ┆ …                               ┆ …      ┆ …            │
+│ 2024-12-29 ┆ Toyama     ┆ Respiratory syncytial virus in… ┆ 1371.0 ┆ 48.96        │
+│ 2024-12-29 ┆ Wakayama   ┆ Respiratory syncytial virus in… ┆ 1702.0 ┆ 58.69        │
+│ 2024-12-29 ┆ Yamagata   ┆ Respiratory syncytial virus in… ┆ 1795.0 ┆ 66.48        │
+│ 2024-12-29 ┆ Yamaguchi  ┆ Respiratory syncytial virus in… ┆ 3118.0 ┆ 72.51        │
+│ 2024-12-29 ┆ Yamanashi  ┆ Respiratory syncytial virus in… ┆ 510.0  ┆ 21.25        │
+└────────────┴────────────┴─────────────────────────────────┴────────┴──────────────┘
 ```
 
 ## Datasets
@@ -162,6 +170,45 @@ Use `jp.load(...)` with:
 - `"unified"`: deduplicated combined dataset (sex-total + modern bullet/sentinel, recommended)
 
 Detailed schema and coverage are documented in [DATASETS.md](./docs/DATASETS.md).
+
+## Optional Prefecture IDs
+
+Attach ISO prefecture IDs (JP-01 ... JP-47) only when needed:
+
+```python
+import jp_idwr_db as jp
+
+df_with_ids = (
+    jp.get_data(disease="Measles", year=2024)
+    .select(["prefecture", "disease", "count"])
+    .sort(["prefecture", "count"])
+    .unique(subset=["prefecture"], keep="first")
+    .pipe(jp.attach_prefecture_id)
+    .sort("prefecture")
+)
+print(df_with_ids)
+```
+
+```text
+shape: (48, 4)
+┌────────────┬─────────┬───────┬───────────────┐
+│ prefecture ┆ disease ┆ count ┆ prefecture_id │
+│ ---        ┆ ---     ┆ ---   ┆ ---           │
+│ str        ┆ str     ┆ f64   ┆ str           │
+╞════════════╪═════════╪═══════╪═══════════════╡
+│ Aichi      ┆ Measles ┆ 0.0   ┆ JP-23         │
+│ Akita      ┆ Measles ┆ 0.0   ┆ JP-05         │
+│ Aomori     ┆ Measles ┆ 0.0   ┆ JP-02         │
+│ Chiba      ┆ Measles ┆ 0.0   ┆ JP-12         │
+│ Ehime      ┆ Measles ┆ 0.0   ┆ JP-38         │
+│ …          ┆ …       ┆ …     ┆ …             │
+│ Toyama     ┆ Measles ┆ 0.0   ┆ JP-16         │
+│ Wakayama   ┆ Measles ┆ 0.0   ┆ JP-30         │
+│ Yamagata   ┆ Measles ┆ 0.0   ┆ JP-06         │
+│ Yamaguchi  ┆ Measles ┆ 0.0   ┆ JP-35         │
+│ Yamanashi  ┆ Measles ┆ 0.0   ┆ JP-19         │
+└────────────┴─────────┴───────┴───────────────┘
+```
 
 ## Raw Download and Parsing
 
