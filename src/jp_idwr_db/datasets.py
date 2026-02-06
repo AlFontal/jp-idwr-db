@@ -1,17 +1,13 @@
-"""Dataset loading utilities for bundled surveillance data.
-
-This module provides functions for loading pre-processed parquet datasets that
-are bundled with the package.
-"""
+"""Dataset loading utilities for release-hosted parquet datasets."""
 
 from __future__ import annotations
 
-from importlib import resources
 from pathlib import Path
 from typing import Literal
 
 import polars as pl
 
+from .data_manager import ensure_data
 from .types import DatasetName
 
 _DATASETS = {
@@ -24,14 +20,13 @@ _DATASETS = {
 }
 
 
-def _data_path(name: str) -> Path:
-    """Get the path to a bundled dataset file.
+def _data_path(name: str, version: str | None = None, force: bool = False) -> Path:
+    """Get the path to a cached dataset file.
 
     Args:
         name: Dataset name (must be in _DATASETS).
-
-    Returns:
-        Path to the parquet file.
+        version: Optional data release version (example: ``v0.1.0``).
+        force: Force re-download if cache exists.
 
     Raises:
         ValueError: If the dataset name is unknown.
@@ -40,16 +35,17 @@ def _data_path(name: str) -> Path:
         filename = _DATASETS[name]
     except KeyError as exc:
         raise ValueError(f"Unknown dataset: {name}") from exc
-    return Path(str(resources.files("jp_idwr_db.data").joinpath(filename)))
+    data_dir = ensure_data(version=version, force=force)
+    return Path(data_dir / filename)
 
 
 def load_dataset(
     name: DatasetName | Literal["sex_prefecture", "place_prefecture", "unified", "sentinel"],
+    *,
+    version: str | None = None,
+    force_download: bool = False,
 ) -> pl.DataFrame:
-    """Load a bundled dataset.
-
-    Bundled datasets are pre-processed historical data in parquet format,
-    included with the package for quick access without downloading.
+    """Load a dataset from local cache (downloaded from release assets when needed).
 
     Args:
         name: Dataset name:
@@ -59,6 +55,9 @@ def load_dataset(
             - "sentinel": Sentinel surveillance (2023+) - RSV, HFMD, etc.
             - "unified": Combined dataset (1999-2026) - RECOMMENDED
             Aliases: "sex_prefecture", "place_prefecture"
+        version: Optional data release version.
+        force_download: Force re-download of release assets.
+
     Returns:
         DataFrame containing the requested dataset.
 
@@ -74,11 +73,11 @@ def load_dataset(
     elif name == "place":
         name = "place_prefecture"
 
-    path = _data_path(name)
+    path = _data_path(name, version=version, force=force_download)
     return pl.read_parquet(path)
 
 
-def load_prefecture_en() -> list[str]:
+def load_prefecture_en(*, version: str | None = None, force_download: bool = False) -> list[str]:
     """Load the list of English prefecture names.
 
     Returns:
@@ -90,6 +89,6 @@ def load_prefecture_en() -> list[str]:
         >>> print(prefectures[:3])
         ['Hokkaido', 'Aomori', 'Iwate']
     """
-    path = _data_path("prefecture_en")
+    path = _data_path("prefecture_en", version=version, force=force_download)
     df = pl.read_parquet(path)
     return df.get_column("prefecture").to_list()

@@ -80,7 +80,7 @@ def get_data(
         ...     source="all"
         ... )
     """
-    # Load the unified bundled dataset by default.
+    # Load unified dataset (cached locally, downloaded from releases on demand).
     try:
         df = load_dataset("unified")
     except Exception:

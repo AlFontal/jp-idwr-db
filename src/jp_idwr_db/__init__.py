@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from .api import get_data, get_latest_week, list_diseases, list_prefectures
 from .config import Config, configure, get_config
+from .data_manager import ensure_data
 from .datasets import load_dataset as load
 from .transform import merge, pivot
 from .types import DatasetName
@@ -12,6 +13,7 @@ __all__ = [
     "DatasetName",
     "attach_prefecture_id",
     "configure",
+    "ensure_data",
     "get_config",
     "get_data",
     "get_latest_week",
@@ -24,3 +26,4 @@ __all__ = [
 ]
 
 __version__ = "0.1.0"
+__data_version__ = __version__

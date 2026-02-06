@@ -1,6 +1,6 @@
 # Disease Coverage in Unified Dataset
 
-Coverage summary generated from `src/jp_idwr_db/data/unified.parquet` (snapshot: 2026-02-06).
+Coverage summary generated from `data/parquet/unified.parquet` (snapshot: 2026-02-06).
 
 - Total diseases: **118**
 - Year span: **1999-2026**

@@ -65,19 +65,20 @@ jp-idwr-db/
 ├── src/jp_idwr_db/         # Main package code
 │   ├── __init__.py         # Public API exports
 │   ├── config.py           # Global configuration
-│   ├── datasets.py         # Bundled dataset loading
+│   ├── datasets.py         # Dataset loading through local cache
+│   ├── data_manager.py     # Release asset download + checksum validation
 │   ├── http.py             # HTTP client with caching
 │   ├── io.py               # Data download and reading
 │   ├── transform.py        # Data manipulation
 │   ├── types.py            # Type definitions
 │   ├── urls.py             # URL generation
 │   ├── utils.py            # Helper functions
-│   └── data/               # Bundled parquet datasets
+├── data/parquet/           # Source parquet files used to build release assets
 ├── tests/                  # Pytest test suite
 │   ├── fixtures/           # Test data
 │   └── test_*.py          # Test modules
 ├── scripts/                # Build and utility scripts
-│   └── build_datasets.py  # Build bundled datasets
+│   └── build_datasets.py  # Build parquet datasets
 ├── docs/                   # User-facing markdown docs
 └── pyproject.toml          # Project configuration
 ```
@@ -277,8 +278,23 @@ If downstream code needs pandas, convert explicitly at the call site using
 ### Caching Strategy
 
 - **HTTP cache**: `~/.cache/jp_idwr_db/http/` stores raw downloads with ETag metadata
-- **Data cache**: `~/.cache/jp_idwr_db/raw/` stores renamed files for user access
+- **Data cache**: `~/.cache/jp_idwr_db/data/<version>/` stores release parquet assets
 - Files are copied from HTTP cache to data cache, not moved
+
+## Data Release Assets
+
+Parquet files are not shipped in the wheel. Build release data assets with:
+
+```bash
+uv run python scripts/build_release_data.py --input data/parquet --out dist-data
+```
+
+This generates:
+
+- `jp_idwr_db-parquet.zip`
+- `jp_idwr_db-manifest.json`
+
+Attach both files to the GitHub Release that matches the package tag (`vX.Y.Z`).
 
 ## Pull Request Guidelines
 
