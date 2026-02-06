@@ -7,7 +7,7 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-from jpinfectpy.io import _read_sentinel_pl
+from jp_idwr_db.io import _read_sentinel_pl
 
 
 @pytest.fixture

@@ -1,17 +1,15 @@
 from __future__ import annotations
 
-import pandas as pd
 import polars as pl
 
-import jpinfectpy as jp
+import jp_idwr_db as jp
 
 
 def test_prefecture_map_shape() -> None:
-    df = jp.prefecture_map(return_type="polars")
-    assert isinstance(df, pl.DataFrame)
-    assert df.height == 47
-    assert set(df.columns) == {"prefecture", "prefecture_id"}
-    assert "JP-13" in df["prefecture_id"].to_list()
+    mapping = jp.prefecture_map()
+    assert isinstance(mapping, dict)
+    assert len(mapping) == 47
+    assert mapping["Tokyo"] == "JP-13"
 
 
 def test_attach_prefecture_id_polars() -> None:
@@ -20,10 +18,3 @@ def test_attach_prefecture_id_polars() -> None:
     assert isinstance(out, pl.DataFrame)
     assert "prefecture_id" in out.columns
     assert set(out["prefecture_id"].to_list()) == {"JP-01", "JP-13"}
-
-
-def test_attach_prefecture_id_pandas() -> None:
-    df = pd.DataFrame({"prefecture": ["Tokyo"], "count": [1]})
-    out = jp.attach_prefecture_id(df)
-    assert isinstance(out, pd.DataFrame)
-    assert out.loc[0, "prefecture_id"] == "JP-13"

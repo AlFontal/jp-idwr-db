@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import pandas as pd
 import polars as pl
 
-from jpinfectpy.transform import merge, pivot
+from jp_idwr_db.transform import merge, pivot
 
 
 def test_pivot_roundtrip_polars() -> None:
@@ -17,25 +16,10 @@ def test_pivot_roundtrip_polars() -> None:
             "cases": [18, 7],
         }
     )
-    wide = pivot(long_df, return_type="polars")
+    wide = pivot(long_df)
     assert "Influenza" in wide.columns
-    long_again = pivot(wide, return_type="polars")
+    long_again = pivot(wide)
     assert set(long_again.columns) == set(long_df.columns)
-
-
-def test_pivot_roundtrip_pandas() -> None:
-    long_df = pd.DataFrame(
-        {
-            "prefecture": ["Total", "Tokyo"],
-            "year": [2024, 2024],
-            "week": [1, 1],
-            "date": ["2024-01-07", "2024-01-07"],
-            "disease": ["Influenza", "Influenza"],
-            "cases": [18, 7],
-        }
-    )
-    wide = pivot(long_df, return_type="pandas")
-    assert "Influenza" in wide.columns
 
 
 def test_merge_mixed_inputs() -> None:
@@ -50,7 +34,7 @@ def test_merge_mixed_inputs() -> None:
             "Influenza Total weekly": [18],
         }
     )
-    df2 = pd.DataFrame(
+    df2 = pl.DataFrame(
         {
             "prefecture": ["Total"],
             "year": [2024],
@@ -62,6 +46,6 @@ def test_merge_mixed_inputs() -> None:
             "Influenza Imported weekly": [0],
         }
     )
-    merged = merge(df1, df2, return_type="polars")
+    merged = merge(df1, df2)
     assert isinstance(merged, pl.DataFrame)
     assert merged.height == 1

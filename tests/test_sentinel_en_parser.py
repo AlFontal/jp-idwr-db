@@ -6,7 +6,7 @@ from pathlib import Path
 
 import polars as pl
 
-from jpinfectpy._internal.sentinel_en_parser import _read_sentinel_en_pl
+from jp_idwr_db.io import _read_sentinel_en_pl
 
 
 def test_read_sentinel_en_teitenrui_csv(tmp_path: Path) -> None:
