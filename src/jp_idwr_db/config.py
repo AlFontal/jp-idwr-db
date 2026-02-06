@@ -25,7 +25,7 @@ class Config:
 
     cache_dir: Path = Path(user_cache_dir("jp_idwr_db"))
     rate_limit_per_minute: int = 20
-    user_agent: str = "jp_idwr_db/0.1.0 (+https://github.com/AlFontal/jp_idwr_db)"
+    user_agent: str = "jp_idwr_db/0.2.0 (+https://github.com/AlFontal/jp-idwr-db)"
     timeout_seconds: float = 30.0
     retries: int = 3
 
