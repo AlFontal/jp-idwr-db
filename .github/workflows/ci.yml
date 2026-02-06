@@ -80,3 +80,56 @@ jobs:
 
       - name: Build sdist + wheel
         run: uv build
+
+  smoke-wheel:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - name: Build wheel
+        run: uv build --wheel
+      - name: Install wheel
+        run: pip install dist/*.whl
+      - name: Smoke test import + runtime load
+        run: |
+          python - <<'PY'
+          from datetime import date
+          import tempfile
+          from pathlib import Path
+          import polars as pl
+          import jp_idwr_db as jp
+          import jp_idwr_db.datasets as datasets
+
+          d = Path(tempfile.mkdtemp())
+          pl.DataFrame(
+              {
+                  "prefecture": ["Tokyo"],
+                  "year": [2024],
+                  "week": [1],
+                  "date": [date(2024, 1, 1)],
+                  "count": [1.0],
+                  "category": ["total"],
+                  "disease": ["Tuberculosis"],
+                  "source": ["Confirmed cases"],
+                  "per_sentinel": [None],
+              }
+          ).write_parquet(d / "unified.parquet")
+          pl.DataFrame({"prefecture": ["Tokyo"]}).write_parquet(d / "prefecture_en.parquet")
+          pl.DataFrame({"x": [1]}).write_parquet(d / "sex_prefecture.parquet")
+          pl.DataFrame({"x": [1]}).write_parquet(d / "place_prefecture.parquet")
+          pl.DataFrame({"x": [1]}).write_parquet(d / "bullet.parquet")
+          pl.DataFrame({"x": [1]}).write_parquet(d / "sentinel.parquet")
+          datasets.ensure_data = lambda **_: d
+
+          df = jp.load("unified")
+          assert df.height == 1
+          print(df.select(["prefecture", "disease", "year", "week"]).head())
+          PY

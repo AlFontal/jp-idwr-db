@@ -1,6 +1,6 @@
 # Examples
 
-Polars-first examples for working with bundled `jp_idwr_db` datasets.
+Polars-first examples for working with `jp_idwr_db` datasets.
 
 ## 1. Load Unified Data
 
@@ -258,7 +258,7 @@ shape: (10, 2)
 ## Notes
 
 - The package is Polars-only.
-- `count` is the case-count column in bundled datasets.
+- `count` is the case-count column in the cached parquet datasets.
 - `per_sentinel` is available for sentinel-derived records.
 - `unified` is normalized to `category = "total"` only.
 - `place` data is available as a separate dataset via `jp.load("place")`.

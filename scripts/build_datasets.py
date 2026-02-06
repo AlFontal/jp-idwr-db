@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build bundled parquet datasets and coverage docs for jp_idwr_db."""
+"""Build parquet datasets and coverage docs for jp_idwr_db."""
 
 import argparse
 from datetime import date
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 CURRENT_YEAR = datetime.now().year
 CURRENT_WEEK = datetime.now().isocalendar().week
 LAST_HISTORICAL_YEAR = 2023
-DATA_DIR = Path(__file__).parent.parent / "src" / "jp_idwr_db" / "data"
+DATA_DIR = Path(__file__).parent.parent / "data" / "parquet"
 DISEASES_MD = Path(__file__).parent.parent / "docs" / "DISEASES.md"
 
 
@@ -77,7 +77,7 @@ def _write_diseases_markdown(unified_df: pl.DataFrame) -> None:
     lines = [
         "# Disease Coverage in Unified Dataset",
         "",
-        f"Coverage summary generated from `src/jp_idwr_db/data/unified.parquet` (snapshot: {date.today().isoformat()}).",
+        f"Coverage summary generated from `data/parquet/unified.parquet` (snapshot: {date.today().isoformat()}).",
         "",
         f"- Total diseases: **{summary.height}**",
         f"- Year span: **{int(unified_df['year'].min())}-{int(unified_df['year'].max())}**",

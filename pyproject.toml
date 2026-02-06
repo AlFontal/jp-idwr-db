@@ -28,6 +28,9 @@ dependencies = [
   "pyarrow>=14.0",
 ]
 
+[project.scripts]
+jp-idwr-db = "jp_idwr_db.cli:main"
+
 [project.optional-dependencies]
 excel = ["fastexcel>=0.10"]
 dev = [
@@ -49,7 +52,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build]
 include = ["src/jp_idwr_db", "README.md", "LICENSE", "CITATION.cff", "CHANGELOG.md"]
-artifacts = ["src/jp_idwr_db/data/*.parquet"]
 
 [tool.hatch.build.targets.sdist]
 include = ["src/jp_idwr_db/**", "README.md", "LICENSE", "CITATION.cff", "CHANGELOG.md"]

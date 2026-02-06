@@ -19,5 +19,5 @@ SourceType = Literal["zensu", "teitenrui", "both"]
 - "both": Both sources merged (default)
 """
 
-DatasetName = Literal["sex", "place", "bullet", "sentinel"]
+DatasetName = Literal["sex", "place", "bullet", "sentinel", "unified", "prefecture_en"]
 """Literal type for dataset names used in download and read operations."""

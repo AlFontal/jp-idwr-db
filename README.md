@@ -2,7 +2,8 @@
 
 Python access to Japanese infectious disease surveillance data from NIID/JIHS.
 
-`jp-idwr-db` bundles historical and modern surveillance datasets in Parquet format and provides a Polars-first API for filtering and analysis.
+`jp-idwr-db` provides a Polars-first API for filtering and analysis.
+Parquet datasets are versioned as GitHub Release assets and downloaded to a local cache on first use.
 It is inspired by the R package `jpinfect`, but it is not an API-parity port and includes independently curated ingestion and coverage.
 
 ## Install
@@ -11,12 +12,34 @@ It is inspired by the R package `jpinfect`, but it is not an API-parity port and
 pip install jp-idwr-db
 ```
 
+## Data Download Model
+
+- Package wheels do not ship the large parquet tables.
+- On first call to `jp.load(...)` (or `jp.get_data(...)`), the package downloads versioned data assets from GitHub Releases.
+- Cache path defaults to:
+  - macOS: `~/Library/Caches/jp_idwr_db/data/<version>/`
+  - Linux: `~/.cache/jp_idwr_db/data/<version>/`
+  - Windows: `%LOCALAPPDATA%\\jp_idwr_db\\Cache\\data\\<version>\\`
+
+Prefetch explicitly:
+
+```bash
+python -m jp_idwr_db data download
+python -m jp_idwr_db data download --version v0.1.0 --force
+```
+
+Environment overrides:
+
+- `JPINFECT_DATA_VERSION`: choose a specific release tag (example: `v0.1.0`)
+- `JPINFECT_DATA_BASE_URL`: override asset host base URL
+- `JPINFECT_CACHE_DIR`: override local cache root
+
 ## Quick Start
 
 ```python
 import jp_idwr_db as jp
 
-# Full bundled dataset (recommended)
+# Full unified dataset (recommended)
 df = jp.load("unified")
 print(df.select(["prefecture", "disease", "year", "week", "count", "source"]).head(8))
 ```
@@ -128,14 +151,14 @@ shape: (8, 6)
 └────────────┴─────────────────────────────────┴──────┴──────┴───────┴───────────────────────┘
 ```
 
-## Bundled Datasets
+## Datasets
 
 Use `jp.load(...)` with:
 
 - `"sex"`: historical sex-disaggregated surveillance
 - `"place"`: historical place-category surveillance
 - `"bullet"`: modern all-case weekly reports (rapid zensu)
-- `"sentinel"`: sentinel weekly reports (teitenrui; 2012+ in bundled data)
+- `"sentinel"`: sentinel weekly reports (teitenrui; 2012+ in release data assets)
 - `"unified"`: deduplicated combined dataset (sex-total + modern bullet/sentinel, recommended)
 
 Detailed schema and coverage are documented in [DATASETS.md](./docs/DATASETS.md).
@@ -171,6 +194,12 @@ uv run ruff check .
 uv run mypy src
 uv run pytest
 ```
+
+## Security and Integrity
+
+- Release assets include a `jp_idwr_db-manifest.json` with SHA256 checksums.
+- `ensure_data()` verifies archive checksum and each extracted parquet checksum before marking cache complete.
+- For PyPI publishing, prefer Trusted Publishing (OIDC) over long-lived API tokens.
 
 ## License
 

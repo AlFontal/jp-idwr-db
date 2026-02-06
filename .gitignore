@@ -13,3 +13,6 @@ build/
 dist/
 *.egg-info/
 *.DS_Store
+.pypirc
+.env
+dist-data/

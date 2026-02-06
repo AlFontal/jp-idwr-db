@@ -1,12 +1,13 @@
-# Bundled Dataset Reference
+# Dataset Reference
 
-This document describes the bundled parquet datasets in `src/jp_idwr_db/data/`.
+This document describes the parquet datasets published as GitHub Release assets.
+At runtime they are cached under `~/.cache/jp_idwr_db/data/<version>/` (OS-specific via `platformdirs`).
 
 All figures below reflect the repository snapshot on **2026-02-06**.
 
 ## Overview
 
-`jp_idwr_db` ships five analytical datasets:
+`jp_idwr_db` provides six analytical datasets:
 
 - `sex_prefecture.parquet`
 - `place_prefecture.parquet`
@@ -107,7 +108,7 @@ Load with:
 ## Prefecture IDs
 
 To avoid increasing parquet storage, ISO prefecture IDs are not materialized in
-the bundled datasets by default. Add them when needed:
+the datasets by default. Add them when needed:
 
 ```python
 import jp_idwr_db as jp
