@@ -121,11 +121,7 @@ def smart_merge(
         >>> # Result: Influenza from zensu + RSV from teiten
     """
     confirmed_diseases = (
-        zensu_df.select("disease")
-        .drop_nulls()
-        .unique()
-        .get_column("disease")
-        .to_list()
+        zensu_df.select("disease").drop_nulls().unique().get_column("disease").to_list()
     )
 
     # Filter teiten to only include diseases not present in confirmed data.

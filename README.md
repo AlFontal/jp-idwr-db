@@ -18,18 +18,25 @@ import jp_idwr_db as jp
 
 # Full bundled dataset (recommended)
 df = jp.load("unified")
-print(df.shape)
-print(df.select(["year", "week"]).max())
+print(df.select(["prefecture", "disease", "year", "week", "count", "source"]).head(8))
 ```
 
 ```text
-(5370477, 9)
-shape: (1, 2)
-┌──────┬──────┐
-│ year ┆ week │
-╞══════╪══════╡
-│ 2026 ┆ 53   │
-└──────┴──────┘
+shape: (8, 6)
+┌────────────┬─────────────────────────────────┬──────┬──────┬───────┬───────────────────────┐
+│ prefecture ┆ disease                         ┆ year ┆ week ┆ count ┆ source                │
+│ ---        ┆ ---                             ┆ ---  ┆ ---  ┆ ---   ┆ ---                   │
+│ str        ┆ str                             ┆ i32  ┆ i32  ┆ f64   ┆ str                   │
+╞════════════╪═════════════════════════════════╪══════╪══════╪═══════╪═══════════════════════╡
+│ Tochigi    ┆ Lyme disease                    ┆ 2011 ┆ 24   ┆ 0.0   ┆ Confirmed cases       │
+│ Kochi      ┆ Avian influenza H5N1            ┆ 2008 ┆ 51   ┆ 0.0   ┆ Confirmed cases       │
+│ Hokkaido   ┆ Dengue fever                    ┆ 1999 ┆ 28   ┆ 0.0   ┆ Confirmed cases       │
+│ Tokyo      ┆ Congenital rubella syndrome     ┆ 2014 ┆ 41   ┆ 0.0   ┆ Confirmed cases       │
+│ Nagasaki   ┆ Severe Acute Respiratory Syndr… ┆ 2018 ┆ 4    ┆ 0.0   ┆ Confirmed cases       │
+│ Fukushima  ┆ Infectious gastroenteritis (on… ┆ 2019 ┆ 25   ┆ 145.0 ┆ Sentinel surveillance │
+│ Nara       ┆ Severe invasive streptococcal … ┆ 2003 ┆ 10   ┆ 0.0   ┆ Confirmed cases       │
+│ Mie        ┆ Plague                          ┆ 2006 ┆ 37   ┆ 0.0   ┆ Confirmed cases       │
+└────────────┴─────────────────────────────────┴──────┴──────┴───────┴───────────────────────┘
 ```
 
 ```python
@@ -74,13 +81,25 @@ import jp_idwr_db as jp
 
 # Tuberculosis rows for a year range
 tb = jp.get_data(disease="Tuberculosis", year=(2018, 2023))
-print(tb.shape)
-print(tb["year"].min(), tb["year"].max())
+print(tb.select(["prefecture", "disease", "year", "week", "count", "source"]).head(8))
 ```
 
 ```text
-(14664, 9)
-2018 2023
+shape: (8, 6)
+┌────────────┬──────────────┬──────┬──────┬───────┬─────────────────┐
+│ prefecture ┆ disease      ┆ year ┆ week ┆ count ┆ source          │
+│ ---        ┆ ---          ┆ ---  ┆ ---  ┆ ---   ┆ ---             │
+│ str        ┆ str          ┆ i32  ┆ i32  ┆ f64   ┆ str             │
+╞════════════╪══════════════╪══════╪══════╪═══════╪═════════════════╡
+│ Hokkaido   ┆ Tuberculosis ┆ 2020 ┆ 12   ┆ 5.0   ┆ Confirmed cases │
+│ Oita       ┆ Tuberculosis ┆ 2023 ┆ 38   ┆ 6.0   ┆ Confirmed cases │
+│ Fukuoka    ┆ Tuberculosis ┆ 2021 ┆ 8    ┆ 12.0  ┆ Confirmed cases │
+│ Kagawa     ┆ Tuberculosis ┆ 2020 ┆ 19   ┆ 2.0   ┆ Confirmed cases │
+│ Chiba      ┆ Tuberculosis ┆ 2020 ┆ 19   ┆ 9.0   ┆ Confirmed cases │
+│ Kanagawa   ┆ Tuberculosis ┆ 2022 ┆ 17   ┆ 25.0  ┆ Confirmed cases │
+│ Okinawa    ┆ Tuberculosis ┆ 2021 ┆ 11   ┆ 4.0   ┆ Confirmed cases │
+│ Gifu       ┆ Tuberculosis ┆ 2018 ┆ 23   ┆ 7.0   ┆ Confirmed cases │
+└────────────┴──────────────┴──────┴──────┴───────┴─────────────────┘
 ```
 
 ```python
@@ -88,18 +107,25 @@ import jp_idwr_db as jp
 
 # Sentinel-only diseases from recent years
 sentinel = jp.get_data(source="sentinel", year=(2023, 2026))
-print(sentinel["disease"].n_unique())
-print(sentinel.select(["year", "week"]).max())
+print(sentinel.select(["prefecture", "disease", "year", "week", "count", "source"]).head(8))
 ```
 
 ```text
-20
-shape: (1, 2)
-┌──────┬──────┐
-│ year ┆ week │
-╞══════╪══════╡
-│ 2026 ┆ 52   │
-└──────┴──────┘
+shape: (8, 6)
+┌────────────┬─────────────────────────────────┬──────┬──────┬───────┬───────────────────────┐
+│ prefecture ┆ disease                         ┆ year ┆ week ┆ count ┆ source                │
+│ ---        ┆ ---                             ┆ ---  ┆ ---  ┆ ---   ┆ ---                   │
+│ str        ┆ str                             ┆ i32  ┆ i32  ┆ f64   ┆ str                   │
+╞════════════╪═════════════════════════════════╪══════╪══════╪═══════╪═══════════════════════╡
+│ Ishikawa   ┆ Respiratory syncytial virus in… ┆ 2024 ┆ 42   ┆ 813.0 ┆ Sentinel surveillance │
+│ Nara       ┆ Erythema infection              ┆ 2025 ┆ 31   ┆ 823.0 ┆ Sentinel surveillance │
+│ Saga       ┆ Mumps                           ┆ 2024 ┆ 26   ┆ 14.0  ┆ Sentinel surveillance │
+│ Hyogo      ┆ Pharyngoconjunctival fever      ┆ 2023 ┆ 19   ┆ 468.0 ┆ Sentinel surveillance │
+│ Miyazaki   ┆ Infectious gastroenteritis      ┆ 2026 ┆ 3    ┆ 339.0 ┆ Sentinel surveillance │
+│ Kagoshima  ┆ Infectious gastroenteritis (on… ┆ 2024 ┆ 9    ┆ null  ┆ Sentinel surveillance │
+│ Osaka      ┆ Mumps                           ┆ 2024 ┆ 49   ┆ 404.0 ┆ Sentinel surveillance │
+│ Aomori     ┆ Erythema infection              ┆ 2024 ┆ 10   ┆ 5.0   ┆ Sentinel surveillance │
+└────────────┴─────────────────────────────────┴──────┴──────┴───────┴───────────────────────┘
 ```
 
 ## Bundled Datasets
