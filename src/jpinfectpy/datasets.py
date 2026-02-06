@@ -1,13 +1,11 @@
 """Dataset loading utilities for bundled surveillance data.
 
 This module provides functions for loading pre-processed parquet datasets that
-are bundled with the package, as well as a convenience function for loading
-all available data (historical + recent).
+are bundled with the package.
 """
 
 from __future__ import annotations
 
-import logging
 from importlib import resources
 from pathlib import Path
 from typing import Literal
@@ -16,8 +14,6 @@ import polars as pl
 
 from .types import AnyFrame, DatasetName, ReturnType
 from .utils import resolve_return_type, to_pandas
-
-logger = logging.getLogger(__name__)
 
 _DATASETS = {
     "sex_prefecture": "sex_prefecture.parquet",
@@ -89,36 +85,6 @@ def load_dataset(
     if resolve_return_type(return_type) == "pandas":
         return to_pandas(df)
     return df
-
-
-def load_all(
-    *,
-    return_type: ReturnType | None = None,
-) -> AnyFrame:
-    """Load the complete unified dataset.
-
-    Returns the unified dataset combining:
-    - Historical sex/place data (1999-2023)
-    - Modern confirmed cases (bullet, 2024+)
-    - Modern sentinel surveillance (teiten, 2024+)
-
-    This is equivalent to `load("unified")` and is the recommended way
-    to access all available surveillance data in one DataFrame.
-
-    Args:
-        return_type: Desired return type ("polars" or "pandas").
-            If None, uses global config.
-
-    Returns:
-        Combined DataFrame spanning 1999-2026 with 20M+ rows.
-
-    Example:
-        >>> import jpinfectpy as jp
-        >>> df_all = jp.load_all()  # Complete dataset (1999-2026)
-        >>> df_all.shape  # (20027262, 8)
-        >>> df_all['source'].unique()  # Shows data sources
-    """
-    return load_dataset("unified", return_type=return_type)
 
 
 def load_prefecture_en() -> list[str]:

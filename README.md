@@ -24,9 +24,9 @@ print(df.select(["year", "week"]).max())
 ```python
 import jpinfectpy as jp
 
-# Convenience equivalent to load("unified")
-df_all = jp.load_all(return_type="polars")
-print(df_all["source"].unique().sort())
+# Optional: attach ISO prefecture IDs (JP-01 ... JP-47) only when needed
+df_with_ids = jp.attach_prefecture_id(df, prefecture_col="prefecture", id_col="prefecture_id")
+print(df_with_ids.select(["prefecture", "prefecture_id"]).head())
 ```
 
 ## Main API
@@ -34,11 +34,12 @@ print(df_all["source"].unique().sort())
 Top-level API exported by `jpinfectpy`:
 
 - `load(name, return_type=None)`
-- `load_all(return_type=None)`
 - `get_data(...)`
 - `list_diseases(source="all")`
 - `list_prefectures()`
 - `get_latest_week()`
+- `prefecture_map(return_type="polars"|"pandas")`
+- `attach_prefecture_id(df, prefecture_col="prefecture", id_col="prefecture_id")`
 - `merge(...)`, `pivot(...)`
 - `configure(...)`, `get_config()`
 - `to_polars(...)`, `to_pandas(...)`
@@ -71,7 +72,7 @@ Use `jp.load(...)` with:
 - `"place"`: historical place-category surveillance
 - `"bullet"`: modern all-case weekly reports (rapid zensu)
 - `"sentinel"`: modern sentinel weekly reports (rapid teitenrui)
-- `"unified"`: deduplicated combined dataset (recommended)
+- `"unified"`: deduplicated combined dataset (sex-total + modern bullet/sentinel, recommended)
 
 Detailed schema and coverage are documented in [DATASETS.md](./DATASETS.md).
 
@@ -88,6 +89,8 @@ These are useful for refreshing local raw weekly files or debugging parser behav
 ## Data Wrangling Examples
 
 See [EXAMPLES.md](./EXAMPLES.md) for Polars-first data wrangling recipes (grouping, trends, regional slices, source-aware filtering).
+
+Disease-by-disease temporal coverage is documented in [DISEASES.md](./DISEASES.md).
 
 ## Data Source
 

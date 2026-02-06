@@ -146,9 +146,22 @@ print(type(pd_df))
 print(pd_df.head())
 ```
 
+## 9. Add ISO Prefecture IDs Only When Needed
+
+```python
+import jpinfectpy as jp
+
+df = jp.load("unified", return_type="polars")
+df_with_ids = jp.attach_prefecture_id(df)
+
+print(df_with_ids.select(["prefecture", "prefecture_id"]).head(10))
+```
+
 ## Notes
 
 - Use `return_type="polars"` for most heavy wrangling workflows.
 - `count` is the case-count column in bundled datasets.
 - `per_sentinel` is available for sentinel-derived records.
+- `unified` is normalized to `category = "total"` only.
+- `place` data is available as a separate dataset via `jp.load("place")`.
 - In `unified`, source values are currently: `Confirmed cases`, `All-case reporting`, and `Sentinel surveillance`.
