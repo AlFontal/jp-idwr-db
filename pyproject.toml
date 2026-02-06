@@ -50,7 +50,6 @@ build-backend = "hatchling.build"
 [tool.hatch.build]
 include = ["src/jp_idwr_db", "README.md", "LICENSE", "CITATION.cff", "CHANGELOG.md"]
 artifacts = ["src/jp_idwr_db/data/*.parquet"]
-sources = ["src"]
 
 [tool.hatch.build.targets.sdist]
 include = ["src/jp_idwr_db/**", "README.md", "LICENSE", "CITATION.cff", "CHANGELOG.md"]
@@ -58,9 +57,7 @@ include = ["src/jp_idwr_db/**", "README.md", "LICENSE", "CITATION.cff", "CHANGEL
 [tool.hatch.build.targets.wheel]
 include = ["src/jp_idwr_db/**"]
 packages = ["src/jp_idwr_db"]
-
-[tool.hatch.build.targets.wheel.force-include]
-"jp_idwr_db/data" = "jp_idwr_db/data"
+only-packages = false
 
 [tool.ruff]
 line-length = 100
