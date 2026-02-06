@@ -6,6 +6,13 @@ Python access to Japanese infectious disease surveillance data from NIID/JIHS.
 Parquet datasets are versioned as GitHub Release assets and downloaded to a local cache on first use.
 It is inspired by the R package `jpinfect`, but it is not an API-parity port and includes independently curated ingestion and coverage.
 
+NIID/JIHS surveillance data is public, but it is not exposed as a clean analytical API.
+To reconstruct usable time series, you typically need to navigate multiple archive structures, yearly directories,
+and week-level files with changing formats (Excel and CSV) across historical and modern reporting systems.
+
+This package exists to remove that friction: it consolidates those heterogeneous sources into standardized, queryable
+tables so you can move directly to epidemiological analysis instead of file discovery, parsing, and schema harmonization.
+
 ## Install
 
 ```bash
@@ -36,17 +43,15 @@ Environment overrides:
 
 ## Quick Start
 
+To fetch the full unified dataset with a single call:
+
 ```python
 import jp_idwr_db as jp
 import polars as pl
 
-# Full unified dataset (recommended)
-pl.Config.set_tbl_rows(10)
-
 df = (
     jp.load("unified")
     .select(["date", "prefecture", "category", "disease", "count", "source"])
-    .sort(["date", "prefecture", "category", "disease"])
 )
 print(df)
 ```
@@ -73,33 +78,17 @@ shape: (5_370_477, 6)
 └────────────┴────────────┴──────────┴─────────────────────────────┴───────┴────────────────────┘
 ```
 
-## Main API
-
-Top-level API exported by `jp_idwr_db`:
-
-- `load(name)`
-- `get_data(...)`
-- `list_diseases(source="all")`
-- `list_prefectures()`
-- `get_latest_week()`
-- `prefecture_map()`
-- `attach_prefecture_id(df, prefecture_col="prefecture", id_col="prefecture_id")`
-- `merge(...)`, `pivot(...)`
-- `configure(...)`, `get_config()`
-
-### Filtered Access with `get_data`
+You can also filter at the source with `jp.get_data(...)`:
 
 ```python
-import jp_idwr_db as jp
-import polars as pl
 
-# Tuberculosis rows for a year range
-pl.Config.set_tbl_rows(10)
-
+# Fetch only tuberculosis data for 2024 in Tokyo, Osaka, and Hokkaido
 tb = (
-    jp.get_data(disease="Tuberculosis", year=2024, prefecture=["Tokyo", "Osaka", "Hokkaido"])
+    jp.get_data(
+        disease="Tuberculosis", 
+        year=2024, 
+        prefecture=["Tokyo", "Osaka", "Hokkaido"])
     .select(["date", "prefecture", "disease", "count", "source"])
-    .sort(["date", "prefecture"])
 )
 print(tb)
 ```
@@ -126,38 +115,52 @@ shape: (156, 5)
 ```
 
 ```python
-import jp_idwr_db as jp
-import polars as pl
 
-# Sentinel-only diseases from recent years
-rsv = (
-    jp.get_data(source="sentinel", disease="Respiratory syncytial virus infection", year=2024)
+# Sentinel-only diseases from recent years in Tokyo prefecture
+sentinel_df = (
+    jp.get_data(
+        source="sentinel", 
+        year=(2024, 2026))
     .select(["date", "prefecture", "disease", "count", "per_sentinel"])
-    .sort(["date", "prefecture"])
 )
-print(rsv)
+print(sentinel_df)
 ```
 
 ```text
-shape: (2_444, 5)
-┌────────────┬────────────┬─────────────────────────────────┬────────┬──────────────┐
-│ date       ┆ prefecture ┆ disease                         ┆ count  ┆ per_sentinel │
-│ ---        ┆ ---        ┆ ---                             ┆ ---    ┆ ---          │
-│ date       ┆ str        ┆ str                             ┆ f64    ┆ f64          │
-╞════════════╪════════════╪═════════════════════════════════╪════════╪══════════════╡
-│ 2024-01-07 ┆ Aichi      ┆ Respiratory syncytial virus in… ┆ 1.0    ┆ 0.01         │
-│ 2024-01-07 ┆ Akita      ┆ Respiratory syncytial virus in… ┆ null   ┆ null         │
-│ 2024-01-07 ┆ Aomori     ┆ Respiratory syncytial virus in… ┆ 1.0    ┆ 0.03         │
-│ 2024-01-07 ┆ Chiba      ┆ Respiratory syncytial virus in… ┆ 8.0    ┆ 0.06         │
-│ 2024-01-07 ┆ Ehime      ┆ Respiratory syncytial virus in… ┆ null   ┆ null         │
-│ …          ┆ …          ┆ …                               ┆ …      ┆ …            │
-│ 2024-12-29 ┆ Toyama     ┆ Respiratory syncytial virus in… ┆ 1371.0 ┆ 48.96        │
-│ 2024-12-29 ┆ Wakayama   ┆ Respiratory syncytial virus in… ┆ 1702.0 ┆ 58.69        │
-│ 2024-12-29 ┆ Yamagata   ┆ Respiratory syncytial virus in… ┆ 1795.0 ┆ 66.48        │
-│ 2024-12-29 ┆ Yamaguchi  ┆ Respiratory syncytial virus in… ┆ 3118.0 ┆ 72.51        │
-│ 2024-12-29 ┆ Yamanashi  ┆ Respiratory syncytial virus in… ┆ 510.0  ┆ 21.25        │
-└────────────┴────────────┴─────────────────────────────────┴────────┴──────────────┘
+shape: (2_052, 5)
+┌────────────┬────────────┬─────────────────────────────────┬─────────┬──────────────┐
+│ date       ┆ prefecture ┆ disease                         ┆ count   ┆ per_sentinel │
+│ ---        ┆ ---        ┆ ---                             ┆ ---     ┆ ---          │
+│ date       ┆ str        ┆ str                             ┆ f64     ┆ f64          │
+╞════════════╪════════════╪═════════════════════════════════╪═════════╪══════════════╡
+│ 2024-01-07 ┆ Tokyo      ┆ Acute hemorrhagic conjunctivit… ┆ null    ┆ null         │
+│ 2024-01-07 ┆ Tokyo      ┆ Aseptic meningitis              ┆ null    ┆ null         │
+│ 2024-01-07 ┆ Tokyo      ┆ Bacterial meningitis            ┆ null    ┆ null         │
+│ 2024-01-07 ┆ Tokyo      ┆ COVID-19                        ┆ 1365.0  ┆ 3.38         │
+│ 2024-01-07 ┆ Tokyo      ┆ Chickenpox                      ┆ 31.0    ┆ 0.12         │
+│ …          ┆ …          ┆ …                               ┆ …       ┆ …            │
+│ 2026-01-25 ┆ Tokyo      ┆ Influenza(excld. avian influen… ┆ 13082.0 ┆ 34.07        │
+│ 2026-01-25 ┆ Tokyo      ┆ Mumps                           ┆ 30.0    ┆ 0.12         │
+│ 2026-01-25 ┆ Tokyo      ┆ Mycoplasma pneumonia            ┆ 32.0    ┆ 1.28         │
+│ 2026-01-25 ┆ Tokyo      ┆ Pharyngoconjunctival fever      ┆ 115.0   ┆ 0.47         │
+│ 2026-01-25 ┆ Tokyo      ┆ Respiratory syncytial virus in… ┆ 242.0   ┆ 1.0          │
+└────────────┴────────────┴─────────────────────────────────┴─────────┴──────────────┘
 ```
+
+## Main API
+
+Top-level API exported by `jp_idwr_db`:
+
+- `load(name)`
+- `get_data(...)`
+- `list_diseases(source="all")`
+- `list_prefectures()`
+- `get_latest_week()`
+- `prefecture_map()`
+- `attach_prefecture_id(df, prefecture_col="prefecture", id_col="prefecture_id")`
+- `merge(...)`, `pivot(...)`
+- `configure(...)`, `get_config()`
+
 
 ## Datasets
 
