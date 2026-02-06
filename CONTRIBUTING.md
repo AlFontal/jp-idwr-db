@@ -1,6 +1,6 @@
-# Contributing to jpinfectpy
+# Contributing to jp-idwr-db
 
-Thanks for your interest in contributing to jpinfectpy! This guide will help you get started with development, understand our code standards, and submit high-quality contributions.
+Thanks for your interest in contributing to jp-idwr-db! This guide will help you get started with development, understand our code standards, and submit high-quality contributions.
 
 ## Quick Start
 
@@ -13,8 +13,8 @@ Thanks for your interest in contributing to jpinfectpy! This guide will help you
 
 ```bash
 # Clone the repository
-git clone https://github.com/AlFontal/jpinfectpy.git
-cd jpinfectpy
+git clone https://github.com/AlFontal/jp-idwr-db.git
+cd jp-idwr-db
 
 # Install with development dependencies
 uv sync --all-extras --dev
@@ -30,7 +30,7 @@ pre-commit install
 uv run pytest
 
 # Run with coverage
-uv run pytest --cov=jpinfectpy --cov-report=term-missing
+uv run pytest --cov=jp_idwr_db --cov-report=term-missing
 
 # Run specific test file
 uv run pytest tests/test_transform.py
@@ -61,8 +61,8 @@ uv run mypy src
 ## Repository Structure
 
 ```
-jpinfectpy/
-├── src/jpinfectpy/         # Main package code
+jp-idwr-db/
+├── src/jp_idwr_db/         # Main package code
 │   ├── __init__.py         # Public API exports
 │   ├── config.py           # Global configuration
 │   ├── datasets.py         # Bundled dataset loading
@@ -78,7 +78,7 @@ jpinfectpy/
 │   └── test_*.py          # Test modules
 ├── scripts/                # Build and utility scripts
 │   └── build_datasets.py  # Build bundled datasets
-├── docs/                   # MkDocs documentation
+├── docs/                   # User-facing markdown docs
 └── pyproject.toml          # Project configuration
 ```
 
@@ -104,13 +104,12 @@ from __future__ import annotations
 import polars as pl
 from pathlib import Path
 
-def read_data(path: Path, return_type: str = "polars") -> pl.DataFrame:
+def read_data(path: Path) -> pl.DataFrame:
     """Read data from file.
-    
+
     Args:
         path: Path to the data file.
-        return_type: Format to return ("polars" or "pandas").
-        
+
     Returns:
         DataFrame containing the data.
     """
@@ -159,11 +158,11 @@ Example test:
 ```python
 import pytest
 import polars as pl
-from jpinfectpy import load
+from jp_idwr_db import load
 
 def test_load_returns_polars():
     """Test that load returns Polars DataFrame by default."""
-    df = load("sex", return_type="polars")
+    df = load("sex")
     assert isinstance(df, pl.DataFrame)
     assert len(df) > 0
     assert "prefecture" in df.columns
@@ -222,26 +221,26 @@ Then create a pull request on GitHub with:
 
 ### Adding a New Dataset Type
 
-1. Update `DatasetName` type in `src/jpinfectpy/types.py`
-2. Add URL generation logic in `src/jpinfectpy/urls.py`
-3. Add parsing logic in `src/jpinfectpy/io.py` (or reuse existing)
+1. Update `DatasetName` type in `src/jp_idwr_db/types.py`
+2. Add URL generation logic in `src/jp_idwr_db/urls.py`
+3. Add parsing logic in `src/jp_idwr_db/io.py` (or reuse existing)
 4. Update docstrings in affected functions
 5. Add tests in `tests/`
 
 ### Adding a New Transformation
 
-1. Add function to `src/jpinfectpy/transform.py`
-2. Export in `src/jpinfectpy/__init__.py`
+1. Add function to `src/jp_idwr_db/transform.py`
+2. Export in `src/jp_idwr_db/__init__.py`
 3. Add comprehensive docstring with examples
 4. Add tests in `tests/test_transform.py`
-5. Update `EXAMPLES.md` if appropriate
+5. Update `docs/EXAMPLES.md` if appropriate
 
 ### Updating Excel Parsers
 
 Excel format changes are common. If the NIID website changes file structure:
 
 1. Download sample file and inspect manually
-2. Update `_read_excel_sheets()` in `src/jpinfectpy/io.py`
+2. Update `_read_excel_sheets()` in `src/jp_idwr_db/io.py`
 3. Update row offsets if headers changed (currently rows 2-3)
 4. Update column name cleaning in `_resolve_headers()`
 5. Update `_sheet_range_for_year()` if sheet count changed
@@ -269,18 +268,16 @@ The NIID has changed URL structures multiple times:
 
 The `ConfirmedRule` system in `urls.py` handles these transitions.
 
-### Dual Return Type System
+### Polars-Only Dataframes
 
-All data-returning functions accept `return_type="pandas"|"polars"`:
-
-- Internally, everything uses Polars (faster)
-- Pandas conversion happens only at return if requested
-- Default return type is configurable globally via `configure()`
+All public data functions return Polars DataFrames.
+If downstream code needs pandas, convert explicitly at the call site using
+`df.to_pandas()`.
 
 ### Caching Strategy
 
-- **HTTP cache**: `~/.cache/jpinfectpy/http/` stores raw downloads with ETag metadata
-- **Data cache**: `~/.cache/jpinfectpy/raw/` stores renamed files for user access
+- **HTTP cache**: `~/.cache/jp_idwr_db/http/` stores raw downloads with ETag metadata
+- **Data cache**: `~/.cache/jp_idwr_db/raw/` stores renamed files for user access
 - Files are copied from HTTP cache to data cache, not moved
 
 ## Pull Request Guidelines
@@ -334,4 +331,4 @@ Contributors will be recognized in:
 - Release notes
 - Potential CONTRIBUTORS file (if project grows)
 
-Thank you for contributing to jpinfectpy! 🎉
+Thank you for contributing to jp-idwr-db! 🎉

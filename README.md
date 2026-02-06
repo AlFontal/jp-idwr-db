@@ -1,28 +1,29 @@
-# jpinfectpy
+# jp-idwr-db
 
 Python access to Japanese infectious disease surveillance data from NIID/JIHS.
 
-`jpinfectpy` bundles historical and modern surveillance datasets in Parquet format and provides a Polars/Pandas-friendly API for filtering and analysis.
+`jp-idwr-db` bundles historical and modern surveillance datasets in Parquet format and provides a Polars-first API for filtering and analysis.
+It is inspired by the R package `jpinfect`, but it is not an API-parity port and includes independently curated ingestion and coverage.
 
 ## Install
 
 ```bash
-pip install jpinfectpy
+pip install jp-idwr-db
 ```
 
 ## Quick Start
 
 ```python
-import jpinfectpy as jp
+import jp_idwr_db as jp
 
 # Full bundled dataset (recommended)
-df = jp.load("unified", return_type="polars")
+df = jp.load("unified")
 print(df.shape)
 print(df.select(["year", "week"]).max())
 ```
 
 ```python
-import jpinfectpy as jp
+import jp_idwr_db as jp
 
 # Optional: attach ISO prefecture IDs (JP-01 ... JP-47) only when needed
 df_with_ids = jp.attach_prefecture_id(df, prefecture_col="prefecture", id_col="prefecture_id")
@@ -31,35 +32,34 @@ print(df_with_ids.select(["prefecture", "prefecture_id"]).head())
 
 ## Main API
 
-Top-level API exported by `jpinfectpy`:
+Top-level API exported by `jp_idwr_db`:
 
-- `load(name, return_type=None)`
+- `load(name)`
 - `get_data(...)`
 - `list_diseases(source="all")`
 - `list_prefectures()`
 - `get_latest_week()`
-- `prefecture_map(return_type="polars"|"pandas")`
+- `prefecture_map()`
 - `attach_prefecture_id(df, prefecture_col="prefecture", id_col="prefecture_id")`
 - `merge(...)`, `pivot(...)`
 - `configure(...)`, `get_config()`
-- `to_polars(...)`, `to_pandas(...)`
 
 ### Filtered Access with `get_data`
 
 ```python
-import jpinfectpy as jp
+import jp_idwr_db as jp
 
 # Tuberculosis rows for a year range
-tb = jp.get_data(disease="Tuberculosis", year=(2018, 2023), return_type="polars")
+tb = jp.get_data(disease="Tuberculosis", year=(2018, 2023))
 print(tb.shape)
 print(tb["year"].min(), tb["year"].max())
 ```
 
 ```python
-import jpinfectpy as jp
+import jp_idwr_db as jp
 
 # Sentinel-only diseases from recent years
-sentinel = jp.get_data(source="sentinel", year=(2024, 2026), return_type="polars")
+sentinel = jp.get_data(source="sentinel", year=(2023, 2026))
 print(sentinel["disease"].n_unique())
 print(sentinel.select(["year", "week"]).max())
 ```
@@ -71,26 +71,26 @@ Use `jp.load(...)` with:
 - `"sex"`: historical sex-disaggregated surveillance
 - `"place"`: historical place-category surveillance
 - `"bullet"`: modern all-case weekly reports (rapid zensu)
-- `"sentinel"`: modern sentinel weekly reports (rapid teitenrui)
+- `"sentinel"`: sentinel weekly reports (teitenrui; 2012+ in bundled data)
 - `"unified"`: deduplicated combined dataset (sex-total + modern bullet/sentinel, recommended)
 
-Detailed schema and coverage are documented in [DATASETS.md](./DATASETS.md).
+Detailed schema and coverage are documented in [DATASETS.md](./docs/DATASETS.md).
 
 ## Raw Download and Parsing
 
-Raw file workflows are available in `jpinfectpy.io`:
+Raw file workflows are available in `jp_idwr_db.io`:
 
-- `jpinfectpy.io.download(...)`
-- `jpinfectpy.io.download_recent(...)`
-- `jpinfectpy.io.read(...)`
+- `jp_idwr_db.io.download(...)`
+- `jp_idwr_db.io.download_recent(...)`
+- `jp_idwr_db.io.read(...)`
 
 These are useful for refreshing local raw weekly files or debugging parser behavior.
 
 ## Data Wrangling Examples
 
-See [EXAMPLES.md](./EXAMPLES.md) for Polars-first data wrangling recipes (grouping, trends, regional slices, source-aware filtering).
+See [EXAMPLES.md](./docs/EXAMPLES.md) for Polars-first data wrangling recipes (grouping, trends, regional slices, source-aware filtering).
 
-Disease-by-disease temporal coverage is documented in [DISEASES.md](./DISEASES.md).
+Disease-by-disease temporal coverage is documented in [DISEASES.md](./docs/DISEASES.md).
 
 ## Data Source
 

@@ -1,13 +1,13 @@
 # Examples
 
-Polars-first examples for working with bundled `jpinfectpy` datasets.
+Polars-first examples for working with bundled `jp_idwr_db` datasets.
 
 ## 1. Load Unified Data
 
 ```python
-import jpinfectpy as jp
+import jp_idwr_db as jp
 
-df = jp.load("unified", return_type="polars")
+df = jp.load("unified")
 print(df.shape)
 print(df.columns)
 print(df.select(["year", "week"]).max())
@@ -16,10 +16,10 @@ print(df.select(["year", "week"]).max())
 ## 2. Basic Disease Filter
 
 ```python
-import jpinfectpy as jp
+import jp_idwr_db as jp
 import polars as pl
 
-df = jp.load("unified", return_type="polars")
+df = jp.load("unified")
 
 measles = df.filter(pl.col("disease") == "Measles")
 print(measles.shape)
@@ -29,10 +29,10 @@ print(measles["year"].min(), measles["year"].max())
 ## 3. Annual Trend (Polars Group By)
 
 ```python
-import jpinfectpy as jp
+import jp_idwr_db as jp
 import polars as pl
 
-df = jp.load("unified", return_type="polars")
+df = jp.load("unified")
 
 tb_annual = (
     df.filter(pl.col("disease") == "Tuberculosis")
@@ -48,10 +48,10 @@ print(tb_annual.tail(5))
 ## 4. Recent Sentinel Surveillance Slice
 
 ```python
-import jpinfectpy as jp
+import jp_idwr_db as jp
 import polars as pl
 
-sentinel = jp.load("sentinel", return_type="polars")
+sentinel = jp.load("sentinel")
 
 recent = sentinel.filter(
     (pl.col("year") >= 2024) &
@@ -73,10 +73,10 @@ print(weekly.head(10))
 ## 5. Source-Aware Comparison in Unified
 
 ```python
-import jpinfectpy as jp
+import jp_idwr_db as jp
 import polars as pl
 
-df = jp.load("unified", return_type="polars")
+df = jp.load("unified")
 
 source_counts = (
     df.group_by("source")
@@ -90,14 +90,13 @@ print(source_counts)
 ## 6. Prefecture-Level Comparison for One Disease
 
 ```python
-import jpinfectpy as jp
+import jp_idwr_db as jp
 import polars as pl
 
 df = jp.get_data(
     disease="Hand, foot and mouth disease",
     source="sentinel",
     year=(2024, 2026),
-    return_type="polars",
 )
 
 by_prefecture = (
@@ -112,10 +111,10 @@ print(by_prefecture.head(10))
 ## 7. Category-Based Historical Analysis
 
 ```python
-import jpinfectpy as jp
+import jp_idwr_db as jp
 import polars as pl
 
-sex = jp.load("sex", return_type="polars")
+sex = jp.load("sex")
 
 male_vs_total = (
     sex.filter(pl.col("disease") == "Tuberculosis")
@@ -127,13 +126,13 @@ male_vs_total = (
 print(male_vs_total.head(10))
 ```
 
-## 8. Convert to Pandas Only at the End
+## 8. Build a Compact Yearly Summary
 
 ```python
-import jpinfectpy as jp
+import jp_idwr_db as jp
 import polars as pl
 
-pl_df = jp.load("unified", return_type="polars")
+pl_df = jp.load("unified")
 summary = (
     pl_df.filter(pl.col("year") >= 2020)
     .group_by("year")
@@ -141,17 +140,15 @@ summary = (
     .sort("year")
 )
 
-pd_df = jp.to_pandas(summary)
-print(type(pd_df))
-print(pd_df.head())
+print(summary.head())
 ```
 
 ## 9. Add ISO Prefecture IDs Only When Needed
 
 ```python
-import jpinfectpy as jp
+import jp_idwr_db as jp
 
-df = jp.load("unified", return_type="polars")
+df = jp.load("unified")
 df_with_ids = jp.attach_prefecture_id(df)
 
 print(df_with_ids.select(["prefecture", "prefecture_id"]).head(10))
@@ -159,7 +156,7 @@ print(df_with_ids.select(["prefecture", "prefecture_id"]).head(10))
 
 ## Notes
 
-- Use `return_type="polars"` for most heavy wrangling workflows.
+- The package is Polars-only.
 - `count` is the case-count column in bundled datasets.
 - `per_sentinel` is available for sentinel-derived records.
 - `unified` is normalized to `category = "total"` only.

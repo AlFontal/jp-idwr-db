@@ -1,12 +1,12 @@
 # Bundled Dataset Reference
 
-This document describes the bundled parquet datasets in `src/jpinfectpy/data/`.
+This document describes the bundled parquet datasets in `src/jp_idwr_db/data/`.
 
 All figures below reflect the repository snapshot on **2026-02-06**.
 
 ## Overview
 
-`jpinfectpy` ships five analytical datasets:
+`jp_idwr_db` ships five analytical datasets:
 
 - `sex_prefecture.parquet`
 - `place_prefecture.parquet`
@@ -44,9 +44,9 @@ Load with:
 - Grain: prefecture x year x week x disease
 - Source label: `All-case reporting`
 
-### `sentinel` (modern weekly sentinel / teitenrui)
+### `sentinel` (weekly sentinel / teitenrui)
 
-- Coverage: `2024+`
+- Coverage: `2012+` (2012 is partial year)
 - Grain: prefecture x year x week x disease
 - Metrics: `count`, `per_sentinel`
 - Source label: `Sentinel surveillance`
@@ -56,7 +56,7 @@ Load with:
 - Composition:
   - historical **sex dataset only** (category normalized to `total`)
   - modern `bullet`
-  - sentinel-exclusive diseases from `sentinel` after smart merge
+  - diseases from `sentinel` that are absent in `bullet` after smart merge
 - The `place` dataset is **not fused** into unified.
 - Category policy: unified keeps only `category = total`.
 
@@ -68,7 +68,7 @@ Load with:
 - Columns: `prefecture, year, week, date, count, category, disease, source`
 - Years: `1999-2023`
 - Prefectures: `47`
-- Diseases: `98`
+- Diseases: `94`
 
 ### `place_prefecture.parquet`
 
@@ -76,7 +76,7 @@ Load with:
 - Columns: `prefecture, year, week, date, count, category, disease, source`
 - Years: `2001-2023`
 - Prefectures: `47`
-- Diseases: `100`
+- Diseases: `96`
 
 ### `bullet.parquet`
 
@@ -88,19 +88,19 @@ Load with:
 
 ### `sentinel.parquet`
 
-- Rows: `96,444`
+- Rows: `606,225`
 - Columns: `prefecture, disease, year, week, date, count, per_sentinel, source`
-- Years: `2024-2026`
+- Years: `2012-2026`
 - Prefectures: `47`
-- Diseases: `20`
+- Diseases: `21`
 
 ### `unified.parquet`
 
-- Rows: `4,802,583`
+- Rows: `5,370,477`
 - Columns: `prefecture, year, week, date, count, category, disease, source, per_sentinel`
 - Years: `1999-2026`
 - Prefectures: `48`
-- Diseases: `117`
+- Diseases: `118`
 - Categories: `total` only
 - Sources: `Confirmed cases`, `All-case reporting`, `Sentinel surveillance`
 
@@ -110,14 +110,14 @@ To avoid increasing parquet storage, ISO prefecture IDs are not materialized in
 the bundled datasets by default. Add them when needed:
 
 ```python
-import jpinfectpy as jp
+import jp_idwr_db as jp
 
-df = jp.load("unified", return_type="polars")
+df = jp.load("unified")
 df = jp.attach_prefecture_id(df)  # adds prefecture_id (JP-01 ... JP-47)
 ```
 
 Or get the standalone mapping:
 
 ```python
-pref_map = jp.prefecture_map(return_type="polars")
+pref_map = jp.prefecture_map()
 ```
