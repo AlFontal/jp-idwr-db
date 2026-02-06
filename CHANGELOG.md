@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2 - 2026-02-06
+
+- Fixed PyPI publish command in release workflow for current `uv` (`uv publish dist/*`).
+
 ## 0.2.1 - 2026-02-06
 
 - Fixed release workflow validation issue and simplified current publish path to PyPI token-based mode.
