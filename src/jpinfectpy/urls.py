@@ -99,7 +99,6 @@ def url_confirmed(year: int, type: Literal["sex", "place"] = "sex") -> str:
 def url_bullet(
     year: int,
     week: int | Iterable[int] | None = None,
-    lang: Literal["en", "ja"] = "en",
 ) -> list[str]:
     """Get URLs for weekly bulletin data (rapid surveillance reports).
 
@@ -110,7 +109,6 @@ def url_bullet(
     Args:
         year: Year of the data (must be > 2023).
         week: Week number(s) (1-53). If None, checks all weeks.
-        lang: Language for the bulletin ("en" or "ja").
 
     Returns:
         List of valid URLs for available weeks.
@@ -119,11 +117,10 @@ def url_bullet(
         ValueError: If year <= 2023 or if week numbers are out of range.
 
     Note:
-        As of 2025 week 11, Japanese bulletins moved to a new URL structure.
-        This function handles the transition automatically.
+        Always uses English version of bulletins.
 
     Example:
-        >>> url_bullet(2024, week=1, lang="en")
+        >>> url_bullet(2024, week=1)
         ['https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/2024/01/zensu01.csv']
     """
     if year <= 2023:
@@ -143,30 +140,75 @@ def url_bullet(
         raise ValueError("Week must be between 1 and 52.")
 
     urls: list[str] = []
-    config = get_config()
 
     for w in weeks:
-        if lang == "en":
-            base = "https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/"
-            path = f"{year}/{w:02d}/zensu{w:02d}.csv"
-        else:
-            # Japanese URL structure changed in 2025 week 11
-            if year >= 2025 and w >= 11:
-                base = "https://id-info.jihs.go.jp/surveillance/idwr/jp/rapid/"
-            else:
-                base = "https://id-info.jihs.go.jp/surveillance/idwr/rapid/"
-            path = f"{year}/{w:d}/{year}-{w:02d}-zensu.csv"
+        # Always use English version
+        base = "https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/"
+        url = f"{base}{year}/{w:02d}/zensu{w:02d}.csv"
 
-        url = f"{base}{path}"
-        # Check if URL exists before adding to results
-        try:
-            resp = cached_head(url, config)
-            if resp.status_code == 200:
-                content_length = resp.headers.get("content-length", "0")
-                if int(content_length) > 0:
-                    urls.append(url)
-        except Exception:
-            # Silently skip unavailable URLs
-            continue
+        urls.append(url)
+
+    return urls
+
+
+def url_sentinel(
+    year: int,
+    week: int | Iterable[int] | None = None,
+) -> list[str]:
+    r"""Get URLs for sentinel surveillance data (teitenrui).
+
+    Generates URLs for sentinel (teitenrui) CSV reports. Only available from 2024 onwards
+    for modern data. This function checks URL availability using HEAD requests and only
+    returns URLs that exist on the server.
+
+    Args:
+        year: Year of the data (must be > 2023 for modern data).
+        week: Week number(s) (1-53). If None, checks all weeks.
+
+    Returns:
+        List of valid URLs for available weeks.
+
+    Raises:
+        ValueError: If year <= 2023 or if week numbers are out of range.
+
+    Note:
+        Sentinel data contains diseases like RSV, Influenza, HFMD monitored
+        through ~3,000 designated sentinel clinics across Japan.
+        Uses English version from /rapid/ path.
+
+    Example:
+        >>> url_sentinel(2025, week=4)
+        ['https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/2025/04/teitenrui04.csv']
+    """
+    if year <= 2023:
+        raise ValueError("Year must be > 2023 for sentinel data.")
+
+    # Normalize week parameter
+    if week is None:
+        weeks = list(range(1, 54))
+    elif isinstance(week, int):
+        weeks = [week]
+    else:
+        weeks = list(week)
+
+    # Validate week range
+    weeks = [w for w in weeks if 1 <= w <= 52]
+    if not weeks:
+        raise ValueError("Week must be between 1 and 52.")
+
+    urls: list[str] = []
+
+    # Use English version from /rapid/ path
+    base = "https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/"
+
+    for w in weeks:
+        url = f"{base}{year}/{w:02d}/teitenrui{w:02d}.csv"
+
+        # Check if URL exists
+        resp = cached_head(url, get_config())
+        if resp.status_code == 200:
+            content_length = resp.headers.get("content-length", "0")
+            if int(content_length) > 0:
+                urls.append(url)
 
     return urls

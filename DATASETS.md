@@ -1,79 +1,140 @@
-# Dataset Descriptions
+# Bundled Dataset Reference
 
-`jpinfectpy` provides access to three primary datasets derived from the [National Institute of Infectious Diseases (NIID)](https://www.niid.go.jp/niid/en/) Weekly Reports. This document details the contents, schema, and nature of each dataset.
+This document describes the bundled parquet datasets shipped in `src/jpinfectpy/data/` and how they relate to each other.
 
-## 1. Sex-Prefecture Data (`jp.load("sex")`)
+All numbers below are from the repository snapshot on **2026-02-06**.
 
-This dataset tracks reported cases of infectious diseases disaggregated by **sex** and **prefecture**.
+## Overview
 
-*   **Source**: Sentinel surveillance data (Files typically named `Syu_01_1.xls`).
-*   **Time Range**: 1999 – 2023 (Bundled).
-*   **Granularity**: Weekly.
-*   **Schema**:
+`jpinfectpy` bundles five analytical datasets:
 
-| Column | Type | Description |
-| :--- | :--- | :--- |
-| `prefecture` | `str` | Name of the prefecture (e.g., "Hokkaido", "Tokyo"). |
-| `year` | `int` | Reporting year. |
-| `week` | `int` | Reporting week (ISO-like). |
-| `date` | `date` | Calculated Monday of the reporting week. |
-| `disease` | `str` | Name of the disease (in English, e.g., "Influenza"). |
-| `category` | `str` | Category of the count: `"total"`, `"male"`, `"female"`. |
-| `count` | `int` | Number of reported cases. |
+- `sex_prefecture.parquet`
+- `place_prefecture.parquet`
+- `bullet.parquet`
+- `sentinel.parquet`
+- `unified.parquet`
 
-*   **Notes**:
-    *   Categories are normalized to lowercase.
-    *   Historical data (pre-2006) often contains "Unknown" sex categories which are cleaned or standardized where possible.
+Use:
 
-## 2. Place-Prefecture Data (`jp.load("place")`)
+- `jp.load("sex")` -> `sex_prefecture.parquet`
+- `jp.load("place")` -> `place_prefecture.parquet`
+- `jp.load("bullet")` -> `bullet.parquet`
+- `jp.load("sentinel")` -> `sentinel.parquet`
+- `jp.load("unified")` / `jp.load_all()` -> `unified.parquet`
 
-This dataset tracks reported cases disaggregated by **reporting sentinel type/location** (e.g., Hospital, Clinic) and **prefecture**.
+## Dataset Nature
 
-*   **Source**: Sentinel surveillance data (Files typically named `Syu_02_1.xls`).
-*   **Time Range**: 2001 – 2023 (Bundled).
-*   **Granularity**: Weekly.
-*   **Schema**:
+### `sex` (historical confirmed case reporting)
+- Time span: `1999` to `2023`
+- Granularity: prefecture x week x disease x category
+- Categories: `total`, `male`
+- Primary use: long historical trend analysis for confirmed-case records.
 
-| Column | Type | Description |
-| :--- | :--- | :--- |
-| `prefecture` | `str` | Name of the prefecture. |
-| `year` | `int` | Reporting year. |
-| `week` | `int` | Reporting week. |
-| `date` | `date` | Calculated Monday of the reporting week. |
-| `disease` | `str` | Name of the disease. |
-| `category` | `str` | Sentinel type: `"total"`, `"hospital"`, `"clinic"`, etc. |
-| `count` | `int` | Number of reported cases. |
+### `place` (historical place-category reporting)
+- Time span: `2001` to `2023`
+- Granularity: prefecture x week x disease x category
+- Categories: `total`, `japan`, `others`, `unknown`
+- Primary use: domestic/imported/unknown-style place-category analysis.
 
-## 3. Bullet Data (`jp.download("bullet", ...)` or `jp.read(...)`)
+### `bullet` (modern rapid all-case reports / zensu)
+- Time span: `2024+`
+- Granularity: prefecture x week x disease
+- Includes `source = "All-case reporting"`
+- Primary use: most recent weekly all-case monitoring.
 
-"Bullet" refers to the raw weekly bulletin CSVs. These files are typically text-heavy and may contain varied formatting depending on the week. They are not bundled due to their size and variability but can be downloaded and parsed.
+### `sentinel` (modern rapid sentinel reports / teitenrui)
+- Time span: `2024+`
+- Granularity: prefecture x week x disease
+- Includes `count` and `per_sentinel`
+- Includes `source = "Sentinel surveillance"`
+- Primary use: weekly sentinel metrics for common infectious diseases.
 
-*   **Source**: Raw CSV Weekly Reports.
-*   **Time Range**: Available for download for recent years (e.g., 2024-2025).
-*   **Granularity**: Weekly.
-*   **Schema** (when parsed via `jp.read()`):
-    *   Similar long-format structure to `sex` and `place` data where possible.
-    *   Includes `year`, `week`, `date` columns inferred from the filename.
-    *   Disease columns are melted into `disease`/`count` pairs.
+### `unified` (recommended)
+- Combines historical (`sex`, `place`) plus modern (`bullet`, `sentinel`).
+- Applies smart merge logic for modern overlap:
+  - keeps all modern all-case (`bullet`) rows
+  - includes only sentinel-exclusive diseases from `sentinel`
+- Includes source labels and a superset schema.
 
-## Data Processing Steps
+## Schema Summary
 
-All datasets undergo the following processing when loaded:
-1.  **Header Resolution**: Legacy Excel headers (merged cells) are parsed to identify Disease and Category.
-4. Reshaping: Data is "melted" from wide (pivot) format to long format for easier analysis.
+### `sex_prefecture.parquet`
+- Rows: `8,635,686`
+- Columns: `prefecture, year, week, date, count, category, disease, source`
+- Year range: `1999-2023`
+- Prefectures: `47`
+- Diseases: `98`
+- Source values: `Confirmed cases`
 
-## Combined Data (`jp.load_all()`)
+### `place_prefecture.parquet`
+- Rows: `22,061,988`
+- Columns: `prefecture, year, week, date, count, category, disease, source`
+- Year range: `2001-2023`
+- Prefectures: `47`
+- Diseases: `100`
+- Source values: `Confirmed cases`
 
-This function fuses the historical `sex` dataset (1999-2023) with the most recent `bullet` data (2024-present).
+### `bullet.parquet`
+- Rows: `459,360`
+- Columns: `prefecture, disease, count, week, source, year, date`
+- Year range: `2024-2026`
+- Prefectures: `48`
+- Diseases: `87`
+- Source values: `All-case reporting`
 
-*   **Logic**:
-    *   Loads `sex` data and filters to `category="total"` (to match recent data).
-    *   Downloads generic 2024+ weekly reports (if available).
-    *   Combines them into a single timeline.
-    *   Adds a `source` column: `"historical_sex"` or `"recent_bullet"`.
-*   **Limitation**: Age-stratified data is **not available** in these standard datasets.
+### `sentinel.parquet`
+- Rows: `96,444`
+- Columns: `prefecture, disease, year, week, date, count, per_sentinel, source`
+- Year range: `2024-2026`
+- Prefectures: `47`
+- Diseases: `20`
+- Source values: `Sentinel surveillance`
+- Non-null `per_sentinel`: `87,136`
+- Rows per week are stable in current snapshot (`893` each week across `108` weeks).
 
-## Age Stratification
+### `unified.parquet`
+- Rows: `20,047,362`
+- Columns: `prefecture, year, week, date, count, category, disease, source, per_sentinel`
+- Year range: `1999-2026`
+- Prefectures: `48`
+- Diseases: `119`
+- Source values:
+  - `Confirmed cases`: `19,562,622` rows
+  - `All-case reporting`: `459,360` rows
+  - `Sentinel surveillance`: `25,380` rows
 
-Users often request age-stratified data (e.g., cases by age group). Please note:
-*   **Not Available**: The standard `Syu_01` (Sex) and "Bullet" (CSV) files provided by NIID do **not** contain age-group columns. They are stratified only by Prefecture and Sex (in older files) or just Prefecture (in recent rapid reports).
+## Sentinel Integration Behavior in Unified
+
+`sentinel.parquet` includes `20` diseases, but only sentinel-exclusive diseases are retained in `unified.parquet` for overlap years. In the current snapshot, unified retains these sentinel diseases:
+
+- `Aseptic meningitis`
+- `Hand, foot and mouth disease`
+- `Herpangina`
+- `Mycoplasma pneumonia`
+- `Respiratory syncytial virus infection`
+
+This is intentional dedup behavior to avoid double-counting diseases already covered by modern all-case reporting.
+
+## Practical Guidance
+
+- Use `jp.load("unified")` for most downstream analyses.
+- Use `jp.load("sentinel")` when you need full sentinel disease coverage and `per_sentinel` metrics.
+- Use `jp.load("bullet")` for modern all-case-only analyses.
+- Use `sex`/`place` for historical category-specific studies.
+
+## Reproducibility Snippet
+
+```python
+import polars as pl
+from pathlib import Path
+
+for fn in [
+    "sex_prefecture.parquet",
+    "place_prefecture.parquet",
+    "bullet.parquet",
+    "sentinel.parquet",
+    "unified.parquet",
+]:
+    df = pl.read_parquet(Path("src/jpinfectpy/data") / fn)
+    print(fn, df.height, df.columns)
+```

@@ -18,7 +18,7 @@ import logging
 import re
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Literal
+from typing import Literal, cast
 
 import polars as pl
 from platformdirs import user_cache_dir
@@ -26,7 +26,7 @@ from platformdirs import user_cache_dir
 from .config import get_config
 from .http import download_urls
 from .types import AnyFrame, DatasetName, ReturnType
-from .urls import url_bullet, url_confirmed
+from .urls import url_bullet, url_confirmed, url_sentinel
 from .utils import resolve_return_type, to_pandas
 
 logger = logging.getLogger(__name__)
@@ -45,14 +45,14 @@ _DISEASE_NAME_MAPPINGS = {
     # B virus
     "Herpes B virus infection": "B virus disease",
     # Scrub typhus / Tsutsugamushi
-    "Scrub typhus(Tsutsugamushi disease)": "Scrub typhus",
+    "Scrub typhus (Tsutsugamushi disease)": "Scrub typhus",
     "Tsutsugamushi disease": "Scrub typhus",
     # Severe invasive streptococcal
-    "Severe invasive streptococcal infections(TSLS)": "Severe invasive streptococcal infections",
+    "Severe invasive streptococcal infections (TSLS)": "Severe invasive streptococcal infections",
     # VRE
     "VRE infection": "Vancomycin-resistant Enterococcus infection",
     # West Nile fever
-    "West Nile fever(including West Nile encephalitis)": "West Nile fever",
+    "West Nile fever (including West Nile encephalitis)": "West Nile fever",
     # Avian influenza duplicates (malformed will be handled by normalization)
     "Avian influenza H5N1": "Avian influenza H5N1",
     "Avian influenza H7N9": "Avian influenza H7N9",
@@ -78,17 +78,18 @@ def _col_rename_bullet(names: list[str]) -> list[str]:
     for raw_name in names:
         # Remove newlines that appear in the middle of names
         clean = re.sub(r"^.*[\r\n]+", "", str(raw_name))
-        clean = re.sub(r"^.*[\r\n]+", "", clean)
         # Remove Excel-generated column names like "...1", "...2"
         clean = re.sub(r"^\.\.\.[0-9]+$", "", clean)
         # Replace full-width characters with ASCII equivalents
-        clean = clean.replace("Ｉ", "I")  # noqa: RUF001
-        clean = clean.replace("（", "(").replace("）", ")")  # noqa: RUF001
+        clean = clean.replace("\uff29", "I")
+        clean = clean.replace("\uff08", "(").replace("\uff09", ")")
         # Collapse multiple spaces
         clean = re.sub(r"\s+", " ", clean).strip()
-        # Remove leading and trailing parentheses
-        clean = re.sub(r"^\(", "", clean)
-        clean = re.sub(r"\)$", "", clean)
+        # Remove wrapping parentheses only (not parentheses that are part of the name)
+        # Only strip if the entire string is wrapped: "(Something)" -> "Something"
+        # Don't strip if parentheses are part of content: "Word (detail)" stays as is
+        if clean.startswith("(") and clean.endswith(")") and clean.count("(") == 1:
+            clean = clean[1:-1].strip()
         if clean:
             cleaned.append(clean)
     return cleaned
@@ -99,7 +100,7 @@ def _clean_cell_text(text: str | None) -> str | None:
 
     Excel files from 1999-2000 contain null bytes. Bilingual cells have
     Japanese text followed by English in parentheses - we extract the English.
-    Handles both half-width () and full-width （）parentheses.  # noqa: RUF001
+    Handles both half-width and full-width parentheses.
 
     Args:
         text: Raw cell text.
@@ -114,10 +115,10 @@ def _clean_cell_text(text: str | None) -> str | None:
     # Normalize whitespace
     clean = clean.replace("\r", " ").replace("\n", " ").replace("\t", " ")
 
-    # Extract English text from bilingual cells like "日本語 (English)" or "日本語 （English）"  # noqa: RUF001
-    # Support both half-width () and full-width （）parentheses  # noqa: RUF001
+    # Extract English text from bilingual cells like "日本語 (English)".
+    # Support both half-width and full-width parentheses.
     # Use findall to get all matches, then take the LAST one (which is usually the English)
-    matches = re.findall(r"[（(]([^\)）]+)[)）]", clean)  # noqa: RUF001
+    matches = re.findall(r"[\uFF08(]([^\)\uFF09]+)[)\uFF09]", clean)
     if matches:
         # Take the last match (English is typically at the end)
         english = matches[-1].strip()
@@ -141,12 +142,12 @@ def _normalize_fullwidth(text: str) -> str:
     """
     # Common full-width letters and characters seen in the data
     replacements = {
-        "Ｉ": "I",
-        "ｎ": "n",
-        "Ａ": "A",
-        "Ｅ": "E",
-        "Ｏ": "O",
-        "　": " ",  # Full-width space
+        "\uff29": "I",
+        "\uff4e": "n",
+        "\uff21": "A",
+        "\uff25": "E",
+        "\uff2f": "O",
+        "\u3000": " ",  # Full-width space
     }
     for fw, hw in replacements.items():
         text = text.replace(fw, hw)
@@ -349,7 +350,7 @@ def _extract_year_week(path: Path) -> tuple[int | None, int | None]:
         Tuple of (year, week) or (None, None) if not found.
     """
     year_match = re.search(r"(19|20)\d{2}", path.name)
-    week_match = re.search(r"(?:-)(\\d{2})|zensu(\\d{2})", path.name)
+    week_match = re.search(r"(?:-)?(\d{2})|zensu(\d{2})", path.name)
     year = int(year_match.group(0)) if year_match else None
     week = None
     if week_match:
@@ -520,6 +521,9 @@ def _read_confirmed_pl(
         pl.col("count").cast(pl.Float64, strict=False).fill_null(0).cast(pl.Int64)
     )
 
+    # Add source column
+    long_df = long_df.with_columns(pl.lit("Confirmed cases").alias("source"))
+
     return long_df
 
 
@@ -614,10 +618,182 @@ def _read_bullet_pl(
                 pl.col("count").cast(pl.Float64, strict=False).fill_null(0).cast(pl.Int64)
             )
 
+            # Add source column
+            long_df = long_df.with_columns(pl.lit("Confirmed cases").alias("source"))
+
             frames.append(long_df)
 
         except Exception:
             logger.exception(f"Failed to parse bullet file: {p.name}")
+            continue
+
+    if not frames:
+        return pl.DataFrame()
+    return pl.concat(frames, how="vertical")
+
+
+def _read_sentinel_pl(  # noqa: PLR0915
+    path: Path,
+    *,
+    year: int | None = None,
+    week: Iterable[int] | None = None,
+) -> pl.DataFrame:
+    """Read sentinel surveillance (teitenrui) CSV files.
+
+    Args:
+        path: Path to CSV file or directory containing CSV files.
+        year: Year to assign (if None, inferred from filename).
+        week: Filter to specific week(s) if provided.
+
+    Returns:
+        DataFrame in long format with columns: prefecture, year, week, date,
+        disease, count, per_sentinel, source.
+    """
+    # Find CSV files
+    files = list(path.glob("*.csv")) if path.is_dir() else [path]
+
+    # Filter by week if specified
+    if week is not None:
+        week_set = {int(w) for w in week}
+        files = [p for p in files if (_extract_year_week(p)[1] in week_set)]
+
+    frames: list[pl.DataFrame] = []
+    for p in sorted(files):
+        try:
+            # Read raw CSV: Row 0-1=metadata, Row 2=diseases, Row 3=count/per-sentinel, Row 4+=data
+            df_raw = pl.read_csv(
+                p, skip_rows=2, has_header=False, infer_schema_length=0, encoding="shift-jis"
+            )
+
+            if df_raw.height < 3:
+                continue
+
+            # Extract disease names from row 0 and column types from row 1
+            disease_row = df_raw.row(0)
+            type_row = df_raw.row(1)
+            data_df = df_raw.slice(2)  # Data starts from row 2
+
+            # First column is prefecture
+            first_col = df_raw.columns[0]
+            data_df = data_df.rename({first_col: "prefecture"})
+
+            # Build (disease, count_col, per_sentinel_col) tuples
+            disease_cols: list[tuple[str, str, str | None]] = []
+            current_disease: str | None = None
+            count_col: str | None = None
+
+            for i, (disease_name, col_type) in enumerate(
+                zip(disease_row[1:], type_row[1:], strict=False)
+            ):
+                original_col = df_raw.columns[i + 1]
+                if disease_name and str(disease_name).strip():
+                    # New disease
+                    current_disease = _clean_cell_text(str(disease_name))
+                    count_col = original_col
+                elif current_disease and col_type:
+                    # Per-sentinel column for current disease
+                    if count_col is not None:
+                        disease_cols.append((current_disease, count_col, original_col))
+                    current_disease = None
+                    count_col = None
+
+            # Handle last disease if no per-sentinel column
+            if current_disease and count_col:
+                disease_cols.append((current_disease, count_col, None))
+
+            # Clean prefecture names and filter totals
+            data_df = data_df.with_columns(
+                pl.col("prefecture").map_elements(
+                    lambda x: _clean_cell_text(str(x)) if x else None,
+                    return_dtype=pl.Utf8,
+                )
+            ).filter(
+                pl.col("prefecture").is_not_null() & ~pl.col("prefecture").str.contains("総数|合計")
+            )
+
+            # Process each disease
+            disease_frames: list[pl.DataFrame] = []
+            for disease, count_col, per_sentinel_col in disease_cols:
+                disease_df = data_df.select(["prefecture"])
+                disease_df = disease_df.with_columns(
+                    [
+                        pl.lit(disease).alias("disease"),
+                        data_df[count_col].alias("count_raw")
+                        if count_col in data_df.columns
+                        else pl.lit(None).alias("count_raw"),
+                    ]
+                )
+
+                if per_sentinel_col and per_sentinel_col in data_df.columns:
+                    disease_df = disease_df.with_columns(
+                        data_df[per_sentinel_col].alias("per_sentinel_raw")
+                    )
+                else:
+                    disease_df = disease_df.with_columns(pl.lit(None).alias("per_sentinel_raw"))
+
+                disease_frames.append(disease_df)
+
+            if not disease_frames:
+                continue
+
+            # Concatenate all diseases for this file
+            long_df = pl.concat(disease_frames, how="vertical")
+
+            # Add year and week columns
+            file_year, file_week = _extract_year_week(p)
+            y = year or file_year
+            w = file_week
+
+            if y is not None:
+                long_df = long_df.with_columns(pl.lit(y).alias("year"))
+            if w is not None:
+                long_df = long_df.with_columns(pl.lit(w).alias("week"))
+
+            # Calculate date
+            if "year" in long_df.columns and "week" in long_df.columns:
+                long_df = long_df.with_columns(
+                    pl.struct(["year", "week"])
+                    .map_elements(
+                        lambda x: _iso_week_date(int(x["year"]), int(x["week"])),
+                        return_dtype=pl.Date,
+                    )
+                    .alias("date")
+                )
+
+            # Clean count and per_sentinel (replace "-" with null)
+            long_df = long_df.with_columns(
+                [
+                    pl.col("count_raw")
+                    .str.replace("-", "")
+                    .cast(pl.Float64, strict=False)
+                    .fill_null(0)
+                    .cast(pl.Int64)
+                    .alias("count"),
+                    pl.col("per_sentinel_raw")
+                    .str.replace("-", "")
+                    .cast(pl.Float64, strict=False)
+                    .alias("per_sentinel"),
+                ]
+            ).drop(["count_raw", "per_sentinel_raw"])
+
+            # Add source column
+            long_df = long_df.with_columns(pl.lit("Sentinel surveillance").alias("source"))
+
+            # Normalize disease names
+            disease_mappings = {}
+            for raw_name in long_df["disease"].unique().to_list():
+                normalized = _normalize_disease_name(raw_name)
+                if normalized != raw_name:
+                    disease_mappings[raw_name] = normalized
+                    _disease_name_tracker[raw_name] = normalized
+
+            if disease_mappings:
+                long_df = long_df.with_columns(pl.col("disease").replace(disease_mappings))
+
+            frames.append(long_df)
+
+        except Exception:
+            logger.exception(f"Failed to parse sentinel file: {p.name}")
             continue
 
     if not frames:
@@ -632,47 +808,55 @@ def download(
     out_dir: Path | str | None = None,
     overwrite: bool = False,
     week: int | Iterable[int] | None = None,
-    lang: Literal["en", "ja"] = "en",
 ) -> Path | list[Path]:
     """Download raw data for a specific year.
 
     Args:
-        name: Dataset name ("sex", "place", or "bullet").
+        name: Dataset name ("sex", "place", "bullet", or "sentinel").
         year: Year of the data (e.g., 2023).
         out_dir: Directory to save file. Defaults to system cache.
         overwrite: If True, overwrite existing file(s).
-        week: (Bullet only) Specific week(s) to download.
-        lang: (Bullet only) Language for bullet data ("en" or "ja").
+        week: (Bullet/Sentinel only) Specific week(s) to download.
 
     Returns:
-        Path to the downloaded file (for sex/place) or list of Paths (for bullet).
+        Path to the downloaded file (for sex/place) or list of Paths (for bullet/sentinel).
 
     Example:
         >>> path = jp.download("sex", 2024)
-        >>> bullet_paths = jp.download("bullet", 2024, week=[1, 2], lang="en")
+        >>> bullet_paths = jp.download("bullet", 2024, week=[1, 2])
     """
     config = get_config()
     if out_dir is None:
         base_cache = Path(user_cache_dir("jpinfectpy"))
-        out_dir = base_cache / "raw" / ("bullet" if name == "bullet" else "confirmed")
+        if name in ("bullet", "sentinel"):
+            out_dir = base_cache / "raw" / name
+        else:
+            out_dir = base_cache / "raw" / "confirmed"
 
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    if name == "bullet":
-        urls = url_bullet(year, week, lang=lang)
+    if name in ("bullet", "sentinel"):
+        # Week-based bullet/sentinel files reuse names each year (e.g., zensu01.csv),
+        # so isolate storage by year to avoid cross-year collisions.
+        year_out_dir = out_dir / str(year)
+        year_out_dir.mkdir(parents=True, exist_ok=True)
+
+        # Bullet or sentinel data
+        urls = url_bullet(year, week) if name == "bullet" else url_sentinel(year, week)
+
         if not urls:
             return []
 
-        existing = {p.name: p for p in out_dir.glob("*.csv")}
+        existing = {p.name: p for p in year_out_dir.glob("*.csv")}
         if overwrite:
-            return download_urls(urls, out_dir, config)
+            return download_urls(urls, year_out_dir, config)
 
         needed = [url for url in urls if Path(url).name not in existing]
         if not needed:
             return [existing[Path(url).name] for url in urls]
 
-        downloaded = download_urls(needed, out_dir, config)
+        downloaded = download_urls(needed, year_out_dir, config)
         downloaded_map = {p.name: p for p in downloaded}
 
         # Return all requested (existing + newly downloaded)
@@ -684,7 +868,7 @@ def download(
 
     else:
         # Confirmed (sex or place)
-        type_ = name
+        type_ = cast(Literal["sex", "place"], name)
         url = url_confirmed(year, type_)
         filename = f"{year}_{Path(url).name}"
         dest = out_dir / filename
@@ -709,7 +893,6 @@ def download_recent(
     *,
     out_dir: Path | str | None = None,
     overwrite: bool = False,
-    lang: Literal["en", "ja"] = "en",
 ) -> list[Path]:
     """Download all available bullet data (weekly reports) from 2024 onwards.
 
@@ -719,7 +902,6 @@ def download_recent(
     Args:
         out_dir: Destination directory. Defaults to system cache.
         overwrite: If True, overwrite existing files.
-        lang: Language for bulletin ("en" or "ja").
 
     Returns:
         List of paths to downloaded files.
@@ -741,7 +923,11 @@ def download_recent(
         for week in range(1, 54):
             try:
                 paths = download(
-                    "bullet", year, out_dir=out_dir, overwrite=overwrite, week=week, lang=lang
+                    "bullet",
+                    year,
+                    out_dir=out_dir,
+                    overwrite=overwrite,
+                    week=week,
                 )
                 if paths:
                     year_files.extend(paths if isinstance(paths, list) else [paths])

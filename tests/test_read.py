@@ -40,3 +40,6 @@ def test_read_bullet_pl() -> None:
     assert isinstance(df, pl.DataFrame)
     # Check for core columns - bullet data always has prefecture and year at minimum
     assert {"prefecture", "year"}.issubset(set(df.columns))
+    # Check that source column is present
+    if "source" in df.columns:
+        assert df["source"].unique().to_list() == ["Confirmed cases"]

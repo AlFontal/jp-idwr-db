@@ -3,6 +3,8 @@ from __future__ import annotations
 import typing
 from typing import Any
 
+import pytest
+
 from jpinfectpy import urls
 
 
@@ -25,11 +27,13 @@ def test_url_bullet_en(monkeypatch: Any) -> None:
         return Resp()
 
     monkeypatch.setattr(urls, "cached_head", fake_head)
-    result = urls.url_bullet(2025, 1, lang="en")
-    assert result == ["https://id-info.jihs.go.jp/surveillance/idwr/en/rapid/2025/01/zensu01.csv"]
+    result = urls.url_bullet(2025, 1)
+    assert result == ["https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/2025/01/zensu01.csv"]
 
 
 def test_url_bullet_ja(monkeypatch: Any) -> None:
+    """Test English bullet URL generation (no Japanese option now)."""
+
     def fake_head(url: str, config: Any) -> Any:
         class Resp:
             status_code = 200
@@ -38,7 +42,48 @@ def test_url_bullet_ja(monkeypatch: Any) -> None:
         return Resp()
 
     monkeypatch.setattr(urls, "cached_head", fake_head)
-    result = urls.url_bullet(2025, 11, lang="ja")
+    result = urls.url_bullet(2025, 11)
+    # Now always returns English version
+    assert result == ["https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/2025/11/zensu11.csv"]
+
+
+def test_url_sentinel_single_week(monkeypatch: Any) -> None:
+    """Test sentinel URL generation for a single week."""
+
+    def fake_head(url: str, config: Any) -> Any:
+        class Resp:
+            status_code = 200
+            headers: typing.ClassVar = {"content-length": "100"}
+
+        return Resp()
+
+    monkeypatch.setattr(urls, "cached_head", fake_head)
+    result = urls.url_sentinel(2025, 4)
     assert result == [
-        "https://id-info.jihs.go.jp/surveillance/idwr/jp/rapid/2025/11/2025-11-zensu.csv"
+        "https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/2025/04/teitenrui04.csv"
     ]
+
+
+def test_url_sentinel_multiple_weeks(monkeypatch: Any) -> None:
+    """Test sentinel URL generation for multiple weeks."""
+
+    def fake_head(url: str, config: Any) -> Any:
+        class Resp:
+            status_code = 200
+            headers: typing.ClassVar = {"content-length": "100"}
+
+        return Resp()
+
+    monkeypatch.setattr(urls, "cached_head", fake_head)
+    result = urls.url_sentinel(2025, [1, 2, 3])
+    assert len(result) == 3
+    assert all("teitenrui" in url for url in result)
+    assert result[0].endswith("2025/01/teitenrui01.csv")
+    assert result[2].endswith("2025/03/teitenrui03.csv")
+
+
+def test_url_sentinel_validation() -> None:
+    """Test sentinel URL validation for invalid years."""
+    # Year too old (before 2024)
+    with pytest.raises(ValueError, match="Year must be > 2023 for sentinel data"):
+        urls.url_sentinel(2023, 1)

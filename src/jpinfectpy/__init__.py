@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+from .api import get_data, get_latest_week, list_diseases, list_prefectures
 from .config import Config, configure, get_config
 from .datasets import load_all
 from .datasets import load_dataset as load
-from .io import download, download_recent, get_disease_name_mappings, read
 from .transform import merge, pivot
 from .types import AnyFrame, DatasetName, ReturnType
 from .utils import to_pandas, to_polars
@@ -14,15 +14,15 @@ __all__ = [
     "DatasetName",
     "ReturnType",
     "configure",
-    "download",
-    "download_recent",
     "get_config",
-    "get_disease_name_mappings",
+    "get_data",
+    "get_latest_week",
+    "list_diseases",
+    "list_prefectures",
     "load",
     "load_all",
     "merge",
     "pivot",
-    "read",
     "to_pandas",
     "to_polars",
 ]

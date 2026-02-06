@@ -23,6 +23,8 @@ _DATASETS = {
     "sex_prefecture": "sex_prefecture.parquet",
     "place_prefecture": "place_prefecture.parquet",
     "bullet": "bullet.parquet",
+    "sentinel": "sentinel.parquet",
+    "unified": "unified.parquet",
     "prefecture_en": "prefecture_en.parquet",
 }
 
@@ -47,7 +49,7 @@ def _data_path(name: str) -> Path:
 
 
 def load_dataset(
-    name: DatasetName | Literal["sex_prefecture", "place_prefecture"],
+    name: DatasetName | Literal["sex_prefecture", "place_prefecture", "unified", "sentinel"],
     *,
     return_type: ReturnType | None = None,
 ) -> AnyFrame:
@@ -57,8 +59,13 @@ def load_dataset(
     included with the package for quick access without downloading.
 
     Args:
-        name: Dataset name - "sex", "place", or "bullet".
-            ("sex_prefecture" and "place_prefecture" are accepted aliases)
+        name: Dataset name:
+            - "sex": Sex-disaggregated data (1999-2023)
+            - "place": Place of infection data (2001-2023)
+            - "bullet": Confirmed cases (2024+)
+            - "sentinel": Sentinel surveillance (2024+) - RSV, HFMD, etc.
+            - "unified": Combined dataset (1999-2026) - RECOMMENDED
+            Aliases: "sex_prefecture", "place_prefecture"
         return_type: Desired return type ("polars" or "pandas").
             If None, uses global config.
 
@@ -67,8 +74,9 @@ def load_dataset(
 
     Example:
         >>> import jpinfectpy as jp
+        >>> df = jp.load("unified")  # Load complete unified dataset (RECOMMENDED)
         >>> df_sex = jp.load("sex")  # Load historical sex-disaggregated data
-        >>> df_place = jp.load("place", return_type="polars")
+        >>> df_sentinel = jp.load("sentinel", return_type="polars")  # Sentinel data
     """
     # Normalize aliases
     if name == "sex":
@@ -87,85 +95,30 @@ def load_all(
     *,
     return_type: ReturnType | None = None,
 ) -> AnyFrame:
-    """Load a fused dataset combining historical and recent data.
+    """Load the complete unified dataset.
 
-    This function combines:
-    1. Historical sex-disaggregated data (1999-2023) from bundled datasets
-    2. Recent weekly reports (2024+) downloaded from the NIID website
+    Returns the unified dataset combining:
+    - Historical sex/place data (1999-2023)
+    - Modern confirmed cases (bullet, 2024+)
+    - Modern sentinel surveillance (teiten, 2024+)
 
-    The sex-disaggregated data is filtered to the 'total' category to match
-    the granularity of the recent weekly reports (which do not have sex breakdown).
+    This is equivalent to `load("unified")` and is the recommended way
+    to access all available surveillance data in one DataFrame.
 
     Args:
         return_type: Desired return type ("polars" or "pandas").
             If None, uses global config.
 
     Returns:
-        Combined DataFrame with a 'source' column indicating data origin
-        ("historical_sex" or "recent_bullet").
-
-    Note:
-        This function may download data from the internet on first use.
-        Subsequent calls will use cached data. Use `download_recent()` with
-        `overwrite=True` to force re-download.
+        Combined DataFrame spanning 1999-2026 with 20M+ rows.
 
     Example:
         >>> import jpinfectpy as jp
-        >>> df_all = jp.load_all()  # Historical (1999-2023) + Recent (2024+)
-        >>> df_all['source'].value_counts()
+        >>> df_all = jp.load_all()  # Complete dataset (1999-2026)
+        >>> df_all.shape  # (20027262, 8)
+        >>> df_all['source'].unique()  # Shows data sources
     """
-    # Import here to avoid circular dependency
-    from .io import download_recent, read  # noqa: PLC0415
-
-    # Load historical data (1999-2023) filtered to 'total' category
-    hist_df = load_dataset("sex", return_type="polars")
-    hist_df = hist_df.filter(pl.col("category") == "total")
-    hist_df = hist_df.with_columns(pl.lit("historical_sex").alias("source"))
-
-    # Download and load recent weekly reports (2024+)
-    bullet_paths = download_recent()
-    recent_dfs: list[pl.DataFrame] = []
-
-    # If no recent data available, return historical only
-    if not bullet_paths:
-        logger.info("No recent bulletin data found. Returning historical data only.")
-        if resolve_return_type(return_type) == "pandas":
-            return to_pandas(hist_df)
-        return hist_df
-
-    # Read and normalize recent data
-    for p in bullet_paths:
-        try:
-            df = read(p, type="bullet", return_type="polars")
-            # Bullet data lacks 'category' column, add it as 'total'
-            if "category" not in df.columns:
-                df = df.with_columns(pl.lit("total").alias("category"))
-
-            df = df.with_columns(pl.lit("recent_bullet").alias("source"))
-
-            # Ensure column alignment for concatenation
-            cols = ["prefecture", "year", "week", "date", "disease", "category", "count", "source"]
-            df = df.select([c for c in cols if c in df.columns])
-            recent_dfs.append(df)
-        except Exception as e:
-            # Log failures but continue processing other files
-            logger.warning(f"Failed to read {p.name}: {e}")
-            continue
-
-    # Combine historical and recent data
-    if recent_dfs:
-        recent_all = pl.concat(recent_dfs, how="vertical_relaxed")
-        combined = pl.concat([hist_df, recent_all], how="diagonal_relaxed")
-    else:
-        logger.warning("All recent bulletins failed to parse. Returning historical data only.")
-        combined = hist_df
-
-    # Sort by time and location
-    combined = combined.sort(["year", "week", "prefecture"])
-
-    if resolve_return_type(return_type) == "pandas":
-        return to_pandas(combined)
-    return combined
+    return load_dataset("unified", return_type=return_type)
 
 
 def load_prefecture_en() -> list[str]:
