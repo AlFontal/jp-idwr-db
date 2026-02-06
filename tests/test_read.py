@@ -6,7 +6,7 @@ from typing import Any
 import polars as pl
 import pytest
 
-from jpinfectpy.io import read
+from jp_idwr_db.io import read
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -21,9 +21,9 @@ def test_read_confirmed_pl(monkeypatch: Any) -> None:
         return
 
     # Fixture only has 2 sheets (indices 0, 1). Standard logic expects starts at index 2.
-    monkeypatch.setattr("jpinfectpy.io._sheet_range_for_year", lambda y: range(0, 2))
+    monkeypatch.setattr("jp_idwr_db.io._sheet_range_for_year", lambda y: range(0, 2))
 
-    df = read(path, type="sex", return_type="polars")
+    df = read(path, type="sex")
     assert isinstance(df, pl.DataFrame)
     assert {"prefecture", "year", "week", "date"}.issubset(set(df.columns))
     assert df.height > 0
@@ -36,7 +36,7 @@ def test_read_bullet_pl() -> None:
         return
 
     # read() infers bullet from .csv
-    df = read(path, return_type="polars")
+    df = read(path)
     assert isinstance(df, pl.DataFrame)
     # Check for core columns - bullet data always has prefecture and year at minimum
     assert {"prefecture", "year"}.issubset(set(df.columns))

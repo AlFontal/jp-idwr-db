@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from jpinfectpy import io
+from jp_idwr_db import io
 
 
 def test_download_sentinel_separates_files_by_year(tmp_path: Path, monkeypatch: Any) -> None:
