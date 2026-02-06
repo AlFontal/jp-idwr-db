@@ -22,12 +22,35 @@ print(df.shape)
 print(df.select(["year", "week"]).max())
 ```
 
+```text
+(5370477, 9)
+shape: (1, 2)
+┌──────┬──────┐
+│ year ┆ week │
+╞══════╪══════╡
+│ 2026 ┆ 53   │
+└──────┴──────┘
+```
+
 ```python
 import jp_idwr_db as jp
 
 # Optional: attach ISO prefecture IDs (JP-01 ... JP-47) only when needed
 df_with_ids = jp.attach_prefecture_id(df, prefecture_col="prefecture", id_col="prefecture_id")
 print(df_with_ids.select(["prefecture", "prefecture_id"]).head())
+```
+
+```text
+shape: (5, 2)
+┌────────────┬───────────────┐
+│ prefecture ┆ prefecture_id │
+╞════════════╪═══════════════╡
+│ Tochigi    ┆ JP-09         │
+│ Kochi      ┆ JP-39         │
+│ Hokkaido   ┆ JP-01         │
+│ Tokyo      ┆ JP-13         │
+│ Nagasaki   ┆ JP-42         │
+└────────────┴───────────────┘
 ```
 
 ## Main API
@@ -55,6 +78,11 @@ print(tb.shape)
 print(tb["year"].min(), tb["year"].max())
 ```
 
+```text
+(14664, 9)
+2018 2023
+```
+
 ```python
 import jp_idwr_db as jp
 
@@ -62,6 +90,16 @@ import jp_idwr_db as jp
 sentinel = jp.get_data(source="sentinel", year=(2023, 2026))
 print(sentinel["disease"].n_unique())
 print(sentinel.select(["year", "week"]).max())
+```
+
+```text
+20
+shape: (1, 2)
+┌──────┬──────┐
+│ year ┆ week │
+╞══════╪══════╡
+│ 2026 ┆ 52   │
+└──────┴──────┘
 ```
 
 ## Bundled Datasets
