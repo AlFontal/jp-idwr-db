@@ -4,8 +4,12 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/AlFontal/jp-idwr-db/ci.yml?branch=main&label=CI)](https://github.com/AlFontal/jp-idwr-db/actions/workflows/ci.yml)
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/License-GPL--3.0--or--later-blue.svg)](https://github.com/AlFontal/jp-idwr-db/blob/main/LICENSE)
 
-`jp-idwr-db` is a simple Python package that gives you practical access to Japan’s infectious disease surveillance data (NIID/JIHS IDWR) as clean, analysis-ready tables.
-It’s Polars-first and ships a simple query API, while the large Parquet datasets are downloaded on demand from GitHub Releases and cached locally.
+`jp-idwr-db` publishes Japan’s infectious disease surveillance data (NIID/JIHS IDWR) as a
+versioned, language-agnostic data product: Parquet tables plus a machine-readable
+`manifest.json` (and an optional DuckDB file with views).
+
+The Python package adds a convenient API and local caching on top of those release assets.
+Internally, data wrangling is Polars-first for speed and consistent transforms.
 
 The goal is to skip the usual work of chasing week-by-week files across changing archives and formats, so you can get straight to building time series and doing epidemiology instead of spending hours on data munging.
 
@@ -126,7 +130,7 @@ shape: (2_052, 5)
 <summary><strong>Data Download Model</strong></summary>
 
 - Package wheels do not ship the large parquet tables.
-- On first call to `jp.load(...)` (or `jp.get_data(...)`), the package downloads versioned data assets from GitHub Releases.
+- On first call to `jp.load(...)` (or `jp.get_data(...)`), the package downloads versioned parquet assets listed in a release `manifest.json`.
 - Cache path defaults to:
   - macOS: `~/Library/Caches/jp_idwr_db/data/<version>/`
   - Linux: `~/.cache/jp_idwr_db/data/<version>/`
@@ -145,6 +149,80 @@ Environment overrides:
 - `JPINFECT_DATA_BASE_URL`: override asset host base URL
 - `JPINFECT_CACHE_DIR`: override local cache root
 </details>
+
+## Language-independent data access
+
+Release data assets are published as:
+
+- `manifest.json`
+- one or more `.parquet` tables (including `unified.parquet`)
+- optional `jp_idwr_db.duckdb` (views over the parquet files)
+
+Manifest schema reference: [`docs/manifest.schema.json`](./docs/manifest.schema.json).
+
+Fetch the manifest:
+
+```bash
+curl -L "https://github.com/AlFontal/jp-idwr-db/releases/download/<tag>/manifest.json"
+```
+
+Query with DuckDB CLI (when `jp_idwr_db.duckdb` and parquet files are in the same directory):
+
+```bash
+duckdb jp_idwr_db.duckdb -c "SELECT year, week, COUNT(*) AS rows FROM unified GROUP BY 1,2 ORDER BY 1 DESC, 2 DESC LIMIT 5;"
+```
+
+### Download assets for any language
+
+```bash
+TAG=v0.2.4
+BASE="https://github.com/AlFontal/jp-idwr-db/releases/download/${TAG}"
+
+mkdir -p jp-idwr-assets
+cd jp-idwr-assets
+curl -L -O "${BASE}/manifest.json"
+curl -L -O "${BASE}/unified.parquet"
+curl -L -O "${BASE}/jp_idwr_db.duckdb"
+```
+
+### R example (DuckDB, local)
+
+This example opens the local `jp_idwr_db.duckdb` artifact (downloaded with the parquet files)
+and queries the `unified` view:
+
+```r
+con <- DBI::dbConnect(duckdb::duckdb(), "jp_idwr_db.duckdb", read_only = TRUE)
+
+tb <- DBI::dbGetQuery(
+  con,
+  "SELECT date, prefecture, disease, count, source
+   FROM unified
+   WHERE year = 2024 AND disease = 'Tuberculosis'
+   ORDER BY date, prefecture
+   LIMIT 20"
+)
+
+print(tb)
+DBI::dbDisconnect(con, shutdown = TRUE)
+```
+
+### R example (Arrow, remote)
+
+You can also query the parquet files directly from the GitHub Release URL without downloading first:
+
+```r
+
+tag <- "v0.2.4"
+url <- sprintf(
+  "https://github.com/AlFontal/jp-idwr-db/releases/download/%s/unified.parquet",
+  tag
+)
+
+tb <- arrow::read_parquet(url) %>%
+  dplyr::filter(year == 2024, disease == "Tuberculosis") %>%
+  dplyr::select(date, prefecture, disease, count, source)
+
+```
 
 ## Main API
 
@@ -206,12 +284,18 @@ uv sync --all-extras --dev
 uv run ruff check .
 uv run mypy src
 uv run pytest
+
+# Build release data assets (manifest + duckdb + parquet metadata)
+uv run --with duckdb jp-idwr-db-build-assets \
+  --data-dir data/parquet \
+  --release-tag v0.2.4 \
+  --base-url https://github.com/AlFontal/jp-idwr-db/releases/download/v0.2.4
 ```
 
 ## Security and Integrity
 
-- Release assets include a `jp_idwr_db-manifest.json` with SHA256 checksums.
-- `ensure_data()` verifies archive checksum and each extracted parquet checksum before marking cache complete.
+- Release assets include a `manifest.json` with SHA256 checksums and file sizes.
+- `ensure_data()` verifies each downloaded parquet checksum and size before marking cache complete.
 - For PyPI publishing, prefer Trusted Publishing (OIDC) over long-lived API tokens.
 
 ## License
