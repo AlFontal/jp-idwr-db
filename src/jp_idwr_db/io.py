@@ -853,8 +853,12 @@ def _sentinel_cumulative_to_weekly(df: pl.DataFrame) -> pl.DataFrame:
         return df
 
     group_cols = ["year", "prefecture", "disease"]
-    sort_cols = [col for col in ["year", "prefecture", "disease", "week", "date"] if col in df.columns]
-    out = df.sort(sort_cols, nulls_last=True).with_columns(pl.col("count").fill_null(0.0).alias("_count_cum"))
+    sort_cols = [
+        col for col in ["year", "prefecture", "disease", "week", "date"] if col in df.columns
+    ]
+    out = df.sort(sort_cols, nulls_last=True).with_columns(
+        pl.col("count").fill_null(0.0).alias("_count_cum")
+    )
 
     weekly_diff = pl.col("_count_cum") - pl.col("_count_cum").shift(1).over(group_cols)
     out = out.with_columns(
@@ -863,7 +867,10 @@ def _sentinel_cumulative_to_weekly(df: pl.DataFrame) -> pl.DataFrame:
         .otherwise(weekly_diff)
         .alias("count")
     ).with_columns(
-        pl.when(pl.col("count").is_null()).then(pl.col("_count_cum")).otherwise(pl.col("count")).alias("count")
+        pl.when(pl.col("count").is_null())
+        .then(pl.col("_count_cum"))
+        .otherwise(pl.col("count"))
+        .alias("count")
     )
 
     return out.drop("_count_cum")
