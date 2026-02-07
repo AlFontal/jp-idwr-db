@@ -160,6 +160,10 @@ Release data assets are published as:
 
 Manifest schema reference: [`docs/manifest.schema.json`](./docs/manifest.schema.json).
 
+Compatibility note: releases up to and including `v0.2.4` use legacy assets
+(`jp_idwr_db-manifest.json` + `jp_idwr_db-parquet.zip`). The `manifest.json` +
+direct parquet/duckdb layout starts at `v0.2.5`.
+
 Fetch the manifest:
 
 ```bash
@@ -175,7 +179,7 @@ duckdb jp_idwr_db.duckdb -c "SELECT year, week, COUNT(*) AS rows FROM unified GR
 ### Download assets for any language
 
 ```bash
-TAG=v0.2.4
+TAG=v0.2.5
 BASE="https://github.com/AlFontal/jp-idwr-db/releases/download/${TAG}"
 
 mkdir -p jp-idwr-assets
@@ -212,7 +216,7 @@ You can also query the parquet files directly from the GitHub Release URL withou
 
 ```r
 
-tag <- "v0.2.4"
+tag <- "v0.2.5"
 url <- sprintf(
   "https://github.com/AlFontal/jp-idwr-db/releases/download/%s/unified.parquet",
   tag
@@ -288,8 +292,8 @@ uv run pytest
 # Build release data assets (manifest + duckdb + parquet metadata)
 uv run --with duckdb jp-idwr-db-build-assets \
   --data-dir data/parquet \
-  --release-tag v0.2.4 \
-  --base-url https://github.com/AlFontal/jp-idwr-db/releases/download/v0.2.4
+  --release-tag v0.2.5 \
+  --base-url https://github.com/AlFontal/jp-idwr-db/releases/download/v0.2.5
 ```
 
 ## Security and Integrity

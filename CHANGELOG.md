@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.5 - 2026-02-07
+
+- Added language-agnostic release asset tooling: `manifest.json` builder, optional `jp_idwr_db.duckdb`, and `jp-idwr-db-build-assets` CLI.
+- Updated release automation to publish parquet tables with `manifest.json` (and DuckDB artifact) as first-class release assets.
+- Updated runtime data download to consume `manifest.json` assets, with automatic fallback to legacy `jp_idwr_db-manifest.json` + zip releases.
+- Expanded README language-independent usage docs and clarified that pre-`v0.2.5` releases use legacy asset format.
+
 ## 0.2.4 - 2026-02-07
 
 - Fixed sentinel (`teitenrui`) `count` values by converting cumulative year-to-date reports into weekly incidence.
