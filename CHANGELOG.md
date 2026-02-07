@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.4 - 2026-02-07
+
+- Fixed sentinel (`teitenrui`) `count` values by converting cumulative year-to-date reports into weekly incidence.
+- Regenerated `sentinel.parquet` and `unified.parquet` from corrected weekly counts.
+- Added tests for cumulative-to-weekly conversion and documented the sentinel counting convention.
+
 ## 0.2.3 - 2026-02-06
 
 - Refreshed release data assets from sorted parquet datasets (date/prefecture/category ordering).
