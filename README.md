@@ -169,8 +169,11 @@ Use `jp.load(...)` with:
 - `"sex"`: historical sex-disaggregated surveillance
 - `"place"`: historical place-category surveillance
 - `"bullet"`: modern all-case weekly reports (rapid zensu)
-- `"sentinel"`: sentinel weekly reports (teitenrui; 2012+ in release data assets)
+- `"sentinel"`: sentinel reports (teitenrui; 2012+ in release data assets)
 - `"unified"`: deduplicated combined dataset (sex-total + modern bullet/sentinel, recommended)
+
+Note: teitenrui CSVs report year-to-date cumulative counts. `jp-idwr-db` converts these to
+weekly incidence (`count_t - count_{t-1}` within year/prefecture/disease; first week kept as-is).
 
 Detailed schema and coverage are documented in [DATASETS.md](./docs/DATASETS.md).
 
