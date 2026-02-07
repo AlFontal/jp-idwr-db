@@ -1,70 +1,53 @@
 #!/usr/bin/env python3
-"""Build versioned data release assets for GitHub Releases."""
+"""Build release data assets into an output directory.
+
+This helper keeps a simple script-based workflow while using the same core
+logic as ``jp-idwr-db-build-assets``.
+"""
 
 from __future__ import annotations
 
 import argparse
-import hashlib
-import json
+import shutil
 from pathlib import Path
-import zipfile
 
+from jp_idwr_db.duckdb_build import build_duckdb
+from jp_idwr_db.manifest import MANIFEST_NAME, build_manifest
 
-ARCHIVE_NAME = "jp_idwr_db-parquet.zip"
-MANIFEST_NAME = "jp_idwr_db-manifest.json"
-
-
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
-def _write_deterministic_zip(input_dir: Path, output_zip: Path) -> list[Path]:
-    parquet_files = sorted(input_dir.glob("*.parquet"))
-    if not parquet_files:
-        raise ValueError(f"No parquet files found in {input_dir}")
-
-    output_zip.parent.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(output_zip, mode="w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
-        for file_path in parquet_files:
-            info = zipfile.ZipInfo(filename=file_path.name, date_time=(1980, 1, 1, 0, 0, 0))
-            info.compress_type = zipfile.ZIP_DEFLATED
-            info.external_attr = 0o644 << 16
-            zf.writestr(info, file_path.read_bytes())
-    return parquet_files
+DUCKDB_NAME = "jp_idwr_db.duckdb"
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Create release data assets (zip + manifest).")
+    parser = argparse.ArgumentParser(description="Create release data assets (parquet + duckdb + manifest).")
     parser.add_argument("--input", type=Path, required=True, help="Directory containing parquet files.")
     parser.add_argument("--out", type=Path, required=True, help="Output directory for release assets.")
+    parser.add_argument("--release-tag", type=str, required=True, help="Release tag (e.g. v0.2.4).")
+    parser.add_argument("--base-url", type=str, required=True, help="Release assets base URL.")
+    parser.add_argument("--no-duckdb", action="store_true", help="Skip building DuckDB artifact.")
     args = parser.parse_args()
 
     input_dir = args.input.resolve()
     out_dir = args.out.resolve()
-    archive_path = out_dir / ARCHIVE_NAME
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    parquet_files = sorted(input_dir.glob("*.parquet"))
+    if not parquet_files:
+        raise ValueError(f"No parquet files found in {input_dir}")
+    for parquet_file in parquet_files:
+        shutil.copy2(parquet_file, out_dir / parquet_file.name)
+
+    if not args.no_duckdb:
+        duckdb_path = out_dir / DUCKDB_NAME
+        build_duckdb(data_dir=out_dir, out_path=duckdb_path)
+        print(f"Wrote {duckdb_path}")
+
     manifest_path = out_dir / MANIFEST_NAME
-
-    parquet_files = _write_deterministic_zip(input_dir, archive_path)
-
-    manifest: dict[str, object] = {
-        "archive": ARCHIVE_NAME,
-        "archive_sha256": _sha256(archive_path),
-        "files": {},
-    }
-    files = {}
-    for file_path in parquet_files:
-        files[file_path.name] = {
-            "sha256": _sha256(file_path),
-            "size_bytes": file_path.stat().st_size,
-        }
-    manifest["files"] = files
-
-    manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    print(f"Wrote {archive_path}")
+    build_manifest(
+        data_dir=out_dir,
+        release_tag=args.release_tag,
+        base_url=args.base_url,
+        out_path=manifest_path,
+    )
     print(f"Wrote {manifest_path}")
 
 

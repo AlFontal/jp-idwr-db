@@ -40,7 +40,13 @@ jobs:
           python-version: "3.12"
       - uses: astral-sh/setup-uv@v7
       - name: Build data release assets
-        run: uv run python scripts/build_release_data.py --input data/parquet --out dist-data
+        run: |
+          mkdir -p dist-data
+          cp data/parquet/*.parquet dist-data/
+          uv run --with duckdb python -m jp_idwr_db.build_release_assets \
+            --data-dir dist-data \
+            --release-tag "${GITHUB_REF_NAME}" \
+            --base-url "https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}"
       - name: Upload data artifacts
         uses: actions/upload-artifact@v4
         with:
