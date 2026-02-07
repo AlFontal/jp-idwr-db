@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/AlFontal/jp-idwr-db/blob/main/docs/manifest.schema.json",
+  "title": "jp_idwr_db Release Manifest",
+  "description": "Schema for language-independent jp_idwr_db release data assets.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "spec_version",
+    "dataset_id",
+    "data_version",
+    "release_tag",
+    "published_at",
+    "license",
+    "homepage",
+    "assets_base_url",
+    "tables"
+  ],
+  "properties": {
+    "spec_version": {
+      "type": "string"
+    },
+    "dataset_id": {
+      "type": "string"
+    },
+    "data_version": {
+      "type": "string"
+    },
+    "release_tag": {
+      "type": "string"
+    },
+    "published_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "license": {
+      "type": "string"
+    },
+    "homepage": {
+      "type": "string"
+    },
+    "assets_base_url": {
+      "type": "string"
+    },
+    "tables": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "file",
+          "format",
+          "size_bytes",
+          "sha256"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "file": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "parquet",
+              "duckdb"
+            ]
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "schema": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "dtype"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "dtype": {
+                  "type": "string",
+                  "enum": [
+                    "date",
+                    "datetime",
+                    "string",
+                    "bool",
+                    "int64",
+                    "float64",
+                    "categorical"
+                  ]
+                },
+                "note": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "stats": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "date_min": {
+                "type": "string"
+              },
+              "date_max": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "format": {
+                  "const": "parquet"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "schema",
+                "stats"
+              ]
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}

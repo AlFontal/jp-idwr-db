@@ -30,6 +30,7 @@ dependencies = [
 
 [project.scripts]
 jp-idwr-db = "jp_idwr_db.cli:main"
+jp-idwr-db-build-assets = "jp_idwr_db.build_release_assets:main"
 
 [project.optional-dependencies]
 excel = ["fastexcel>=0.10"]
