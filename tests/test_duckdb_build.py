@@ -41,3 +41,31 @@ def test_build_duckdb_creates_views_and_metadata(
         assert "read_parquet('unified.parquet')" in view_sql[0]
     finally:
         con.close()
+
+
+def test_build_duckdb_succeeds_from_different_working_directory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    duckdb = pytest.importorskip("duckdb")
+    monkeypatch.setenv("SOURCE_DATE_EPOCH", "1735689600")
+    monkeypatch.setenv("JPINFECT_DATA_VERSION", "v-test")
+
+    data_dir = tmp_path / "data-assets"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    pl.DataFrame({"x": [1]}).write_parquet(data_dir / "bullet.parquet")
+
+    other_cwd = tmp_path / "other-cwd"
+    other_cwd.mkdir(parents=True, exist_ok=True)
+    monkeypatch.chdir(other_cwd)
+
+    out_path = data_dir / "jp_idwr_db.duckdb"
+    build_duckdb(data_dir=data_dir, out_path=out_path)
+    assert out_path.exists()
+
+    con = duckdb.connect(out_path.as_posix(), read_only=True)
+    try:
+        row_count = con.execute("SELECT COUNT(*) FROM bullet").fetchone()
+        assert row_count is not None
+        assert row_count[0] == 1
+    finally:
+        con.close()

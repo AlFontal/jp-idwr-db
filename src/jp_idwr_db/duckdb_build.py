@@ -77,12 +77,21 @@ def build_duckdb(data_dir: Path, out_path: Path) -> None:
             ],
         )
 
-        for parquet_path in parquet_files:
-            view_name = _quote_ident(parquet_path.stem)
-            relative_path = Path(
-                os.path.relpath(parquet_path.resolve(), start=out_path.parent.resolve())
-            ).as_posix()
-            literal_path = _quote_literal(relative_path)
-            con.execute(f"CREATE VIEW {view_name} AS SELECT * FROM read_parquet({literal_path})")
+        # DuckDB resolves relative files in read_parquet() against process CWD
+        # while creating the view. Build from the DB directory to make this stable.
+        previous_cwd = Path.cwd()
+        os.chdir(out_path.parent)
+        try:
+            for parquet_path in parquet_files:
+                view_name = _quote_ident(parquet_path.stem)
+                relative_path = Path(
+                    os.path.relpath(parquet_path.resolve(), start=out_path.parent.resolve())
+                ).as_posix()
+                literal_path = _quote_literal(relative_path)
+                con.execute(
+                    f"CREATE VIEW {view_name} AS SELECT * FROM read_parquet({literal_path})"
+                )
+        finally:
+            os.chdir(previous_cwd)
     finally:
         con.close()
