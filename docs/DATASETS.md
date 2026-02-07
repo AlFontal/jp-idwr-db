@@ -50,6 +50,9 @@ Load with:
 - Coverage: `2012+` (2012 is partial year)
 - Grain: prefecture x year x week x disease
 - Metrics: `count`, `per_sentinel`
+- `count` is converted to weekly incidence from teitenrui cumulative reports:
+  `weekly_count_t = cumulative_t - cumulative_{t-1}` within each year/prefecture/disease
+  (first observed week is kept as-is).
 - Source label: `Sentinel surveillance`
 
 ### `unified` (recommended analysis table)

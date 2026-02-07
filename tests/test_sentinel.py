@@ -7,7 +7,7 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-from jp_idwr_db.io import _read_sentinel_pl
+from jp_idwr_db.io import _read_sentinel_pl, _sentinel_cumulative_to_weekly
 
 
 @pytest.fixture
@@ -151,3 +151,48 @@ def test_read_sentinel_normalization(sample_sentinel_csv: Path) -> None:
     assert all(df["disease"].str.len_chars() > 0)
     # Should not have leading/trailing whitespace
     assert all(df["disease"] == df["disease"].str.strip_chars())
+
+
+def test_sentinel_cumulative_to_weekly_basic_diff() -> None:
+    """Convert cumulative counts into weekly incidence by differencing."""
+    df = pl.DataFrame(
+        {
+            "year": [2024, 2024, 2024],
+            "week": [1, 2, 3],
+            "prefecture": ["Tokyo", "Tokyo", "Tokyo"],
+            "disease": ["RSV", "RSV", "RSV"],
+            "count": [10.0, 25.0, 40.0],
+        }
+    )
+    out = _sentinel_cumulative_to_weekly(df)
+    assert out["count"].to_list() == [10.0, 15.0, 15.0]
+
+
+def test_sentinel_cumulative_to_weekly_resets_each_year() -> None:
+    """Do not diff across year boundaries for the same prefecture/disease."""
+    df = pl.DataFrame(
+        {
+            "year": [2024, 2024, 2025, 2025],
+            "week": [51, 52, 1, 2],
+            "prefecture": ["Tokyo", "Tokyo", "Tokyo", "Tokyo"],
+            "disease": ["RSV", "RSV", "RSV", "RSV"],
+            "count": [100.0, 130.0, 12.0, 30.0],
+        }
+    )
+    out = _sentinel_cumulative_to_weekly(df).sort(["year", "week"])
+    assert out["count"].to_list() == [100.0, 30.0, 12.0, 18.0]
+
+
+def test_sentinel_cumulative_to_weekly_missing_previous_week_uses_observed_value() -> None:
+    """If no prior observed week exists in the year, keep the observed cumulative value."""
+    df = pl.DataFrame(
+        {
+            "year": [2024, 2024],
+            "week": [3, 4],
+            "prefecture": ["Osaka", "Osaka"],
+            "disease": ["RSV", "RSV"],
+            "count": [22.0, 31.0],
+        }
+    )
+    out = _sentinel_cumulative_to_weekly(df).sort(["year", "week"])
+    assert out["count"].to_list() == [22.0, 9.0]

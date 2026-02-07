@@ -334,6 +334,8 @@ def build_sentinel():
 
     if dfs:
         full_df = pl.concat(dfs, how="diagonal_relaxed")
+        # teitenrui files provide cumulative year-to-date counts; convert to weekly incidence.
+        full_df = io._sentinel_cumulative_to_weekly(full_df)
         full_df = _sort_for_output(full_df)
         out_path = DATA_DIR / "sentinel.parquet"
         full_df.write_parquet(out_path)
