@@ -20,7 +20,8 @@ PACKAGE_NAME = "jp_idwr_db"
 DEFAULT_REPO = "AlFontal/jp-idwr-db"
 DEFAULT_BASE_URL = f"https://github.com/{DEFAULT_REPO}/releases/download"
 ARCHIVE_NAME = "jp_idwr_db-parquet.zip"
-MANIFEST_NAME = "jp_idwr_db-manifest.json"
+MANIFEST_NAME = "manifest.json"
+LEGACY_MANIFEST_NAME = "jp_idwr_db-manifest.json"
 EXPECTED_DATASETS = {
     "sex_prefecture.parquet",
     "place_prefecture.parquet",
@@ -80,32 +81,120 @@ def _download_file(url: str, dest: Path) -> None:
                 handle.write(chunk)
 
 
-def _verify_manifest(manifest: dict[str, Any]) -> None:
-    """Ensure manifest has expected structure."""
+def _verify_legacy_manifest(manifest: dict[str, Any]) -> None:
+    """Ensure legacy zip manifest has expected structure."""
     required = {"archive", "archive_sha256", "files"}
     missing = required - set(manifest)
     if missing:
-        raise ValueError(f"Invalid manifest; missing keys: {sorted(missing)}")
+        raise ValueError(f"Invalid legacy manifest; missing keys: {sorted(missing)}")
     files = manifest["files"]
     if not isinstance(files, dict) or not files:
-        raise ValueError("Invalid manifest; 'files' must be a non-empty object")
+        raise ValueError("Invalid legacy manifest; 'files' must be a non-empty object")
 
 
-def download_release_assets(version: str, dest_dir: Path) -> tuple[Path, Path]:
-    """Download release archive + manifest for a data version."""
+def _verify_manifest(manifest: dict[str, Any]) -> None:
+    """Ensure new release manifest has expected structure."""
+    required = {
+        "spec_version",
+        "dataset_id",
+        "data_version",
+        "release_tag",
+        "published_at",
+        "license",
+        "homepage",
+        "assets_base_url",
+        "tables",
+    }
+    missing = required - set(manifest)
+    if missing:
+        raise ValueError(f"Invalid manifest; missing keys: {sorted(missing)}")
+    tables = manifest["tables"]
+    if not isinstance(tables, list) or not tables:
+        raise ValueError("Invalid manifest; 'tables' must be a non-empty list")
+    for table in tables:
+        if not isinstance(table, dict):
+            raise ValueError("Invalid manifest; each table entry must be an object")
+        required_table = {"name", "file", "format", "size_bytes", "sha256"}
+        missing_table = required_table - set(table)
+        if missing_table:
+            raise ValueError(f"Invalid manifest table entry; missing keys: {sorted(missing_table)}")
+
+
+def _download_manifest(version: str, dest_dir: Path) -> tuple[Path, bool]:
+    """Download release manifest, preferring the new schema with legacy fallback."""
     base_url = _resolve_base_url(version)
     manifest_path = dest_dir / MANIFEST_NAME
-    archive_path = dest_dir / ARCHIVE_NAME
+    try:
+        _download_file(f"{base_url}/{MANIFEST_NAME}", manifest_path)
+        return manifest_path, False
+    except httpx.HTTPStatusError as exc:
+        response = exc.response
+        if response is None or response.status_code != 404:
+            raise
 
-    _download_file(f"{base_url}/{MANIFEST_NAME}", manifest_path)
-    _download_file(f"{base_url}/{ARCHIVE_NAME}", archive_path)
-    return archive_path, manifest_path
+    legacy_manifest = dest_dir / LEGACY_MANIFEST_NAME
+    _download_file(f"{base_url}/{LEGACY_MANIFEST_NAME}", legacy_manifest)
+    return legacy_manifest, True
 
 
 def _extract_archive(archive_path: Path, dest_dir: Path) -> None:
     """Extract archive into destination directory."""
     with zipfile.ZipFile(archive_path) as archive:
         archive.extractall(dest_dir)
+
+
+def _download_and_verify_file(
+    base_url: str, dest_dir: Path, filename: str, expected: dict[str, Any]
+) -> None:
+    """Download one asset file and verify size/checksum."""
+    file_path = dest_dir / filename
+    _download_file(f"{base_url}/{filename}", file_path)
+
+    expected_hash = str(expected["sha256"])
+    if _sha256(file_path) != expected_hash:
+        raise ValueError(f"Checksum mismatch for {filename}")
+
+    expected_size = int(expected["size_bytes"])
+    if file_path.stat().st_size != expected_size:
+        raise ValueError(f"Size mismatch for {filename}")
+
+
+def _sync_from_legacy_manifest(base_url: str, data_dir: Path, manifest: dict[str, Any]) -> None:
+    """Download and extract legacy archive assets, then verify per-file checksums."""
+    _verify_legacy_manifest(manifest)
+    archive_name = str(manifest["archive"])
+    archive_path = data_dir / archive_name
+    _download_file(f"{base_url}/{archive_name}", archive_path)
+
+    archive_hash = _sha256(archive_path)
+    if archive_hash != manifest["archive_sha256"]:
+        raise ValueError("Archive checksum mismatch")
+
+    _extract_archive(archive_path, data_dir)
+    file_entries: dict[str, dict[str, Any]] = manifest["files"]
+    for rel_name, file_info in file_entries.items():
+        file_path = data_dir / rel_name
+        if not file_path.exists():
+            raise ValueError(f"Missing extracted data file: {rel_name}")
+        expected_hash = str(file_info["sha256"])
+        if _sha256(file_path) != expected_hash:
+            raise ValueError(f"Checksum mismatch for {rel_name}")
+
+
+def _sync_from_manifest(base_url: str, data_dir: Path, manifest: dict[str, Any]) -> None:
+    """Download required parquet assets listed in the new release manifest."""
+    _verify_manifest(manifest)
+    table_entries: list[dict[str, Any]] = manifest["tables"]
+    parquet_entries = {
+        str(entry["file"]): entry for entry in table_entries if str(entry["format"]) == "parquet"
+    }
+
+    missing_listed = [name for name in EXPECTED_DATASETS if name not in parquet_entries]
+    if missing_listed:
+        raise ValueError(f"Missing required parquet datasets in manifest: {sorted(missing_listed)}")
+
+    for filename in sorted(EXPECTED_DATASETS):
+        _download_and_verify_file(base_url, data_dir, filename, parquet_entries[filename])
 
 
 def ensure_data(version: str | None = None, force: bool = False) -> Path:
@@ -139,30 +228,13 @@ def ensure_data(version: str | None = None, force: bool = False) -> Path:
         file=sys.stderr,
     )
 
-    archive_path, manifest_path = download_release_assets(resolved, data_dir)
+    base_url = _resolve_base_url(resolved)
+    manifest_path, is_legacy_manifest = _download_manifest(resolved, data_dir)
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    _verify_manifest(manifest)
-
-    expected_archive = str(manifest["archive"])
-    if archive_path.name != expected_archive:
-        expected_path = data_dir / expected_archive
-        archive_path.rename(expected_path)
-        archive_path = expected_path
-
-    archive_hash = _sha256(archive_path)
-    if archive_hash != manifest["archive_sha256"]:
-        raise ValueError("Archive checksum mismatch")
-
-    _extract_archive(archive_path, data_dir)
-
-    file_entries: dict[str, dict[str, Any]] = manifest["files"]
-    for rel_name, file_info in file_entries.items():
-        file_path = data_dir / rel_name
-        if not file_path.exists():
-            raise ValueError(f"Missing extracted data file: {rel_name}")
-        expected_hash = str(file_info["sha256"])
-        if _sha256(file_path) != expected_hash:
-            raise ValueError(f"Checksum mismatch for {rel_name}")
+    if is_legacy_manifest:
+        _sync_from_legacy_manifest(base_url, data_dir, manifest)
+    else:
+        _sync_from_manifest(base_url, data_dir, manifest)
 
     missing_expected = [name for name in EXPECTED_DATASETS if not (data_dir / name).exists()]
     if missing_expected:
