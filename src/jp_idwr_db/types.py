@@ -15,7 +15,7 @@ SourceType = Literal["zensu", "teitenrui", "both"]
 """Literal type for filtering data by source.
 
 - "zensu": Only confirmed case data
-- "teitenrui": Only sentinel surveillance data  
+- "teitenrui": Only sentinel surveillance data
 - "both": Both sources merged (default)
 """
 
