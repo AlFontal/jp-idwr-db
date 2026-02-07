@@ -1,45 +1,19 @@
 # jp-idwr-db
+[![PyPI version](https://img.shields.io/pypi/v/jp-idwr-db)](https://pypi.org/project/jp-idwr-db/)
+[![Python versions](https://img.shields.io/pypi/pyversions/jp-idwr-db)](https://pypi.org/project/jp-idwr-db/)
+[![CI](https://img.shields.io/github/actions/workflow/status/AlFontal/jp-idwr-db/ci.yml?branch=main&label=CI)](https://github.com/AlFontal/jp-idwr-db/actions/workflows/ci.yml)
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/License-GPL--3.0--or--later-blue.svg)](https://github.com/AlFontal/jp-idwr-db/blob/main/LICENSE)
 
-Python access to Japanese infectious disease surveillance data from NIID/JIHS.
+`jp-idwr-db` is a simple Python package that gives you practical access to Japan’s infectious disease surveillance data (NIID/JIHS IDWR) as clean, analysis-ready tables.
+It’s Polars-first and ships a simple query API, while the large Parquet datasets are downloaded on demand from GitHub Releases and cached locally.
 
-`jp-idwr-db` provides a Polars-first API for filtering and analysis.
-Parquet datasets are versioned as GitHub Release assets and downloaded to a local cache on first use.
-It is inspired by the R package `jpinfect`, but it is not an API-parity port and includes independently curated ingestion and coverage.
-
-NIID/JIHS surveillance data is public, but it is not exposed as a clean analytical API.
-To reconstruct usable time series, you typically need to navigate multiple archive structures, yearly directories,
-and week-level files with changing formats (Excel and CSV) across historical and modern reporting systems.
-
-This package exists to remove that friction: it consolidates those heterogeneous sources into standardized, queryable
-tables so you can move directly to epidemiological analysis instead of file discovery, parsing, and schema harmonization.
+The goal is to skip the usual work of chasing week-by-week files across changing archives and formats, so you can get straight to building time series and doing epidemiology instead of spending hours on data munging.
 
 ## Install
 
 ```bash
 pip install jp-idwr-db
 ```
-
-## Data Download Model
-
-- Package wheels do not ship the large parquet tables.
-- On first call to `jp.load(...)` (or `jp.get_data(...)`), the package downloads versioned data assets from GitHub Releases.
-- Cache path defaults to:
-  - macOS: `~/Library/Caches/jp_idwr_db/data/<version>/`
-  - Linux: `~/.cache/jp_idwr_db/data/<version>/`
-  - Windows: `%LOCALAPPDATA%\\jp_idwr_db\\Cache\\data\\<version>\\`
-
-Prefetch explicitly:
-
-```bash
-python -m jp_idwr_db data download
-python -m jp_idwr_db data download --version v0.2.2 --force
-```
-
-Environment overrides:
-
-- `JPINFECT_DATA_VERSION`: choose a specific release tag (example: `v0.2.2`)
-- `JPINFECT_DATA_BASE_URL`: override asset host base URL
-- `JPINFECT_CACHE_DIR`: override local cache root
 
 ## Quick Start
 
@@ -85,8 +59,8 @@ You can also filter at the source with `jp.get_data(...)`:
 # Fetch only tuberculosis data for 2024 in Tokyo, Osaka, and Hokkaido
 tb = (
     jp.get_data(
-        disease="Tuberculosis", 
-        year=2024, 
+        disease="Tuberculosis",
+        year=2024,
         prefecture=["Tokyo", "Osaka", "Hokkaido"])
     .select(["date", "prefecture", "disease", "count", "source"])
 )
@@ -119,7 +93,8 @@ shape: (156, 5)
 # Sentinel-only diseases from recent years in Tokyo prefecture
 sentinel_df = (
     jp.get_data(
-        source="sentinel", 
+        source="sentinel",
+        prefecture="Tokyo",
         year=(2024, 2026))
     .select(["date", "prefecture", "disease", "count", "per_sentinel"])
 )
@@ -146,6 +121,30 @@ shape: (2_052, 5)
 │ 2026-01-25 ┆ Tokyo      ┆ Respiratory syncytial virus in… ┆ 242.0   ┆ 1.0          │
 └────────────┴────────────┴─────────────────────────────────┴─────────┴──────────────┘
 ```
+
+<details>
+<summary><strong>Data Download Model</strong></summary>
+
+- Package wheels do not ship the large parquet tables.
+- On first call to `jp.load(...)` (or `jp.get_data(...)`), the package downloads versioned data assets from GitHub Releases.
+- Cache path defaults to:
+  - macOS: `~/Library/Caches/jp_idwr_db/data/<version>/`
+  - Linux: `~/.cache/jp_idwr_db/data/<version>/`
+  - Windows: `%LOCALAPPDATA%\\jp_idwr_db\\Cache\\data\\<version>\\`
+
+Prefetch explicitly:
+
+```bash
+python -m jp_idwr_db data download
+python -m jp_idwr_db data download --version v0.2.2 --force
+```
+
+Environment overrides:
+
+- `JPINFECT_DATA_VERSION`: choose a specific release tag (example: `v0.2.2`)
+- `JPINFECT_DATA_BASE_URL`: override asset host base URL
+- `JPINFECT_CACHE_DIR`: override local cache root
+</details>
 
 ## Main API
 
@@ -177,45 +176,6 @@ weekly incidence (`count_t - count_{t-1}` within year/prefecture/disease; first 
 
 Detailed schema and coverage are documented in [DATASETS.md](./docs/DATASETS.md).
 
-## Optional Prefecture IDs
-
-Attach ISO prefecture IDs (JP-01 ... JP-47) only when needed:
-
-```python
-import jp_idwr_db as jp
-
-df_with_ids = (
-    jp.get_data(disease="Measles", year=2024)
-    .select(["prefecture", "disease", "count"])
-    .sort(["prefecture", "count"])
-    .unique(subset=["prefecture"], keep="first")
-    .pipe(jp.attach_prefecture_id)
-    .sort("prefecture")
-)
-print(df_with_ids)
-```
-
-```text
-shape: (48, 4)
-┌────────────┬─────────┬───────┬───────────────┐
-│ prefecture ┆ disease ┆ count ┆ prefecture_id │
-│ ---        ┆ ---     ┆ ---   ┆ ---           │
-│ str        ┆ str     ┆ f64   ┆ str           │
-╞════════════╪═════════╪═══════╪═══════════════╡
-│ Aichi      ┆ Measles ┆ 0.0   ┆ JP-23         │
-│ Akita      ┆ Measles ┆ 0.0   ┆ JP-05         │
-│ Aomori     ┆ Measles ┆ 0.0   ┆ JP-02         │
-│ Chiba      ┆ Measles ┆ 0.0   ┆ JP-12         │
-│ Ehime      ┆ Measles ┆ 0.0   ┆ JP-38         │
-│ …          ┆ …       ┆ …     ┆ …             │
-│ Toyama     ┆ Measles ┆ 0.0   ┆ JP-16         │
-│ Wakayama   ┆ Measles ┆ 0.0   ┆ JP-30         │
-│ Yamagata   ┆ Measles ┆ 0.0   ┆ JP-06         │
-│ Yamaguchi  ┆ Measles ┆ 0.0   ┆ JP-35         │
-│ Yamanashi  ┆ Measles ┆ 0.0   ┆ JP-19         │
-└────────────┴─────────┴───────┴───────────────┘
-```
-
 ## Raw Download and Parsing
 
 Raw file workflows are available in `jp_idwr_db.io`:
@@ -228,7 +188,7 @@ These are useful for refreshing local raw weekly files or debugging parser behav
 
 ## Data Wrangling Examples
 
-See [EXAMPLES.md](./docs/EXAMPLES.md) for Polars-first data wrangling recipes (grouping, trends, regional slices, source-aware filtering).
+See [EXAMPLES.md](./docs/EXAMPLES.md) for data wrangling recipes (grouping, trends, regional slices, source-aware filtering).
 
 Disease-by-disease temporal coverage is documented in [DISEASES.md](./docs/DISEASES.md).
 
