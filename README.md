@@ -13,7 +13,9 @@ Internally, data wrangling is Polars-first for speed and consistent transforms.
 
 The goal is to skip the usual work of chasing week-by-week files across changing archives and formats, so you can get straight to building time series and doing epidemiology instead of spending hours on data munging.
 
-## Install
+The package provides an easier interface to the data, but you can also query the Parquet files directly with any tool that supports them (DuckDB, Arrow, Spark, etc.) using the `manifest.json` for file locations and schema. Direct-access examples are included below.
+
+## Python Install
 
 ```bash
 pip install jp-idwr-db
@@ -140,12 +142,12 @@ Prefetch explicitly:
 
 ```bash
 python -m jp_idwr_db data download
-python -m jp_idwr_db data download --version v0.2.2 --force
+python -m jp_idwr_db data download --version v0.2.5 --force
 ```
 
 Environment overrides:
 
-- `JPINFECT_DATA_VERSION`: choose a specific release tag (example: `v0.2.2`)
+- `JPINFECT_DATA_VERSION`: choose a specific release tag (example: `v0.2.5`)
 - `JPINFECT_DATA_BASE_URL`: override asset host base URL
 - `JPINFECT_CACHE_DIR`: override local cache root
 </details>
@@ -159,10 +161,6 @@ Release data assets are published as:
 - optional `jp_idwr_db.duckdb` (views over the parquet files)
 
 Manifest schema reference: [`docs/manifest.schema.json`](./docs/manifest.schema.json).
-
-Compatibility note: releases up to and including `v0.2.4` use legacy assets
-(`jp_idwr_db-manifest.json` + `jp_idwr_db-parquet.zip`). The `manifest.json` +
-direct parquet/duckdb layout starts at `v0.2.5`.
 
 Fetch the manifest:
 
@@ -192,7 +190,8 @@ curl -L -O "${BASE}/jp_idwr_db.duckdb"
 ### R example (DuckDB, local)
 
 This example opens the local `jp_idwr_db.duckdb` artifact (downloaded with the parquet files)
-and queries the `unified` view:
+and queries the `unified` view. Run it from the directory where `jp_idwr_db.duckdb`
+and the parquet files are located:
 
 ```r
 con <- DBI::dbConnect(duckdb::duckdb(), "jp_idwr_db.duckdb", read_only = TRUE)
@@ -210,11 +209,23 @@ print(tb)
 DBI::dbDisconnect(con, shutdown = TRUE)
 ```
 
+```text
+        date prefecture      disease count             source
+1 2024-01-01      Aichi Tuberculosis     5 All-case reporting
+2 2024-01-01      Akita Tuberculosis     1 All-case reporting
+3 2024-01-01     Aomori Tuberculosis     0 All-case reporting
+4 2024-01-01      Chiba Tuberculosis     7 All-case reporting
+5 2024-01-01      Ehime Tuberculosis     1 All-case reporting
+6 2024-01-01      Fukui Tuberculosis     1 All-case reporting
+...
+```
+
 ### R example (Arrow, remote)
 
 You can also query the parquet files directly from the GitHub Release URL without downloading first:
 
 ```r
+library(magrittr)
 
 tag <- "v0.2.5"
 url <- sprintf(
@@ -224,8 +235,21 @@ url <- sprintf(
 
 tb <- arrow::read_parquet(url) %>%
   dplyr::filter(year == 2024, disease == "Tuberculosis") %>%
-  dplyr::select(date, prefecture, disease, count, source)
+  dplyr::select(date, prefecture, disease, count, source) %>%
+  dplyr::arrange(date, prefecture)
 
+print(as.data.frame(tb))
+```
+
+```text
+        date prefecture      disease count             source
+1 2024-01-01      Aichi Tuberculosis     5 All-case reporting
+2 2024-01-01      Akita Tuberculosis     1 All-case reporting
+3 2024-01-01     Aomori Tuberculosis     0 All-case reporting
+4 2024-01-01      Chiba Tuberculosis     7 All-case reporting
+5 2024-01-01      Ehime Tuberculosis     1 All-case reporting
+6 2024-01-01      Fukui Tuberculosis     1 All-case reporting
+...
 ```
 
 ## Main API
