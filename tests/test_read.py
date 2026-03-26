@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -43,3 +44,30 @@ def test_read_bullet_pl() -> None:
     # Check that source column is present
     if "source" in df.columns:
         assert df["source"].unique().to_list() == ["Confirmed cases"]
+
+
+def test_read_bullet_downloaded_file_infers_year_and_drops_total(tmp_path: Path) -> None:
+    """Downloaded bullet CSVs should infer year from the parent directory."""
+    year_dir = tmp_path / "2026"
+    year_dir.mkdir()
+    csv_path = year_dir / "zensu11.csv"
+    csv_path.write_text(
+        """Table 1. Provisional cases of notifiable diseases by prefecture in Japan,,,,
+"11th week, 2026",,"Data collected as of March 18, 2026",,,
+,,,,,
+Prefecture,Tuberculosis,,Measles,,
+,Current week,Cum 2026,Current week,Cum 2026
+Total No.,10,100,2,12
+Hokkaido,4,40,1,4
+Tokyo,6,60,1,8
+""",
+        encoding="utf-8",
+    )
+
+    df = read(csv_path, type="bullet")
+
+    assert isinstance(df, pl.DataFrame)
+    assert "Total No." not in df["prefecture"].unique().to_list()
+    assert df["year"].unique().to_list() == [2026]
+    assert df["week"].unique().to_list() == [11]
+    assert df["date"].unique().to_list() == [date(2026, 3, 9)]

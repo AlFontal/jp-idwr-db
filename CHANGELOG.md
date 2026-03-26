@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.6 - 2026-03-26
+
+- Refreshed bullet release assets through 2026-W11 and sentinel assets through 2026-W11.
+- Automated bi-weekly data refresh release.
+
 ## 0.2.5 - 2026-02-07
 
 - Added language-agnostic release asset tooling: `manifest.json` builder, optional `jp_idwr_db.duckdb`, and `jp-idwr-db-build-assets` CLI.

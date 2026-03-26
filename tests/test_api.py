@@ -32,17 +32,17 @@ def test_get_data_multiple_diseases() -> None:
 
 def test_get_data_prefecture_filter() -> None:
     """Test filtering by prefecture."""
-    df = jp.get_data(prefecture="Total No.")
+    df = jp.get_data(prefecture="Hokkaido")
     assert df.height > 0
-    assert df["prefecture"].unique().to_list() == ["Total No."]
+    assert df["prefecture"].unique().to_list() == ["Hokkaido"]
 
 
 def test_get_data_multiple_prefectures() -> None:
     """Test filtering by multiple prefectures."""
-    df = jp.get_data(prefecture=["Total No.", "Hokkaido"])
+    df = jp.get_data(prefecture=["Hokkaido", "Tokyo"])
     assert df.height > 0
     prefs = df["prefecture"].unique().to_list()
-    assert set(prefs).issubset({"Total No.", "Hokkaido"})
+    assert set(prefs).issubset({"Hokkaido", "Tokyo"})
 
 
 def test_get_data_week_single() -> None:
@@ -64,12 +64,12 @@ def test_get_data_combined_filters() -> None:
     """Test combining multiple filters."""
     df = jp.get_data(
         disease="Tuberculosis",
-        prefecture="Total No.",
+        prefecture="Hokkaido",
         week=(1, 10),
     )
     if df.height > 0:
         assert all("tuberculosis" in d.lower() for d in df["disease"].unique().to_list())
-        assert df["prefecture"].unique().to_list() == ["Total No."]
+        assert df["prefecture"].unique().to_list() == ["Hokkaido"]
         assert all(1 <= w <= 10 for w in df["week"].unique().to_list())
 
 

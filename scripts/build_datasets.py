@@ -202,9 +202,22 @@ def build_place():
 
 def build_bullet():
     logger.info(f"\nBuilding bullet dataset ({LAST_HISTORICAL_YEAR + 1}-{CURRENT_YEAR})...")
-    # Fetch recent years
-    years = range(LAST_HISTORICAL_YEAR + 1, CURRENT_YEAR + 1)
-    dfs = []
+    out_path = DATA_DIR / "bullet.parquet"
+    all_years = list(range(LAST_HISTORICAL_YEAR + 1, CURRENT_YEAR + 1))
+    dfs: list[pl.DataFrame] = []
+    existing_years: set[int] = set()
+
+    if out_path.exists():
+        existing_df = pl.read_parquet(out_path)
+        existing_years = {int(year) for year in existing_df["year"].unique().to_list()}
+        preserved_years = sorted(year for year in existing_years if year < CURRENT_YEAR)
+        if preserved_years:
+            dfs.append(existing_df.filter(pl.col("year").is_in(preserved_years)))
+            logger.info(
+                f"  Preserved existing bullet data for years: {preserved_years[0]}-{preserved_years[-1]}"
+            )
+
+    years = [year for year in all_years if year == CURRENT_YEAR or year not in existing_years]
     total_weeks = 0
 
     for year in years:
@@ -221,33 +234,27 @@ def build_bullet():
                 for i, p in enumerate(paths, 1):
                     df = read.read(p, type="bullet")
 
-                    # Add year and source columns for consistency with historical data
-                    df = df.with_columns(
-                        [
-                            pl.lit(year).alias("year"),
-                            pl.lit("All-case reporting").alias("source"),
-                        ]
-                    )
+                    additions: list[pl.Expr] = [pl.lit("All-case reporting").alias("source")]
+                    if "year" not in df.columns:
+                        additions.append(pl.lit(year).alias("year"))
 
                     # Filter out empty disease names (data quality issue)
                     df = df.filter(pl.col("disease") != "")
 
-                    # Add date column (week start date)
-                    # Calculate ISO week start date
-                    df = df.with_columns(
-                        [
-                            pl.concat_str(
-                                [
-                                    pl.col("year").cast(pl.Utf8),
-                                    pl.lit("-W"),
-                                    pl.col("week").cast(pl.Utf8).str.zfill(2),
-                                    pl.lit("-1"),  # Monday
-                                ]
+                    if "date" not in df.columns and "year" in df.columns and "week" in df.columns:
+                        additions.append(
+                            pl.struct(["year", "week"])
+                            .map_elements(
+                                lambda value: date.fromisocalendar(
+                                    int(value["year"]), int(value["week"]), 1
+                                ),
+                                return_dtype=pl.Date,
                             )
-                            .str.strptime(pl.Date, "%Y-W%W-%w")
                             .alias("date")
-                        ]
-                    )
+                        )
+
+                    if additions:
+                        df = df.with_columns(additions)
 
                     year_dfs.append(df)
                     # Log progress on last week
@@ -263,7 +270,6 @@ def build_bullet():
     if dfs:
         full_df = pl.concat(dfs, how="diagonal_relaxed")
         full_df = _sort_for_output(full_df)
-        out_path = DATA_DIR / "bullet.parquet"
         full_df.write_parquet(out_path)
         logger.info(f"Saved to {out_path.name} ({full_df.height} rows, {total_weeks} weeks total)")
         logger.info(f"  Schema: {full_df.columns}")
@@ -272,11 +278,26 @@ def build_bullet():
 
 
 def build_sentinel():
-    logger.info(f"\nBuilding sentinel dataset (1999-{CURRENT_YEAR})...")
-    # Sentinel URL patterns are available historically via data-e archives.
-    start_year = 1999
-    years = range(start_year, CURRENT_YEAR + 1)
-    dfs = []
+    logger.info(f"\nBuilding sentinel dataset (2012-{CURRENT_YEAR})...")
+    # Release assets currently cover sentinel data from the English teitenrui archive
+    # starting in 2012. Earlier years are not part of the published dataset.
+    start_year = 2012
+    out_path = DATA_DIR / "sentinel.parquet"
+    all_years = list(range(start_year, CURRENT_YEAR + 1))
+    dfs: list[pl.DataFrame] = []
+    existing_years: set[int] = set()
+
+    if out_path.exists():
+        existing_df = pl.read_parquet(out_path)
+        existing_years = {int(year) for year in existing_df["year"].unique().to_list()}
+        preserved_years = sorted(year for year in existing_years if year < CURRENT_YEAR)
+        if preserved_years:
+            dfs.append(existing_df.filter(pl.col("year").is_in(preserved_years)))
+            logger.info(
+                f"  Preserved existing sentinel data for years: {preserved_years[0]}-{preserved_years[-1]}"
+            )
+
+    years = [year for year in all_years if year == CURRENT_YEAR or year not in existing_years]
     total_weeks = 0
 
     for year in years:
@@ -337,7 +358,6 @@ def build_sentinel():
         # teitenrui files provide cumulative year-to-date counts; convert to weekly incidence.
         full_df = io._sentinel_cumulative_to_weekly(full_df)
         full_df = _sort_for_output(full_df)
-        out_path = DATA_DIR / "sentinel.parquet"
         full_df.write_parquet(out_path)
         logger.info(f"Saved to {out_path.name} ({full_df.height} rows, {total_weeks} weeks total)")
         logger.info(f"  Schema: {full_df.columns}")

@@ -47,6 +47,23 @@ def test_url_bullet_ja(monkeypatch: Any) -> None:
     assert result == ["https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/2025/11/zensu11.csv"]
 
 
+def test_url_bullet_skips_missing_weeks(monkeypatch: Any) -> None:
+    """Return only published bullet URLs when future weeks are requested."""
+
+    def fake_head(url: str, config: Any) -> Any:
+        week = int(url.rsplit("zensu", maxsplit=1)[-1].split(".csv", maxsplit=1)[0])
+
+        class Resp:
+            status_code = 200 if week == 11 else 404
+            headers: typing.ClassVar = {"content-length": "100"}
+
+        return Resp()
+
+    monkeypatch.setattr(urls, "cached_head", fake_head)
+    result = urls.url_bullet(2026, [11, 12, 13])
+    assert result == ["https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/2026/11/zensu11.csv"]
+
+
 def test_url_sentinel_single_week(monkeypatch: Any) -> None:
     """Test sentinel URL generation for a single week."""
 

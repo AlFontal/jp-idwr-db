@@ -1,0 +1,107 @@
+name: Publish Release
+
+on:
+  workflow_call:
+    inputs:
+      release_tag:
+        required: true
+        type: string
+      git_ref:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.git_ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v7
+      - name: Build sdist and wheel
+        run: uv build
+      - name: Upload python artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/*
+
+  build-data-assets:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          ref: ${{ inputs.git_ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v7
+      - name: Build data release assets
+        run: |
+          mkdir -p dist-data
+          cp data/parquet/*.parquet dist-data/
+          uv run --with duckdb python -m jp_idwr_db.build_release_assets \
+            --data-dir dist-data \
+            --release-tag "${{ inputs.release_tag }}" \
+            --base-url "https://github.com/${GITHUB_REPOSITORY}/releases/download/${{ inputs.release_tag }}"
+      - name: Upload data artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-data
+          path: dist-data/*
+
+  github-release:
+    runs-on: ubuntu-latest
+    needs: [build, build-data-assets]
+    permissions:
+      contents: write
+    steps:
+      - name: Download python artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - name: Download data artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-data
+          path: dist-data
+      - name: Create GitHub release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.release_tag }}
+          files: |
+            dist/*
+            dist-data/*
+
+  publish-pypi-token:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v7
+      - name: Download python artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - name: Publish to PyPI with API token
+        env:
+          UV_PUBLISH_USERNAME: "__token__"
+          UV_PUBLISH_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: uv publish dist/*

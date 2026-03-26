@@ -38,7 +38,7 @@ def local_data_dir(tmp_path: Path) -> Path:
     )
     bullet_df = pl.DataFrame(
         {
-            "prefecture": ["Total No.", "Hokkaido"],
+            "prefecture": ["Hokkaido", "Tokyo"],
             "disease": ["Tuberculosis", "Measles"],
             "count": [10.0, 1.0],
             "week": [1, 2],
@@ -63,7 +63,7 @@ def local_data_dir(tmp_path: Path) -> Path:
     )
     unified_df = pl.DataFrame(
         {
-            "prefecture": ["Total No.", "Hokkaido", "Tokyo"],
+            "prefecture": ["Hokkaido", "Osaka", "Tokyo"],
             "year": [2023, 2020, 2023],
             "week": [1, 12, 2],
             "date": [date(2023, 1, 2), date(2020, 3, 16), date(2023, 1, 9)],
@@ -74,7 +74,7 @@ def local_data_dir(tmp_path: Path) -> Path:
             "per_sentinel": [None, None, 1.2],
         }
     )
-    prefecture_en_df = pl.DataFrame({"prefecture": ["Hokkaido", "Tokyo", "Total No."]})
+    prefecture_en_df = pl.DataFrame({"prefecture": ["Hokkaido", "Osaka", "Tokyo"]})
 
     sex_df.write_parquet(data_dir / "sex_prefecture.parquet")
     place_df.write_parquet(data_dir / "place_prefecture.parquet")

@@ -373,11 +373,16 @@ def _extract_year_week(path: Path) -> tuple[int | None, int | None]:
         Tuple of (year, week) or (None, None) if not found.
     """
     year_match = re.search(r"(19|20)\d{2}", path.name)
-    week_match = re.search(r"(?:-)?(\d{2})|zensu(\d{2})", path.name)
     year = int(year_match.group(0)) if year_match else None
+    if year is None and re.fullmatch(r"(19|20)\d{2}", path.parent.name):
+        year = int(path.parent.name)
+
+    week_match = re.search(r"(?:zensu|teiten(?:rui)?)(\d{2})", path.stem, re.IGNORECASE)
+    if week_match is None:
+        week_match = re.search(r"(?:^|[-_])(\d{2})(?:[-_]|$)", path.stem)
     week = None
     if week_match:
-        week = int(week_match.group(1) or week_match.group(2))
+        week = int(week_match.group(1))
     return year, week
 
 
@@ -441,6 +446,14 @@ def _iso_week_date(year: int, week: int) -> dt.date | None:
     """
     try:
         return dt.date.fromisocalendar(int(year), int(week), 7)
+    except Exception:
+        return None
+
+
+def _iso_week_start_date(year: int, week: int) -> dt.date | None:
+    """Convert ISO year and week to the week start date (Monday)."""
+    try:
+        return dt.date.fromisocalendar(int(year), int(week), 1)
     except Exception:
         return None
 
@@ -606,6 +619,15 @@ def _read_bullet_pl(
             if "Prefecture" in df_raw.columns:
                 df_raw = df_raw.rename({"Prefecture": "prefecture"})
 
+            if "prefecture" in df_raw.columns:
+                df_raw = df_raw.filter(
+                    ~pl.col("prefecture")
+                    .cast(pl.Utf8, strict=False)
+                    .fill_null("")
+                    .str.to_lowercase()
+                    .str.starts_with("total")
+                )
+
             # Unpivot to long format
             value_vars = [c for c in df_raw.columns if c != "prefecture"]
             if not value_vars:
@@ -630,7 +652,7 @@ def _read_bullet_pl(
                 long_df = long_df.with_columns(
                     pl.struct(["year", "week"])
                     .map_elements(
-                        lambda x: _iso_week_date(int(x["year"]), int(x["week"])),
+                        lambda x: _iso_week_start_date(int(x["year"]), int(x["week"])),
                         return_dtype=pl.Date,
                     )
                     .alias("date")

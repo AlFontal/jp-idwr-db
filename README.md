@@ -142,12 +142,12 @@ Prefetch explicitly:
 
 ```bash
 python -m jp_idwr_db data download
-python -m jp_idwr_db data download --version v0.2.5 --force
+python -m jp_idwr_db data download --version vX.Y.Z --force
 ```
 
 Environment overrides:
 
-- `JPINFECT_DATA_VERSION`: choose a specific release tag (example: `v0.2.5`)
+- `JPINFECT_DATA_VERSION`: choose a specific release tag (example: `vX.Y.Z`)
 - `JPINFECT_DATA_BASE_URL`: override asset host base URL
 - `JPINFECT_CACHE_DIR`: override local cache root
 </details>
@@ -177,7 +177,7 @@ duckdb jp_idwr_db.duckdb -c "SELECT year, week, COUNT(*) AS rows FROM unified GR
 ### Download assets for any language
 
 ```bash
-TAG=v0.2.5
+TAG=vX.Y.Z
 BASE="https://github.com/AlFontal/jp-idwr-db/releases/download/${TAG}"
 
 mkdir -p jp-idwr-assets
@@ -227,7 +227,7 @@ You can also query the parquet files directly from the GitHub Release URL withou
 ```r
 library(magrittr)
 
-tag <- "v0.2.5"
+tag <- "vX.Y.Z"
 url <- sprintf(
   "https://github.com/AlFontal/jp-idwr-db/releases/download/%s/unified.parquet",
   tag
@@ -314,10 +314,10 @@ uv run mypy src
 uv run pytest
 
 # Build release data assets (manifest + duckdb + parquet metadata)
-uv run --with duckdb jp-idwr-db-build-assets \
+  uv run --with duckdb jp-idwr-db-build-assets \
   --data-dir data/parquet \
-  --release-tag v0.2.5 \
-  --base-url https://github.com/AlFontal/jp-idwr-db/releases/download/v0.2.5
+  --release-tag vX.Y.Z \
+  --base-url https://github.com/AlFontal/jp-idwr-db/releases/download/vX.Y.Z
 ```
 
 ## Security and Integrity

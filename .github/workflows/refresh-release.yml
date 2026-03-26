@@ -1,0 +1,147 @@
+name: Refresh Release
+
+on:
+  schedule:
+    - cron: "0 6 * * 3"
+  workflow_dispatch:
+    inputs:
+      force_run:
+        description: "Bypass the bi-weekly cadence gate."
+        required: false
+        default: false
+        type: boolean
+      force_release:
+        description: "Publish a patch release even when generated outputs are unchanged."
+        required: false
+        default: false
+        type: boolean
+      dry_run:
+        description: "Prepare outputs and metadata without pushing or publishing."
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-release
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    if: github.ref == 'refs/heads/main' || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.cadence.outputs.should_run }}
+      dry_run: ${{ steps.cadence.outputs.dry_run }}
+      changed: ${{ steps.prepare.outputs.changed }}
+      version: ${{ steps.prepare.outputs.version }}
+      tag: ${{ steps.prepare.outputs.tag }}
+      latest_bullet_week: ${{ steps.prepare.outputs.latest_bullet_week }}
+      latest_sentinel_week: ${{ steps.prepare.outputs.latest_sentinel_week }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - name: Install (locked)
+        run: uv sync --frozen --all-extras --dev
+      - name: Apply bi-weekly cadence gate
+        id: cadence
+        env:
+          IS_MANUAL: ${{ github.event_name == 'workflow_dispatch' }}
+          FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.force_run || false }}
+          DRY_RUN_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
+        run: |
+          echo "dry_run=${DRY_RUN_INPUT}" >> "$GITHUB_OUTPUT"
+          if [[ "${IS_MANUAL}" == "true" || "${FORCE_RUN}" == "true" ]]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          ISO_WEEK=$(python - <<'PY'
+          from datetime import date
+          print(date.today().isocalendar().week)
+          PY
+          )
+          if (( ISO_WEEK % 2 == 0 )); then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Prepare refresh release (dry run)
+        id: prepare
+        if: steps.cadence.outputs.should_run == 'true'
+        env:
+          FORCE_RELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.force_release || false }}
+        run: |
+          args=(--dry-run --github-output "$GITHUB_OUTPUT")
+          if [[ "${FORCE_RELEASE}" == "true" ]]; then
+            args+=(--force-release)
+          fi
+          uv run python -m jp_idwr_db.refresh_release "${args[@]}"
+      - name: Apply refresh release
+        if: >
+          steps.cadence.outputs.should_run == 'true' &&
+          steps.prepare.outputs.changed == 'true' &&
+          steps.cadence.outputs.dry_run != 'true'
+        env:
+          FORCE_RELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.force_release || false }}
+        run: |
+          args=()
+          if [[ "${FORCE_RELEASE}" == "true" ]]; then
+            args+=(--force-release)
+          fi
+          uv run python -m jp_idwr_db.refresh_release "${args[@]}"
+      - name: Ruff lint
+        if: >
+          steps.cadence.outputs.should_run == 'true' &&
+          steps.prepare.outputs.changed == 'true' &&
+          steps.cadence.outputs.dry_run != 'true'
+        run: uv run --frozen ruff check .
+      - name: Mypy
+        if: >
+          steps.cadence.outputs.should_run == 'true' &&
+          steps.prepare.outputs.changed == 'true' &&
+          steps.cadence.outputs.dry_run != 'true'
+        run: uv run --frozen mypy src
+      - name: Pytest
+        if: >
+          steps.cadence.outputs.should_run == 'true' &&
+          steps.prepare.outputs.changed == 'true' &&
+          steps.cadence.outputs.dry_run != 'true'
+        run: uv run --frozen pytest -m "not integration"
+      - name: Commit and push refresh release
+        if: >
+          steps.cadence.outputs.should_run == 'true' &&
+          steps.prepare.outputs.changed == 'true' &&
+          steps.cadence.outputs.dry_run != 'true'
+        env:
+          TAG: ${{ steps.prepare.outputs.tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md docs/DISEASES.md pyproject.toml src/jp_idwr_db/__init__.py src/jp_idwr_db/config.py data/parquet/bullet.parquet data/parquet/sentinel.parquet data/parquet/unified.parquet
+          git commit -m "chore: refresh IDWR data for ${TAG}"
+          git tag -a "${TAG}" -m "Release ${TAG}"
+          git push origin HEAD:main "${TAG}"
+
+  publish:
+    needs: refresh
+    if: >
+      needs.refresh.outputs.should_run == 'true' &&
+      needs.refresh.outputs.changed == 'true' &&
+      needs.refresh.outputs.dry_run != 'true'
+    uses: ./.github/workflows/reusable-release.yml
+    with:
+      release_tag: ${{ needs.refresh.outputs.tag }}
+      git_ref: refs/tags/${{ needs.refresh.outputs.tag }}
+    secrets: inherit

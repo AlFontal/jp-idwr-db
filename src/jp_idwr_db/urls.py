@@ -140,13 +140,17 @@ def url_bullet(
         raise ValueError("Week must be between 1 and 52.")
 
     urls: list[str] = []
+    config = get_config()
 
     for w in weeks:
-        # Always use English version
         base = "https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/"
         url = f"{base}{year}/{w:02d}/zensu{w:02d}.csv"
-
-        urls.append(url)
+        resp = cached_head(url, config)
+        if resp.status_code != 200:
+            continue
+        content_length = resp.headers.get("content-length")
+        if content_length is None or content_length == "" or int(content_length) > 0:
+            urls.append(url)
 
     return urls
 
