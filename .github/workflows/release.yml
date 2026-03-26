@@ -4,11 +4,24 @@ on:
   push:
     tags:
       - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Tag to publish, e.g. v0.2.6"
+        required: true
+        type: string
+      git_ref:
+        description: "Git ref to checkout, e.g. refs/tags/v0.2.6"
+        required: true
+        type: string
+
+permissions:
+  contents: write
 
 jobs:
   publish:
     uses: ./.github/workflows/reusable-release.yml
     with:
-      release_tag: ${{ github.ref_name }}
-      git_ref: ${{ github.ref }}
+      release_tag: ${{ inputs.release_tag || github.ref_name }}
+      git_ref: ${{ inputs.git_ref || github.ref }}
     secrets: inherit
