@@ -7,11 +7,11 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "Tag to publish, e.g. v0.2.6"
+        description: "Tag to publish, e.g. v2026.3.26"
         required: true
         type: string
       git_ref:
-        description: "Git ref to checkout, e.g. refs/tags/v0.2.6"
+        description: "Git ref to checkout, e.g. refs/tags/v2026.3.26"
         required: true
         type: string
 

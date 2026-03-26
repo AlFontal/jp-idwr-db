@@ -47,11 +47,13 @@ def test_prepare_refresh_release_detects_noop(
 
     monkeypatch.setattr(refresh_release, "rebuild_release_outputs", lambda root: None)
 
-    outputs = refresh_release.prepare_refresh_release(repo_root=repo_root, dry_run=True)
+    outputs = refresh_release.prepare_refresh_release(
+        repo_root=repo_root, dry_run=True, release_date=date(2026, 3, 26)
+    )
 
     assert outputs.changed is False
-    assert outputs.version == "0.2.6"
-    assert outputs.tag == "v0.2.6"
+    assert outputs.version == "2026.3.26"
+    assert outputs.tag == "v2026.3.26"
     assert refresh_release.current_version(repo_root) == "0.2.5"
 
 
@@ -76,7 +78,9 @@ def test_prepare_refresh_release_dry_run_restores_outputs(
 
     monkeypatch.setattr(refresh_release, "rebuild_release_outputs", fake_rebuild)
 
-    outputs = refresh_release.prepare_refresh_release(repo_root=repo_root, dry_run=True)
+    outputs = refresh_release.prepare_refresh_release(
+        repo_root=repo_root, dry_run=True, release_date=date(2026, 3, 26)
+    )
 
     assert outputs.changed is True
     assert outputs.latest_bullet_week == "2026-W11"
@@ -104,24 +108,34 @@ def test_prepare_refresh_release_updates_versions_and_changelog(
 
     monkeypatch.setattr(refresh_release, "rebuild_release_outputs", fake_rebuild)
 
-    outputs = refresh_release.prepare_refresh_release(repo_root=repo_root)
+    outputs = refresh_release.prepare_refresh_release(
+        repo_root=repo_root, release_date=date(2026, 3, 26)
+    )
 
     assert outputs.changed is True
-    assert outputs.version == "0.2.6"
-    assert refresh_release.current_version(repo_root) == "0.2.6"
-    assert "jp_idwr_db/0.2.6" in (repo_root / "src" / "jp_idwr_db" / "config.py").read_text(
+    assert outputs.version == "2026.3.26"
+    assert refresh_release.current_version(repo_root) == "2026.3.26"
+    assert "jp_idwr_db/2026.3.26" in (repo_root / "src" / "jp_idwr_db" / "config.py").read_text(
         encoding="utf-8"
     )
     changelog = (repo_root / "CHANGELOG.md").read_text(encoding="utf-8")
-    assert changelog.startswith(f"# Changelog\n\n## 0.2.6 - {date.today().isoformat()}\n")
+    assert changelog.startswith("# Changelog\n\n## 2026.3.26 - 2026-03-26\n")
     assert "2026-W11" in changelog
+
+
+def test_next_calver_version_same_day_gets_post_release() -> None:
+    assert refresh_release.next_calver_version("2026.3.26", date(2026, 3, 26)) == "2026.3.26.post1"
+    assert (
+        refresh_release.next_calver_version("2026.3.26.post1", date(2026, 3, 26))
+        == "2026.3.26.post2"
+    )
 
 
 def test_write_outputs(tmp_path: Path) -> None:
     outputs = refresh_release.RefreshOutputs(
         changed=True,
-        version="0.2.6",
-        tag="v0.2.6",
+        version="2026.3.26",
+        tag="v2026.3.26",
         latest_bullet_week="2026-W11",
         latest_sentinel_week="2026-W11",
     )
@@ -131,8 +145,8 @@ def test_write_outputs(tmp_path: Path) -> None:
 
     assert output_path.read_text(encoding="utf-8").splitlines() == [
         "changed=true",
-        "version=0.2.6",
-        "tag=v0.2.6",
+        "version=2026.3.26",
+        "tag=v2026.3.26",
         "latest_bullet_week=2026-W11",
         "latest_sentinel_week=2026-W11",
     ]

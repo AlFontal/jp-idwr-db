@@ -30,7 +30,7 @@ import jp_idwr_db as jp
 import polars as pl
 
 df = (
-    jp.load("unified")
+    jp.load("unified", version="latest")
     .select(["date", "prefecture", "category", "disease", "count", "source"])
 )
 print(df)
@@ -67,7 +67,8 @@ tb = (
     jp.get_data(
         disease="Tuberculosis",
         year=2024,
-        prefecture=["Tokyo", "Osaka", "Hokkaido"])
+        prefecture=["Tokyo", "Osaka", "Hokkaido"],
+        version="latest")
     .select(["date", "prefecture", "disease", "count", "source"])
 )
 print(tb)
@@ -101,7 +102,8 @@ sentinel_df = (
     jp.get_data(
         source="sentinel",
         prefecture="Tokyo",
-        year=(2024, 2026))
+        year=(2024, 2026),
+        version="latest")
     .select(["date", "prefecture", "disease", "count", "per_sentinel"])
 )
 print(sentinel_df)
@@ -132,7 +134,8 @@ shape: (2_052, 5)
 <summary><strong>Data Download Model</strong></summary>
 
 - Package wheels do not ship the large parquet tables.
-- On first call to `jp.load(...)` (or `jp.get_data(...)`), the package downloads versioned parquet assets listed in a release `manifest.json`.
+- On first call to `jp.load(..., version="latest")` (or `jp.get_data(..., version="latest")`), the package downloads parquet assets listed in the latest published release `manifest.json`.
+- By default, the package uses the packaged data version that matches the installed wheel. Use `version="latest"` when you want the freshest published snapshot.
 - Cache path defaults to:
   - macOS: `~/Library/Caches/jp_idwr_db/data/<version>/`
   - Linux: `~/.cache/jp_idwr_db/data/<version>/`
@@ -142,12 +145,12 @@ Prefetch explicitly:
 
 ```bash
 python -m jp_idwr_db data download
-python -m jp_idwr_db data download --version vX.Y.Z --force
+python -m jp_idwr_db data download --version latest --force
 ```
 
 Environment overrides:
 
-- `JPINFECT_DATA_VERSION`: choose a specific release tag (example: `vX.Y.Z`)
+- `JPINFECT_DATA_VERSION`: choose a specific release tag or `latest` (example: `latest`)
 - `JPINFECT_DATA_BASE_URL`: override asset host base URL
 - `JPINFECT_CACHE_DIR`: override local cache root
 </details>
@@ -165,7 +168,7 @@ Manifest schema reference: [`docs/manifest.schema.json`](./docs/manifest.schema.
 Fetch the manifest:
 
 ```bash
-curl -L "https://github.com/AlFontal/jp-idwr-db/releases/download/<tag>/manifest.json"
+curl -L "https://github.com/AlFontal/jp-idwr-db/releases/latest/download/manifest.json"
 ```
 
 Query with DuckDB CLI (when `jp_idwr_db.duckdb` and parquet files are in the same directory):
@@ -177,8 +180,7 @@ duckdb jp_idwr_db.duckdb -c "SELECT year, week, COUNT(*) AS rows FROM unified GR
 ### Download assets for any language
 
 ```bash
-TAG=vX.Y.Z
-BASE="https://github.com/AlFontal/jp-idwr-db/releases/download/${TAG}"
+BASE="https://github.com/AlFontal/jp-idwr-db/releases/latest/download"
 
 mkdir -p jp-idwr-assets
 cd jp-idwr-assets
@@ -227,11 +229,7 @@ You can also query the parquet files directly from the GitHub Release URL withou
 ```r
 library(magrittr)
 
-tag <- "vX.Y.Z"
-url <- sprintf(
-  "https://github.com/AlFontal/jp-idwr-db/releases/download/%s/unified.parquet",
-  tag
-)
+url <- "https://github.com/AlFontal/jp-idwr-db/releases/latest/download/unified.parquet"
 
 tb <- arrow::read_parquet(url) %>%
   dplyr::filter(year == 2024, disease == "Tuberculosis") %>%
@@ -316,8 +314,8 @@ uv run pytest
 # Build release data assets (manifest + duckdb + parquet metadata)
   uv run --with duckdb jp-idwr-db-build-assets \
   --data-dir data/parquet \
-  --release-tag vX.Y.Z \
-  --base-url https://github.com/AlFontal/jp-idwr-db/releases/download/vX.Y.Z
+  --release-tag vYYYY.M.D \
+  --base-url https://github.com/AlFontal/jp-idwr-db/releases/download/vYYYY.M.D
 ```
 
 ## Security and Integrity

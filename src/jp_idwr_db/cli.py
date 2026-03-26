@@ -17,7 +17,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     download_parser = data_subparsers.add_parser("download", help="Download release parquet assets")
     download_parser.add_argument(
-        "--version", type=str, default=None, help="Data version (e.g. v0.1.0)"
+        "--version", type=str, default=None, help="Data version (e.g. v2026.3.26 or latest)"
     )
     download_parser.add_argument("--force", action="store_true", help="Force re-download")
 

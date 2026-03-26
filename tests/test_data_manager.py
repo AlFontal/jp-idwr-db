@@ -172,6 +172,36 @@ def test_ensure_data_supports_legacy_manifest(
     assert all((data_dir / name).exists() for name in data_manager.EXPECTED_DATASETS)
 
 
+def test_ensure_data_latest_resolves_to_actual_release_tag(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source_dir, manifest_path = _make_release_assets(tmp_path)
+    cache_dir = tmp_path / "cache"
+
+    latest_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    latest_manifest["release_tag"] = "v2026.3.26"
+    latest_manifest["assets_base_url"] = "https://example.invalid/download/v2026.3.26"
+    manifest_path.write_text(json.dumps(latest_manifest), encoding="utf-8")
+
+    def fake_download(url: str, dest: Path) -> None:
+        if url.endswith(data_manager.MANIFEST_NAME):
+            shutil.copyfile(manifest_path, dest)
+            return
+        filename = url.rsplit("/", maxsplit=1)[-1]
+        source_path = source_dir / filename
+        if source_path.exists():
+            shutil.copyfile(source_path, dest)
+            return
+        raise AssertionError(f"Unexpected URL: {url}")
+
+    monkeypatch.setattr(data_manager, "_download_file", fake_download)
+    monkeypatch.setenv("JPINFECT_CACHE_DIR", str(cache_dir))
+
+    data_dir = data_manager.ensure_data(version="latest", force=True)
+    assert data_dir.name == "v2026.3.26"
+    assert all((data_dir / name).exists() for name in data_manager.EXPECTED_DATASETS)
+
+
 def test_wheel_does_not_include_parquet(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
     out_dir = tmp_path / "dist"

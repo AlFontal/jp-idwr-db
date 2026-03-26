@@ -22,6 +22,8 @@ def get_data(
     year: int | tuple[int, int] | None = None,
     week: int | tuple[int, int] | None = None,
     source: Literal["confirmed", "sentinel", "all"] = "all",
+    version: str | None = None,
+    force_download: bool = False,
 ) -> pl.DataFrame:
     """Get infectious disease surveillance data with optional filtering.
 
@@ -42,6 +44,9 @@ def get_data(
             - "confirmed": Only zensu (all-case reporting) data
             - "sentinel": Only teiten (sentinel surveillance) data
             - "all": Both sources (default)
+        version: Optional release selector for packaged parquet assets.
+            Use ``"latest"`` for the freshest published snapshot.
+        force_download: Force a fresh download of the selected packaged dataset snapshot.
 
     Returns:
         DataFrame with standardized schema containing:
@@ -58,19 +63,19 @@ def get_data(
     Examples:
         >>> import jp_idwr_db as jp
         >>> # Get all data
-        >>> df = jp.get_data()
+        >>> df = jp.get_data(version="latest")
 
         >>> # Filter by disease
-        >>> flu = jp.get_data(disease="Influenza")
+        >>> flu = jp.get_data(disease="Influenza", version="latest")
 
         >>> # Multiple diseases, specific year
-        >>> df = jp.get_data(disease=["COVID-19", "Influenza"], year=2024)
+        >>> df = jp.get_data(disease=["COVID-19", "Influenza"], year=2024, version="latest")
 
         >>> # Prefecture and year range
-        >>> tokyo = jp.get_data(prefecture="Tokyo", year=(2020, 2024))
+        >>> tokyo = jp.get_data(prefecture="Tokyo", year=(2020, 2024), version="latest")
 
         >>> # Only sentinel data
-        >>> sentinel = jp.get_data(source="sentinel", year=2024)
+        >>> sentinel = jp.get_data(source="sentinel", year=2024, version="latest")
 
         >>> # Complex filtering
         >>> df = jp.get_data(
@@ -82,11 +87,11 @@ def get_data(
     """
     # Load unified dataset (cached locally, downloaded from releases on demand).
     try:
-        df = load_dataset("unified")
+        df = load_dataset("unified", version=version, force_download=force_download)
     except Exception:
         logger.warning("Failed to load unified dataset, falling back to bullet dataset")
         try:
-            df = load_dataset("bullet")
+            df = load_dataset("bullet", version=version, force_download=force_download)
         except Exception:
             logger.warning("Failed to load bullet dataset, returning empty DataFrame")
             df = pl.DataFrame()
@@ -138,58 +143,73 @@ def get_data(
     return df
 
 
-def list_diseases(source: Literal["confirmed", "sentinel", "all"] = "all") -> list[str]:
+def list_diseases(
+    source: Literal["confirmed", "sentinel", "all"] = "all",
+    *,
+    version: str | None = None,
+    force_download: bool = False,
+) -> list[str]:
     """Get list of available disease names.
 
     Args:
         source: Filter by data source - "confirmed", "sentinel", or "all".
+        version: Optional packaged data release selector, including ``"latest"``.
+        force_download: Force a fresh download of the selected packaged dataset snapshot.
 
     Returns:
         Sorted list of disease names.
 
     Example:
         >>> import jp_idwr_db as jp
-        >>> all_diseases = jp.list_diseases()
-        >>> sentinel_only = jp.list_diseases(source="sentinel")
+        >>> all_diseases = jp.list_diseases(version="latest")
+        >>> sentinel_only = jp.list_diseases(source="sentinel", version="latest")
     """
-    df = get_data(source=source)
+    df = get_data(source=source, version=version, force_download=force_download)
     if df.height == 0:
         return []
     return sorted(df["disease"].unique().to_list())
 
 
-def list_prefectures() -> list[str]:
+def list_prefectures(*, version: str | None = None, force_download: bool = False) -> list[str]:
     """Get list of prefecture names.
+
+        version: Optional packaged data release selector, including ``"latest"``.
+        force_download: Force a fresh download of the selected packaged dataset snapshot.
 
     Returns:
         Sorted list of prefecture names.
 
     Example:
         >>> import jp_idwr_db as jp
-        >>> prefectures = jp.list_prefectures()
+        >>> prefectures = jp.list_prefectures(version="latest")
         >>> print(prefectures[:3])
         ['Aichi', 'Akita', 'Aomori']
     """
-    df = get_data()
+    df = get_data(version=version, force_download=force_download)
     if df.height == 0:
         return []
     return sorted(df["prefecture"].unique().to_list())
 
 
-def get_latest_week() -> tuple[int, int] | None:
+def get_latest_week(
+    *, version: str | None = None, force_download: bool = False
+) -> tuple[int, int] | None:
     """Get the latest (year, week) with data available.
+
+        version: Optional packaged data release selector, including ``"latest"``.
+        force_download: Force a fresh download of the selected packaged dataset snapshot.
 
     Returns:
         Tuple of (year, week) for the most recent data, or None if no data.
 
     Example:
         >>> import jp_idwr_db as jp
-        >>> latest = jp.get_latest_week()
+        >>> latest = jp.get_latest_week(version="latest")
         >>> if latest:
         ...     year, week = latest
         ...     print(f"Latest data: {year} week {week}")
     """
-    df = get_data()
+    df = get_data(version=version, force_download=force_download)
     if df.height == 0:
         return None
 

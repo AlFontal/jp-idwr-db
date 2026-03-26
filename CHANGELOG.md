@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026.3.26 - 2026-03-26
+
+- Switched automated refresh releases from patch-style semver to CalVer tags.
+- Added `version="latest"` data resolution for the Python API, CLI, and direct release asset examples.
+- Reduced scheduled refresh cost by gating before setup, rebuilding once, and caching the HTTP download store in GitHub Actions.
+
 ## 0.2.6 - 2026-03-26
 
 - Refreshed bullet release assets through 2026-W11 and sentinel assets through 2026-W11.

@@ -117,13 +117,18 @@ def current_version(repo_root: Path) -> str:
     return match.group(1)
 
 
-def next_patch_version(version: str) -> str:
-    """Increment the patch component of a semantic version string."""
-    match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)", version)
-    if match is None:
-        raise ValueError(f"Unsupported version format: {version}")
-    major, minor, patch = (int(part) for part in match.groups())
-    return f"{major}.{minor}.{patch + 1}"
+def next_calver_version(version: str, release_date: date) -> str:
+    """Return the next calendar-versioned release string for a refresh run."""
+    base_version = f"{release_date.year}.{release_date.month}.{release_date.day}"
+    if version == base_version:
+        return f"{base_version}.post1"
+
+    same_day_post = re.fullmatch(rf"{re.escape(base_version)}\.post(\d+)", version)
+    if same_day_post is not None:
+        next_post = int(same_day_post.group(1)) + 1
+        return f"{base_version}.post{next_post}"
+
+    return base_version
 
 
 def _replace_once(pattern: str, replacement: str, text: str, path: Path) -> str:
@@ -164,7 +169,7 @@ def update_version_files(repo_root: Path, version: str) -> None:
     config_text = config_path.read_text(encoding="utf-8")
     config_path.write_text(
         _replace_once(
-            r"jp_idwr_db/\d+\.\d+\.\d+",
+            r"jp_idwr_db/\d+\.\d+\.\d+(?:\.post\d+)?",
             f"jp_idwr_db/{version}",
             config_text,
             config_path,
@@ -191,6 +196,7 @@ def prepend_changelog_entry(
     version: str,
     latest_bullet_week: str,
     latest_sentinel_week: str,
+    release_date: date,
 ) -> None:
     """Prepend a refresh-release entry to ``CHANGELOG.md``."""
     changelog_path = repo_root / CHANGELOG_PATH
@@ -199,7 +205,7 @@ def prepend_changelog_entry(
         raise ValueError("CHANGELOG.md must start with '# Changelog'")
 
     entry = (
-        f"## {version} - {date.today().isoformat()}\n\n"
+        f"## {version} - {release_date.isoformat()}\n\n"
         f"- Refreshed bullet release assets through {latest_bullet_week} and sentinel assets through "
         f"{latest_sentinel_week}.\n"
         "- Automated bi-weekly data refresh release.\n\n"
@@ -215,11 +221,13 @@ def prepare_refresh_release(
     *,
     dry_run: bool = False,
     force_release: bool = False,
+    release_date: date | None = None,
 ) -> RefreshOutputs:
-    """Rebuild release outputs and prepare a patch release when data changed."""
+    """Rebuild release outputs and prepare a calendar release when data changed."""
     resolved_root = (repo_root or _repo_root()).resolve()
     current = current_version(resolved_root)
-    version = next_patch_version(current)
+    resolved_release_date = release_date or date.today()
+    version = next_calver_version(current, resolved_release_date)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         backup_root = Path(tmp_dir)
@@ -249,6 +257,7 @@ def prepare_refresh_release(
                     version=version,
                     latest_bullet_week=latest_bullet_week,
                     latest_sentinel_week=latest_sentinel_week,
+                    release_date=resolved_release_date,
                 )
 
             return RefreshOutputs(

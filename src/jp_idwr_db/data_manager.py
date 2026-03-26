@@ -7,6 +7,7 @@ import json
 import os
 import shutil
 import sys
+import tempfile
 import zipfile
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as package_version
@@ -43,15 +44,23 @@ def get_cache_dir() -> Path:
 def _resolve_data_version(version: str | None) -> str:
     """Resolve data version from explicit arg, env var, or package version."""
     if version:
-        return version
+        return _normalize_data_version(version)
     env_version = os.getenv("JPINFECT_DATA_VERSION")
     if env_version:
-        return env_version
+        return _normalize_data_version(env_version)
     try:
         pkg_version = package_version("jp-idwr-db")
     except PackageNotFoundError:
         pkg_version = "0.0.0"
-    return pkg_version if pkg_version.startswith("v") else f"v{pkg_version}"
+    return _normalize_data_version(pkg_version)
+
+
+def _normalize_data_version(version: str) -> str:
+    """Normalize a user-facing data version string into a release selector."""
+    normalized = version.strip()
+    if normalized == "latest":
+        return normalized
+    return normalized if normalized.startswith("v") else f"v{normalized}"
 
 
 def _resolve_base_url(version: str) -> str:
@@ -59,7 +68,20 @@ def _resolve_base_url(version: str) -> str:
     base_url = os.getenv("JPINFECT_DATA_BASE_URL")
     if base_url:
         return base_url.rstrip("/")
+    if version == "latest":
+        return f"{DEFAULT_BASE_URL}/latest/download"
     return f"{DEFAULT_BASE_URL}/{version}"
+
+
+def _resolve_latest_release_tag() -> str:
+    """Resolve the current latest GitHub release tag via the published manifest."""
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        manifest_path, is_legacy_manifest = _download_manifest("latest", Path(tmp_dir))
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        if is_legacy_manifest:
+            raise ValueError("The 'latest' alias requires a manifest with a release_tag field")
+        _verify_manifest(manifest)
+        return _normalize_data_version(str(manifest["release_tag"]))
 
 
 def _sha256(path: Path) -> str:
@@ -201,13 +223,14 @@ def ensure_data(version: str | None = None, force: bool = False) -> Path:
     """Ensure parquet assets are available in the local cache.
 
     Args:
-        version: Data release version (for example, ``v0.1.0``).
+        version: Data release version (for example, ``v2026.3.26``) or ``latest``.
         force: Re-download and replace cached files.
 
     Returns:
         Directory path containing parquet files for the resolved version.
     """
-    resolved = _resolve_data_version(version)
+    requested = _resolve_data_version(version)
+    resolved = _resolve_latest_release_tag() if requested == "latest" else requested
     cache_dir = get_cache_dir()
     data_dir = cache_dir / "data" / resolved
     marker = data_dir / ".complete"

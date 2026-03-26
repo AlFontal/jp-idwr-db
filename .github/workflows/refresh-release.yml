@@ -11,7 +11,7 @@ on:
         default: false
         type: boolean
       force_release:
-        description: "Publish a patch release even when generated outputs are unchanged."
+        description: "Publish a refresh release even when generated outputs are unchanged."
         required: false
         default: false
         type: boolean
@@ -29,31 +29,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  refresh:
+  gate:
     if: github.ref == 'refs/heads/main' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
     outputs:
       should_run: ${{ steps.cadence.outputs.should_run }}
       dry_run: ${{ steps.cadence.outputs.dry_run }}
-      changed: ${{ steps.prepare.outputs.changed }}
-      version: ${{ steps.prepare.outputs.version }}
-      tag: ${{ steps.prepare.outputs.tag }}
-      latest_bullet_week: ${{ steps.prepare.outputs.latest_bullet_week }}
-      latest_sentinel_week: ${{ steps.prepare.outputs.latest_sentinel_week }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          lfs: true
-          ref: main
-          fetch-depth: 0
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
-      - name: Install (locked)
-        run: uv sync --frozen --all-extras --dev
       - name: Apply bi-weekly cadence gate
         id: cadence
         env:
@@ -77,55 +59,60 @@ jobs:
           else
             echo "should_run=false" >> "$GITHUB_OUTPUT"
           fi
-      - name: Prepare refresh release (dry run)
-        id: prepare
-        if: steps.cadence.outputs.should_run == 'true'
+
+  refresh:
+    needs: gate
+    if: needs.gate.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      dry_run: ${{ needs.gate.outputs.dry_run }}
+      changed: ${{ steps.refresh.outputs.changed }}
+      version: ${{ steps.refresh.outputs.version }}
+      tag: ${{ steps.refresh.outputs.tag }}
+      latest_bullet_week: ${{ steps.refresh.outputs.latest_bullet_week }}
+      latest_sentinel_week: ${{ steps.refresh.outputs.latest_sentinel_week }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - name: Cache IDWR HTTP downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/jp_idwr_db/http
+          key: jp-idwr-db-http-${{ runner.os }}-${{ hashFiles('src/jp_idwr_db/http.py', 'src/jp_idwr_db/io.py', 'src/jp_idwr_db/urls.py', 'scripts/build_datasets.py') }}-${{ github.run_id }}
+          restore-keys: |
+            jp-idwr-db-http-${{ runner.os }}-${{ hashFiles('src/jp_idwr_db/http.py', 'src/jp_idwr_db/io.py', 'src/jp_idwr_db/urls.py', 'scripts/build_datasets.py') }}-
+            jp-idwr-db-http-${{ runner.os }}-
+      - name: Install runtime dependencies (locked)
+        run: uv sync --frozen
+      - name: Refresh release
+        id: refresh
         env:
           FORCE_RELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.force_release || false }}
+          DRY_RUN: ${{ needs.gate.outputs.dry_run }}
         run: |
-          args=(--dry-run --github-output "$GITHUB_OUTPUT")
+          args=(--github-output "$GITHUB_OUTPUT")
+          if [[ "${DRY_RUN}" == "true" ]]; then
+            args+=(--dry-run)
+          fi
           if [[ "${FORCE_RELEASE}" == "true" ]]; then
             args+=(--force-release)
           fi
-          uv run python -m jp_idwr_db.refresh_release "${args[@]}"
-      - name: Apply refresh release
-        if: >
-          steps.cadence.outputs.should_run == 'true' &&
-          steps.prepare.outputs.changed == 'true' &&
-          steps.cadence.outputs.dry_run != 'true'
-        env:
-          FORCE_RELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.force_release || false }}
-        run: |
-          args=()
-          if [[ "${FORCE_RELEASE}" == "true" ]]; then
-            args+=(--force-release)
-          fi
-          uv run python -m jp_idwr_db.refresh_release "${args[@]}"
-      - name: Ruff lint
-        if: >
-          steps.cadence.outputs.should_run == 'true' &&
-          steps.prepare.outputs.changed == 'true' &&
-          steps.cadence.outputs.dry_run != 'true'
-        run: uv run --frozen ruff check .
-      - name: Mypy
-        if: >
-          steps.cadence.outputs.should_run == 'true' &&
-          steps.prepare.outputs.changed == 'true' &&
-          steps.cadence.outputs.dry_run != 'true'
-        run: uv run --frozen mypy src
-      - name: Pytest
-        if: >
-          steps.cadence.outputs.should_run == 'true' &&
-          steps.prepare.outputs.changed == 'true' &&
-          steps.cadence.outputs.dry_run != 'true'
-        run: uv run --frozen pytest -m "not integration"
+          uv run --frozen python -m jp_idwr_db.refresh_release "${args[@]}"
       - name: Commit and push refresh release
         if: >
-          steps.cadence.outputs.should_run == 'true' &&
-          steps.prepare.outputs.changed == 'true' &&
-          steps.cadence.outputs.dry_run != 'true'
+          steps.refresh.outputs.changed == 'true' &&
+          needs.gate.outputs.dry_run != 'true'
         env:
-          TAG: ${{ steps.prepare.outputs.tag }}
+          TAG: ${{ steps.refresh.outputs.tag }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -135,11 +122,10 @@ jobs:
           git push origin HEAD:main "${TAG}"
 
   publish:
-    needs: refresh
+    needs: [gate, refresh]
     if: >
-      needs.refresh.outputs.should_run == 'true' &&
       needs.refresh.outputs.changed == 'true' &&
-      needs.refresh.outputs.dry_run != 'true'
+      needs.gate.outputs.dry_run != 'true'
     uses: ./.github/workflows/reusable-release.yml
     with:
       release_tag: ${{ needs.refresh.outputs.tag }}

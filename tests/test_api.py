@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import polars as pl
+import pytest
 
 import jp_idwr_db as jp
+from jp_idwr_db import api
 
 
 def test_get_data_basic() -> None:
@@ -118,3 +120,25 @@ def test_get_latest_week() -> None:
         assert isinstance(year, int)
         assert isinstance(week, int)
         assert 1 <= week <= 53
+
+
+def test_get_data_passes_version_to_loader(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_load_dataset(
+        name: str, *, version: str | None = None, force_download: bool = False
+    ) -> pl.DataFrame:
+        captured["name"] = name
+        captured["version"] = version
+        captured["force_download"] = force_download
+        return pl.DataFrame({"year": [2026], "week": [11], "disease": ["Tuberculosis"]})
+
+    monkeypatch.setattr(api, "load_dataset", fake_load_dataset)
+
+    api.get_data(version="latest", force_download=True)
+
+    assert captured == {
+        "name": "unified",
+        "version": "latest",
+        "force_download": True,
+    }
