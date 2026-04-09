@@ -77,6 +77,34 @@ def load_dataset(
     return pl.read_parquet(path)
 
 
+def scan_dataset(
+    name: DatasetName | Literal["sex_prefecture", "place_prefecture", "unified", "sentinel"],
+    *,
+    version: str | None = None,
+    force_download: bool = False,
+) -> pl.LazyFrame:
+    """Scan a dataset lazily from the local cache.
+
+    This is useful for metadata queries and filtered reads where Polars predicate
+    pushdown can avoid materializing the full parquet file.
+
+    Args:
+        name: Dataset name or supported alias.
+        version: Optional data release version.
+        force_download: Force re-download of release assets.
+
+    Returns:
+        LazyFrame scanning the requested parquet dataset.
+    """
+    if name == "sex":
+        name = "sex_prefecture"
+    elif name == "place":
+        name = "place_prefecture"
+
+    path = _data_path(name, version=version, force=force_download)
+    return pl.scan_parquet(path)
+
+
 def load_prefecture_en(*, version: str | None = None, force_download: bool = False) -> list[str]:
     """Load the list of English prefecture names.
 

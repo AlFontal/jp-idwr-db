@@ -71,3 +71,47 @@ Tokyo,6,60,1,8
     assert df["year"].unique().to_list() == [2026]
     assert df["week"].unique().to_list() == [11]
     assert df["date"].unique().to_list() == [date(2026, 3, 9)]
+
+
+def test_read_teiten_csv_infers_sentinel_and_falls_back_to_japanese_parser(tmp_path: Path) -> None:
+    csv_path = tmp_path / "2025-04-teiten.csv"
+    content = """報告数・定点当り報告数、疾病・都道府県別,"","","","",""
+2025年04週(01月20日〜01月26日),"2025年01月29日作成","","","","",""
+,"インフルエンザ","","ＲＳウイルス感染症","","咽頭結膜熱",""
+,"報告","定当","報告","定当","報告","定当"
+"総数","54594","11.06","2283","0.73","1038","0.33"
+"北海道","1794","8.08","234","1.72","47","0.35"
+"青森県","567","9.78","8","0.22","13","0.35"
+"""
+    csv_path.write_bytes(content.encode("shift-jis"))
+
+    df = read(csv_path)
+
+    assert isinstance(df, pl.DataFrame)
+    assert df.height > 0
+    assert "per_sentinel" in df.columns
+    assert df["source"].unique().to_list() == ["Sentinel surveillance"]
+
+
+def test_read_bullet_normalizes_disease_names(tmp_path: Path) -> None:
+    year_dir = tmp_path / "2026"
+    year_dir.mkdir()
+    csv_path = year_dir / "zensu11.csv"
+    csv_path.write_text(
+        """Table 1. Provisional cases of notifiable diseases by prefecture in Japan,,,,
+"11th week, 2026",,"Data collected as of March 18, 2026",,,
+,,,,,
+Prefecture,Acquired immunodeficiency syndrome (AIDS),,Herpes B virus infection,,
+,Current week,Cum 2026,Current week,Cum 2026
+Hokkaido,4,40,1,4
+Tokyo,6,60,1,8
+""",
+        encoding="utf-8",
+    )
+
+    df = read(csv_path, type="bullet")
+
+    diseases = set(df["disease"].unique().to_list())
+    assert "AIDS" in diseases
+    assert "B virus disease" in diseases
+    assert "Acquired immunodeficiency syndrome (AIDS)" not in diseases

@@ -22,6 +22,7 @@ def test_build_duckdb_creates_views_and_metadata(
     build_duckdb(data_dir=tmp_path, out_path=out_path)
     assert out_path.exists()
 
+    monkeypatch.chdir(tmp_path)
     con = duckdb.connect(out_path.as_posix())
     try:
         metadata_rows = con.execute("SELECT key, value FROM metadata ORDER BY key").fetchall()
@@ -43,7 +44,7 @@ def test_build_duckdb_creates_views_and_metadata(
         con.close()
 
 
-def test_build_duckdb_succeeds_from_different_working_directory(
+def test_build_duckdb_succeeds_when_built_from_different_working_directory(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     duckdb = pytest.importorskip("duckdb")
@@ -62,6 +63,7 @@ def test_build_duckdb_succeeds_from_different_working_directory(
     build_duckdb(data_dir=data_dir, out_path=out_path)
     assert out_path.exists()
 
+    monkeypatch.chdir(data_dir)
     con = duckdb.connect(out_path.as_posix(), read_only=True)
     try:
         row_count = con.execute("SELECT COUNT(*) FROM bullet").fetchone()

@@ -7,7 +7,7 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-from jp_idwr_db.io import _read_sentinel_pl, _sentinel_cumulative_to_weekly
+from jp_idwr_db.io import _read_sentinel_auto, _read_sentinel_pl, _sentinel_cumulative_to_weekly
 
 
 @pytest.fixture
@@ -151,6 +151,31 @@ def test_read_sentinel_normalization(sample_sentinel_csv: Path) -> None:
     assert all(df["disease"].str.len_chars() > 0)
     # Should not have leading/trailing whitespace
     assert all(df["disease"] == df["disease"].str.strip_chars())
+
+
+def test_read_sentinel_auto_prefers_english_parser_and_normalizes_disease_names(
+    tmp_path: Path,
+) -> None:
+    csv_path = tmp_path / "teitenrui11.csv"
+    csv_path.write_text(
+        """Sentinel surveillance weekly report,,,,,
+11th week, 2026,,Data collected as of March 18, 2026,,,
+,,,,,
+Prefecture,Acquired immunodeficiency syndrome (AIDS),,Herpes B virus infection,,
+,Current week,Per sentinel,Current week,Per sentinel
+Total,10,1.0,2,0.2
+Tokyo,6,0.6,1,0.1
+Osaka,4,0.4,1,0.1
+""",
+        encoding="utf-8",
+    )
+
+    df = _read_sentinel_auto(csv_path)
+
+    diseases = set(df["disease"].unique().to_list())
+    assert df["source"].unique().to_list() == ["Sentinel surveillance"]
+    assert "AIDS" in diseases
+    assert "B virus disease" in diseases
 
 
 def test_sentinel_cumulative_to_weekly_basic_diff() -> None:

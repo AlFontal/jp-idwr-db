@@ -202,6 +202,21 @@ def _normalize_disease_name(name: str) -> str:
     return name
 
 
+def _normalize_disease_column(df: pl.DataFrame, column: str) -> pl.DataFrame:
+    """Normalize disease names in a DataFrame column and update the tracker."""
+    if column not in df.columns or df.height == 0:
+        return df
+
+    disease_mappings: dict[str, str] = {}
+    for raw_name in df[column].drop_nulls().unique().to_list():
+        normalized = _normalize_disease_name(raw_name)
+        disease_mappings[raw_name] = normalized
+        if raw_name not in _disease_name_tracker:
+            _disease_name_tracker[raw_name] = normalized
+
+    return df.with_columns(pl.col(column).replace(disease_mappings))
+
+
 def _resolve_headers(
     cols: list[str | None], row2: list[str | None], row3: list[str | None]
 ) -> list[str]:
@@ -538,19 +553,8 @@ def _read_confirmed_pl(
         ]
     ).drop("variable")
 
-    # Normalize disease names and track mappings
-    disease_mappings = {}
-    for raw_name in long_df["disease_raw"].unique():
-        if raw_name:
-            normalized = _normalize_disease_name(raw_name)
-            disease_mappings[raw_name] = normalized
-            # Update global tracker
-            if raw_name not in _disease_name_tracker:
-                _disease_name_tracker[raw_name] = normalized
-
-    long_df = long_df.with_columns(
-        pl.col("disease_raw").replace(disease_mappings).alias("disease")
-    ).drop("disease_raw")
+    long_df = long_df.rename({"disease_raw": "disease"})
+    long_df = _normalize_disease_column(long_df, "disease")
 
     # Clean count column (convert to int, treating errors as 0)
     long_df = long_df.with_columns(
@@ -636,6 +640,7 @@ def _read_bullet_pl(
             long_df = df_raw.unpivot(
                 index=["prefecture"], on=value_vars, variable_name="disease", value_name="count"
             )
+            long_df = _normalize_disease_column(long_df, "disease")
 
             # Add year and week columns
             file_year, file_week = _extract_year_week(p)
@@ -824,16 +829,7 @@ def _read_sentinel_pl(  # noqa: PLR0915
             # Add source column
             long_df = long_df.with_columns(pl.lit("Sentinel surveillance").alias("source"))
 
-            # Normalize disease names
-            disease_mappings = {}
-            for raw_name in long_df["disease"].unique().to_list():
-                normalized = _normalize_disease_name(raw_name)
-                if normalized != raw_name:
-                    disease_mappings[raw_name] = normalized
-                    _disease_name_tracker[raw_name] = normalized
-
-            if disease_mappings:
-                long_df = long_df.with_columns(pl.col("disease").replace(disease_mappings))
+            long_df = _normalize_disease_column(long_df, "disease")
 
             frames.append(long_df)
 
@@ -1031,6 +1027,7 @@ def _read_sentinel_en_pl(
                 )
                 .select(list(_SENTINEL_EN_SCHEMA.keys()))
             )
+            frame = _normalize_disease_column(frame, "disease")
             frames.append(frame)
 
         except Exception:
@@ -1040,6 +1037,31 @@ def _read_sentinel_en_pl(
     if not frames:
         return pl.DataFrame(schema=_SENTINEL_EN_SCHEMA)
     return pl.concat(frames, how="vertical")
+
+
+def _read_sentinel_auto(
+    path: Path,
+    *,
+    year: int | None = None,
+    week: Iterable[int] | None = None,
+) -> pl.DataFrame:
+    """Read sentinel CSV files by trying English parsing, then Japanese fallback."""
+    files = list(path.glob("*.csv")) if path.is_dir() else [path]
+    frames: list[pl.DataFrame] = []
+
+    for file_path in sorted(files):
+        english_df = _read_sentinel_en_pl(file_path, year=year, week=week)
+        if english_df.height > 0:
+            frames.append(english_df)
+            continue
+
+        japanese_df = _read_sentinel_pl(file_path, year=year, week=week)
+        if japanese_df.height > 0:
+            frames.append(japanese_df)
+
+    if not frames:
+        return pl.DataFrame(schema=_SENTINEL_EN_SCHEMA)
+    return pl.concat(frames, how="vertical_relaxed")
 
 
 def download(
@@ -1218,7 +1240,13 @@ def read(
     # Infer type if not specified
     if type is None:
         if path.suffix == ".csv" or (path.is_dir() and list(path.glob("*.csv"))):
-            type = "bullet"
+            csv_files = [path] if path.suffix == ".csv" else list(path.glob("*.csv"))
+            if any(
+                re.search(r"teiten(?:rui)?", csv_path.stem, re.IGNORECASE) for csv_path in csv_files
+            ):
+                type = "sentinel"
+            else:
+                type = "bullet"
         elif "Syu_01" in path.name or "sex" in path.name:
             type = "sex"
         elif "Syu_02" in path.name or "place" in path.name:
@@ -1226,7 +1254,12 @@ def read(
         else:
             raise ValueError("Could not infer dataset type from filename. Please specify 'type'.")
 
-    df = _read_bullet_pl(path) if type == "bullet" else _read_confirmed_pl(path, type=type)
+    if type == "bullet":
+        df = _read_bullet_pl(path)
+    elif type == "sentinel":
+        df = _read_sentinel_auto(path)
+    else:
+        df = _read_confirmed_pl(path, type=type)
 
     return df
 
