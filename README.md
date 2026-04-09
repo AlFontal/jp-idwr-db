@@ -312,10 +312,11 @@ uv run mypy src
 uv run pytest
 
 # Build release data assets (manifest + duckdb + parquet metadata)
-  uv run --with duckdb jp-idwr-db-build-assets \
+  uv run --with duckdb --with jsonschema jp-idwr-db-build-assets \
   --data-dir data/parquet \
   --release-tag vYYYY.M.D \
-  --base-url https://github.com/AlFontal/jp-idwr-db/releases/download/vYYYY.M.D
+  --base-url https://github.com/AlFontal/jp-idwr-db/releases/download/vYYYY.M.D \
+  --schema-path docs/manifest.schema.json
 ```
 
 ## Security and Integrity

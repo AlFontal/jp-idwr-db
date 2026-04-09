@@ -15,4 +15,4 @@ body:
   - type: textarea
     attributes:
       label: Environment
-      description: OS, Python version, jpinfectpy version.
+      description: OS, Python version, and jp-idwr-db version.

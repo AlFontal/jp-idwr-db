@@ -16,3 +16,4 @@ dist/
 .pypirc
 .env
 dist-data/
+.omx/

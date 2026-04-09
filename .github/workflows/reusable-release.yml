@@ -51,10 +51,11 @@ jobs:
         run: |
           mkdir -p dist-data
           cp data/parquet/*.parquet dist-data/
-          uv run --with duckdb python -m jp_idwr_db.build_release_assets \
+          uv run --with duckdb --with jsonschema python -m jp_idwr_db.build_release_assets \
             --data-dir dist-data \
             --release-tag "${{ inputs.release_tag }}" \
-            --base-url "https://github.com/${GITHUB_REPOSITORY}/releases/download/${{ inputs.release_tag }}"
+            --base-url "https://github.com/${GITHUB_REPOSITORY}/releases/download/${{ inputs.release_tag }}" \
+            --schema-path docs/manifest.schema.json
       - name: Upload data artifacts
         uses: actions/upload-artifact@v4
         with:

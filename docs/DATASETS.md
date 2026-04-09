@@ -3,17 +3,18 @@
 This document describes the parquet datasets published as GitHub Release assets.
 At runtime they are cached under `~/.cache/jp_idwr_db/data/<version>/` (OS-specific via `platformdirs`).
 
-All figures below reflect the repository snapshot on **2026-02-06**.
+All figures below reflect the repository snapshot on **2026-03-26**.
 
 ## Overview
 
-`jp_idwr_db` provides six analytical datasets:
+`jp_idwr_db` provides six published datasets:
 
 - `sex_prefecture.parquet`
 - `place_prefecture.parquet`
 - `bullet.parquet`
 - `sentinel.parquet`
 - `unified.parquet`
+- `prefecture_en.parquet`
 
 Load with:
 
@@ -22,6 +23,7 @@ Load with:
 - `jp.load("bullet")` -> `bullet.parquet`
 - `jp.load("sentinel")` -> `sentinel.parquet`
 - `jp.load("unified")` -> `unified.parquet`
+- `jp.load_prefecture_en()` -> values from `prefecture_en.parquet`
 
 ## Dataset Roles
 
@@ -64,6 +66,12 @@ Load with:
 - The `place` dataset is **not fused** into unified.
 - Category policy: unified keeps only `category = total`.
 
+### `prefecture_en` (prefecture lookup table)
+
+- Coverage: all 47 prefectures in English
+- Grain: one row per prefecture
+- Intended use: joins, validation, and helper lookups
+
 ## Snapshot Metrics
 
 ### `sex_prefecture.parquet`
@@ -84,15 +92,15 @@ Load with:
 
 ### `bullet.parquet`
 
-- Rows: `459,360`
-- Columns: `prefecture, disease, count, week, source, year, date`
+- Rows: `470,235`
+- Columns: `prefecture, disease, count, year, week, date, source`
 - Years: `2024-2026`
-- Prefectures: `48` (includes national total row)
+- Prefectures: `47`
 - Diseases: `87`
 
 ### `sentinel.parquet`
 
-- Rows: `606,225`
+- Rows: `612,476`
 - Columns: `prefecture, disease, year, week, date, count, per_sentinel, source`
 - Years: `2012-2026`
 - Prefectures: `47`
@@ -100,13 +108,18 @@ Load with:
 
 ### `unified.parquet`
 
-- Rows: `5,370,477`
+- Rows: `5,387,603`
 - Columns: `prefecture, year, week, date, count, category, disease, source, per_sentinel`
 - Years: `1999-2026`
-- Prefectures: `48`
-- Diseases: `118`
+- Prefectures: `47`
+- Diseases: `122`
 - Categories: `total` only
 - Sources: `Confirmed cases`, `All-case reporting`, `Sentinel surveillance`
+
+### `prefecture_en.parquet`
+
+- Rows: `47`
+- Columns: `prefecture`
 
 ## Prefecture IDs
 

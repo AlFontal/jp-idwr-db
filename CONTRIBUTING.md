@@ -196,14 +196,22 @@ uv run pytest
 
 ### 4. Commit Your Changes
 
-Use [Conventional Commits](https://www.conventionalcommits.org/) format:
+Use the repository's **Lore commit protocol**: the first line explains **why** the
+change exists, and the body records constraints, rejected alternatives, and test
+coverage.
 
-```bash
-git commit -m "feat: add support for new dataset type"
-git commit -m "fix: handle missing columns in Excel parsing"
-git commit -m "docs: update README with new examples"
-git commit -m "refactor: simplify DataFrame conversion logic"
-git commit -m "test: add coverage for edge cases"
+Example:
+
+```text
+Tighten release validation so broken manifests fail before publishing
+
+Constraint: Release artifacts must remain language-agnostic and reproducible
+Rejected: Validate only in local scripts | would miss CI/release regressions
+Confidence: high
+Scope-risk: narrow
+Directive: Keep manifest schema validation in the automated release path
+Tested: uv run pytest --cov=jp_idwr_db --cov-report=term-missing
+Not-tested: Live GitHub Release publishing
 ```
 
 ### 5. Push and Create Pull Request
@@ -283,18 +291,26 @@ If downstream code needs pandas, convert explicitly at the call site using
 
 ## Data Release Assets
 
-Parquet files are not shipped in the wheel. Build release data assets with:
+Parquet files are not shipped in the wheel. GitHub Releases publish the runtime
+assets directly as:
+
+- `manifest.json`
+- one or more `.parquet` files
+- optional `jp_idwr_db.duckdb`
+
+Build them locally with schema validation:
 
 ```bash
-uv run python scripts/build_release_data.py --input data/parquet --out dist-data
+uv run --with duckdb --with jsonschema jp-idwr-db-build-assets \
+  --data-dir data/parquet \
+  --release-tag vYYYY.M.D \
+  --base-url https://github.com/AlFontal/jp-idwr-db/releases/download/vYYYY.M.D \
+  --schema-path docs/manifest.schema.json
 ```
 
-This generates:
-
-- `jp_idwr_db-parquet.zip`
-- `jp_idwr_db-manifest.json`
-
-Attach both files to the GitHub Release that matches the package tag (`vX.Y.Z`).
+This writes `manifest.json` next to the parquet files and optionally adds
+`jp_idwr_db.duckdb`. The reusable GitHub release workflow follows this same
+artifact model.
 
 ## Pull Request Guidelines
 
