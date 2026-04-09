@@ -17,12 +17,15 @@ from pathlib import Path
 
 import polars as pl
 
+from ._internal import validation
+
 TARGET_OUTPUTS = (
     Path("data/parquet/bullet.parquet"),
     Path("data/parquet/sentinel.parquet"),
     Path("data/parquet/unified.parquet"),
     Path("docs/DISEASES.md"),
 )
+VALIDATED_OUTPUTS = TARGET_OUTPUTS[:3]
 
 CHANGELOG_PATH = Path("CHANGELOG.md")
 PYPROJECT_PATH = Path("pyproject.toml")
@@ -191,6 +194,19 @@ def _format_year_week(path: Path) -> str:
     return f"{year}-W{week:02d}"
 
 
+def _validate_release_outputs(repo_root: Path) -> None:
+    """Validate refreshed parquet outputs before treating them as release-ready."""
+    for rel_path in VALIDATED_OUTPUTS:
+        dataset_path = repo_root / rel_path
+        if not dataset_path.exists():
+            raise ValueError(f"Missing validated release dataset: {rel_path}")
+
+        df = pl.read_parquet(dataset_path)
+        validation.validate_schema(df)
+        validation.validate_no_duplicates(df)
+        validation.validate_date_ranges(df)
+
+
 def prepend_changelog_entry(
     repo_root: Path,
     version: str,
@@ -236,6 +252,7 @@ def prepare_refresh_release(
 
         try:
             rebuild_release_outputs(resolved_root)
+            _validate_release_outputs(resolved_root)
             after = _snapshot_paths(resolved_root)
             changed = before != after or force_release
             latest_bullet_week = _format_year_week(resolved_root / TARGET_OUTPUTS[0])

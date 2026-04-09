@@ -56,3 +56,50 @@ def test_build_bullet_skips_unpublished_future_weeks(
     assert df["week"].max() == 11
     assert df["date"].unique().to_list() == [date(2026, 3, 9)]
     assert "Total No." not in df["prefecture"].unique().to_list()
+
+
+def test_build_bullet_runs_validation_before_writing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    build_datasets = _load_build_module()
+    monkeypatch.setattr(build_datasets, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(build_datasets, "LAST_HISTORICAL_YEAR", 2025)
+    monkeypatch.setattr(build_datasets, "CURRENT_YEAR", 2026)
+    monkeypatch.setattr(build_datasets, "CURRENT_WEEK", 2)
+
+    monkeypatch.setattr(
+        build_datasets.download,
+        "download",
+        lambda name, year, week: [tmp_path / "2026" / "zensu01.csv"],
+    )
+    monkeypatch.setattr(
+        build_datasets.read,
+        "read",
+        lambda path, type: pl.DataFrame(
+            {
+                "prefecture": ["Tokyo"],
+                "disease": ["Tuberculosis"],
+                "count": [1],
+                "week": [1],
+                "year": [2026],
+                "date": [date(2026, 1, 5)],
+                "source": ["All-case reporting"],
+            }
+        ),
+    )
+
+    called: list[str] = []
+    monkeypatch.setattr(
+        build_datasets.validation, "validate_schema", lambda df: called.append("schema")
+    )
+    monkeypatch.setattr(
+        build_datasets.validation, "validate_no_duplicates", lambda df: called.append("duplicates")
+    )
+    monkeypatch.setattr(
+        build_datasets.validation, "validate_date_ranges", lambda df: called.append("dates")
+    )
+
+    build_datasets.build_bullet()
+
+    assert called == ["schema", "duplicates", "dates"]
+    assert (tmp_path / "bullet.parquet").exists()

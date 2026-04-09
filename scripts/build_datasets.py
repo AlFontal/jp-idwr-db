@@ -66,6 +66,15 @@ def _sort_for_output(df: pl.DataFrame) -> pl.DataFrame:
     return df.sort(sort_keys, nulls_last=True)
 
 
+def _validate_dataset_output(name: str, df: pl.DataFrame) -> None:
+    """Validate a built dataset before it is written to disk."""
+    logger.info(f"Validating {name} dataset...")
+    validation.validate_schema(df)
+    validation.validate_no_duplicates(df)
+    validation.validate_date_ranges(df)
+    logger.info(f"  ✓ {name} validation passed")
+
+
 def _write_diseases_markdown(unified_df: pl.DataFrame) -> None:
     """Write disease temporal coverage and totals to DISEASES.md."""
     summary = (
@@ -164,6 +173,7 @@ def build_sex():
 
         out_path = DATA_DIR / "sex_prefecture.parquet"
         full_df = _sort_for_output(full_df)
+        _validate_dataset_output("sex_prefecture", full_df)
         full_df.write_parquet(out_path)
         logger.info(f"Saved to {out_path.name} ({full_df.height} rows, {success_count} years)")
 
@@ -193,6 +203,7 @@ def build_place():
         full_df = pl.concat(dfs, how="diagonal_relaxed")
         full_df = _sort_for_output(full_df)
         out_path = DATA_DIR / "place_prefecture.parquet"
+        _validate_dataset_output("place_prefecture", full_df)
         full_df.write_parquet(out_path)
         logger.info(f"Saved to {out_path.name} ({full_df.height} rows, {success_count} years)")
 
@@ -270,6 +281,7 @@ def build_bullet():
     if dfs:
         full_df = pl.concat(dfs, how="diagonal_relaxed")
         full_df = _sort_for_output(full_df)
+        _validate_dataset_output("bullet", full_df)
         full_df.write_parquet(out_path)
         logger.info(f"Saved to {out_path.name} ({full_df.height} rows, {total_weeks} weeks total)")
         logger.info(f"  Schema: {full_df.columns}")
@@ -358,6 +370,7 @@ def build_sentinel():
         # teitenrui files provide cumulative year-to-date counts; convert to weekly incidence.
         full_df = io._sentinel_cumulative_to_weekly(full_df)
         full_df = _sort_for_output(full_df)
+        _validate_dataset_output("sentinel", full_df)
         full_df.write_parquet(out_path)
         logger.info(f"Saved to {out_path.name} ({full_df.height} rows, {total_weeks} weeks total)")
         logger.info(f"  Schema: {full_df.columns}")
@@ -475,37 +488,11 @@ def build_unified():
     else:
         logger.info(f"  ✓ No duplicates found")
 
-    # 6. Validate schema
-    logger.info("\nValidating schema...")
-    try:
-        validation.validate_schema(unified_df)
-        logger.info("  ✓ Schema validation passed")
-    except ValueError as e:
-        logger.error(f"  ✗ Schema validation failed: {e}")
-        return
-
-    # 7. Validate no duplicates
-    logger.info("Checking for duplicates...")
-    try:
-        validation.validate_no_duplicates(unified_df)
-        logger.info("  ✓ No duplicates found")
-    except ValueError as e:
-        logger.error(f"  ✗ Duplicate validation failed: {e}")
-        return
-
-    # 8. Validate date ranges
-    logger.info("Validating date ranges...")
-    try:
-        validation.validate_date_ranges(unified_df)
-        logger.info("  ✓ Date range validation passed")
-    except ValueError as e:
-        logger.error(f"  ✗ Date range validation failed: {e}")
-        return
-
-    # 9. Save unified dataset
+    # 6. Validate and save unified dataset
     out_path = DATA_DIR / "unified.parquet"
     logger.info(f"\nSaving unified dataset to {out_path.name}...")
     unified_df = _sort_for_output(unified_df)
+    _validate_dataset_output("unified", unified_df)
     unified_df.write_parquet(out_path)
     _write_diseases_markdown(unified_df)
 

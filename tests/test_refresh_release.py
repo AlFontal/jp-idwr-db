@@ -28,15 +28,20 @@ def _write_refresh_repo(repo_root: Path) -> None:
     )
     (repo_root / "docs" / "DISEASES.md").write_text("# Disease Coverage\n", encoding="utf-8")
 
-    pl.DataFrame({"year": [2026], "week": [6]}).write_parquet(
-        repo_root / "data/parquet/bullet.parquet"
-    )
-    pl.DataFrame({"year": [2026], "week": [4]}).write_parquet(
+    base_frame = {
+        "prefecture": ["Tokyo"],
+        "year": [2026],
+        "week": [6],
+        "disease": ["Tuberculosis"],
+        "count": [1],
+    }
+    pl.DataFrame(base_frame).write_parquet(repo_root / "data/parquet/bullet.parquet")
+    pl.DataFrame({**base_frame, "week": [4], "per_sentinel": [0.1]}).write_parquet(
         repo_root / "data/parquet/sentinel.parquet"
     )
-    pl.DataFrame({"year": [2026], "week": [6]}).write_parquet(
-        repo_root / "data/parquet/unified.parquet"
-    )
+    pl.DataFrame(
+        {**base_frame, "category": ["total"], "source": ["All-case reporting"]}
+    ).write_parquet(repo_root / "data/parquet/unified.parquet")
 
 
 def test_prepare_refresh_release_detects_noop(
@@ -65,15 +70,36 @@ def test_prepare_refresh_release_dry_run_restores_outputs(
     original_digest = refresh_release._sha256(repo_root / "data/parquet/bullet.parquet")
 
     def fake_rebuild(root: Path) -> None:
-        pl.DataFrame({"year": [2026], "week": [11]}).write_parquet(
-            root / "data/parquet/bullet.parquet"
-        )
-        pl.DataFrame({"year": [2026], "week": [11]}).write_parquet(
-            root / "data/parquet/sentinel.parquet"
-        )
-        pl.DataFrame({"year": [2026], "week": [11]}).write_parquet(
-            root / "data/parquet/unified.parquet"
-        )
+        pl.DataFrame(
+            {
+                "prefecture": ["Tokyo"],
+                "year": [2026],
+                "week": [11],
+                "disease": ["Tuberculosis"],
+                "count": [1],
+            }
+        ).write_parquet(root / "data/parquet/bullet.parquet")
+        pl.DataFrame(
+            {
+                "prefecture": ["Tokyo"],
+                "year": [2026],
+                "week": [11],
+                "disease": ["RSV"],
+                "count": [1],
+                "per_sentinel": [0.1],
+            }
+        ).write_parquet(root / "data/parquet/sentinel.parquet")
+        pl.DataFrame(
+            {
+                "prefecture": ["Tokyo"],
+                "year": [2026],
+                "week": [11],
+                "disease": ["Tuberculosis"],
+                "count": [1],
+                "category": ["total"],
+                "source": ["All-case reporting"],
+            }
+        ).write_parquet(root / "data/parquet/unified.parquet")
         (root / "docs" / "DISEASES.md").write_text("# Updated\n", encoding="utf-8")
 
     monkeypatch.setattr(refresh_release, "rebuild_release_outputs", fake_rebuild)
@@ -95,15 +121,36 @@ def test_prepare_refresh_release_updates_versions_and_changelog(
     _write_refresh_repo(repo_root)
 
     def fake_rebuild(root: Path) -> None:
-        pl.DataFrame({"year": [2026], "week": [11]}).write_parquet(
-            root / "data/parquet/bullet.parquet"
-        )
-        pl.DataFrame({"year": [2026], "week": [11]}).write_parquet(
-            root / "data/parquet/sentinel.parquet"
-        )
-        pl.DataFrame({"year": [2026], "week": [11]}).write_parquet(
-            root / "data/parquet/unified.parquet"
-        )
+        pl.DataFrame(
+            {
+                "prefecture": ["Tokyo"],
+                "year": [2026],
+                "week": [11],
+                "disease": ["Tuberculosis"],
+                "count": [1],
+            }
+        ).write_parquet(root / "data/parquet/bullet.parquet")
+        pl.DataFrame(
+            {
+                "prefecture": ["Tokyo"],
+                "year": [2026],
+                "week": [11],
+                "disease": ["RSV"],
+                "count": [1],
+                "per_sentinel": [0.1],
+            }
+        ).write_parquet(root / "data/parquet/sentinel.parquet")
+        pl.DataFrame(
+            {
+                "prefecture": ["Tokyo"],
+                "year": [2026],
+                "week": [11],
+                "disease": ["Tuberculosis"],
+                "count": [1],
+                "category": ["total"],
+                "source": ["All-case reporting"],
+            }
+        ).write_parquet(root / "data/parquet/unified.parquet")
         (root / "docs" / "DISEASES.md").write_text("# Updated\n", encoding="utf-8")
 
     monkeypatch.setattr(refresh_release, "rebuild_release_outputs", fake_rebuild)
@@ -121,6 +168,38 @@ def test_prepare_refresh_release_updates_versions_and_changelog(
     changelog = (repo_root / "CHANGELOG.md").read_text(encoding="utf-8")
     assert changelog.startswith("# Changelog\n\n## 2026.3.26 - 2026-03-26\n")
     assert "2026-W11" in changelog
+
+
+def test_prepare_refresh_release_validates_outputs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo_root = tmp_path / "repo"
+    _write_refresh_repo(repo_root)
+    called: list[Path] = []
+
+    monkeypatch.setattr(refresh_release, "rebuild_release_outputs", lambda root: None)
+    monkeypatch.setattr(
+        refresh_release,
+        "_validate_release_outputs",
+        lambda root: called.append(root),
+    )
+
+    refresh_release.prepare_refresh_release(
+        repo_root=repo_root, dry_run=True, release_date=date(2026, 3, 26)
+    )
+
+    assert called == [repo_root.resolve()]
+
+
+def test_validate_release_outputs_rejects_invalid_week(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    _write_refresh_repo(repo_root)
+    pl.DataFrame(
+        {"prefecture": ["Tokyo"], "year": [2026], "week": [99], "disease": ["X"], "count": [1]}
+    ).write_parquet(repo_root / "data/parquet/bullet.parquet")
+
+    with pytest.raises(ValueError, match="Week values out of valid range"):
+        refresh_release._validate_release_outputs(repo_root)
 
 
 def test_next_calver_version_same_day_gets_post_release() -> None:
