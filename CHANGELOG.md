@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026.4.15 - 2026-04-15
+
+- Refreshed bullet release assets through 2026-W14 and sentinel assets through 2026-W14.
+- Automated bi-weekly data refresh release.
+
 ## 2026.4.1 - 2026-04-01
 
 - Refreshed bullet release assets through 2026-W12 and sentinel assets through 2026-W12.
