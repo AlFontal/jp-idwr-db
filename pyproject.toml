@@ -1,6 +1,6 @@
 [project]
 name = "jp-idwr-db"
-version = "2026.4.15"
+version = "2026.4.29"
 description = "Japanese IDWR infectious disease database and analytics toolkit built on Polars."
 readme = "README.md"
 license = { text = "GPL-3.0-or-later" }
