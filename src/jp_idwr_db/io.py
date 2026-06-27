@@ -283,6 +283,73 @@ def _resolve_headers(
     return headers
 
 
+def _is_confirmed_category_row(row: list[str | None]) -> bool:
+    """Return whether a raw Excel row looks like a confirmed-data category header."""
+    cleaned = [_clean_cell_text(value) for value in row[1:]]
+    lowered = {str(value).lower() for value in cleaned if value}
+    if not any("total" in value for value in lowered):
+        return False
+    return any(
+        marker in value
+        for value in lowered
+        for marker in ("male", "female", "japan", "others", "unknown")
+    )
+
+
+def _find_confirmed_header_rows(df_raw: pl.DataFrame) -> list[int]:
+    """Find disease-header rows in a raw confirmed-data Excel sheet."""
+    header_rows: list[int] = []
+    for idx in range(df_raw.height - 1):
+        disease_row = [str(value) if value is not None else None for value in df_raw.row(idx)]
+        category_row = [
+            str(value) if value is not None else None for value in df_raw.row(idx + 1)
+        ]
+        has_disease = any(_clean_cell_text(value) for value in disease_row[1:])
+        if has_disease and _is_confirmed_category_row(category_row):
+            header_rows.append(idx)
+    return header_rows
+
+
+def _parse_excel_sheet_blocks(df_raw: pl.DataFrame) -> list[pl.DataFrame]:
+    """Parse one raw confirmed-data Excel sheet into one frame per header block."""
+    header_rows = _find_confirmed_header_rows(df_raw)
+    frames: list[pl.DataFrame] = []
+
+    for position, header_idx in enumerate(header_rows):
+        next_header_idx = (
+            header_rows[position + 1] if position + 1 < len(header_rows) else df_raw.height
+        )
+        data_start = header_idx + 2
+        if data_start >= next_header_idx:
+            continue
+
+        disease_row = [str(value) if value is not None else None for value in df_raw.row(header_idx)]
+        category_row = [
+            str(value) if value is not None else None for value in df_raw.row(header_idx + 1)
+        ]
+        headers = _resolve_headers(list(df_raw.columns), disease_row, category_row)
+
+        data_df = df_raw.slice(data_start, next_header_idx - data_start)
+        data_df.columns = headers
+
+        if "prefecture" in data_df.columns:
+            data_df = data_df.with_columns(
+                pl.col("prefecture").map_elements(
+                    lambda x: _clean_cell_text(str(x)) if x is not None else None,
+                    return_dtype=pl.Utf8,
+                )
+            )
+            data_df = data_df.filter(
+                pl.col("prefecture").is_not_null()
+                & ~pl.col("prefecture").str.to_lowercase().str.contains("total")
+            )
+
+        if not data_df.is_empty():
+            frames.append(data_df)
+
+    return frames
+
+
 def _read_excel_sheets(
     file_path: Path, sheet_range: Iterable[int]
 ) -> list[tuple[int, pl.DataFrame]]:
@@ -324,36 +391,12 @@ def _read_excel_sheets(
             if df_raw.height < 5:
                 continue
 
-            # Extract header rows
-            row2 = [str(x) if x is not None else None for x in df_raw.row(2)]
-            row3 = [str(x) if x is not None else None for x in df_raw.row(3)]
-
-            # Validate that this looks like a data sheet (row3 should contain "total")
-            row3_clean = [_clean_cell_text(x) for x in row3]
-            if not any("total" in str(x).lower() for x in row3_clean if x):
-                logger.debug(f"Skipping sheet {sheet}: No 'total' category in header row")
+            sheet_blocks = _parse_excel_sheet_blocks(df_raw)
+            if not sheet_blocks:
+                logger.debug(f"Skipping sheet {sheet}: No confirmed-data header blocks found")
                 continue
 
-            # Resolve header names
-            headers = _resolve_headers(list(df_raw.columns), row2, row3)
-
-            # Extract data rows (skip first 4 rows of headers/metadata)
-            data_df = df_raw.slice(4)
-            data_df.columns = headers
-
-            # Clean prefecture column and remove aggregate rows
-            if "prefecture" in data_df.columns:
-                data_df = data_df.with_columns(
-                    pl.col("prefecture").map_elements(
-                        lambda x: _clean_cell_text(str(x)), return_dtype=pl.Utf8
-                    )
-                )
-                # Remove "Total" aggregate rows
-                data_df = data_df.filter(
-                    ~pl.col("prefecture").str.to_lowercase().str.contains("total")
-                )
-
-            if not data_df.is_empty():
+            for data_df in sheet_blocks:
                 frames.append((sheet, data_df))
 
         except Exception:
@@ -420,35 +463,6 @@ def _sheet_range_for_year(year: int) -> range:
     return range(2, 54)
 
 
-def _combine_confirmed_frames(
-    frames: list[tuple[int, pl.DataFrame]],
-    year: int,
-    *,
-    week_offset: int,
-) -> pl.DataFrame:
-    """Combine multiple sheet DataFrames and add year/week columns.
-
-    Args:
-        frames: List of (sheet_id, DataFrame) tuples.
-        year: Year to assign to all rows.
-        week_offset: Offset to apply to sheet_id to get week number.
-            (e.g., 1999 started at week 14, so offset=12 means sheet 2 = week 14)
-
-    Returns:
-        Combined DataFrame with year and week columns.
-    """
-    combined: list[pl.DataFrame] = []
-    for sheet, frame in frames:
-        week = sheet + week_offset
-        enhanced = frame.with_columns([pl.lit(year).alias("year"), pl.lit(week).alias("week")])
-        combined.append(enhanced)
-
-    if not combined:
-        return pl.DataFrame()
-
-    return pl.concat(combined, how="diagonal_relaxed")
-
-
 def _iso_week_date(year: int, week: int) -> dt.date | None:
     """Convert ISO year and week to a date (last day of week = Sunday).
 
@@ -473,52 +487,10 @@ def _iso_week_start_date(year: int, week: int) -> dt.date | None:
         return None
 
 
-def _read_confirmed_pl(
-    path: Path,
-    *,
-    type: DatasetName | None = None,
-) -> pl.DataFrame:
-    """Read confirmed cases data from Excel file(s).
-
-    Args:
-        path: Path to file or directory containing Excel files.
-        type: Dataset type ("sex" or "place"), used for filename pattern matching.
-
-    Returns:
-        DataFrame in long format with columns: prefecture, year, week, date,
-        disease, category, count.
-    """
-    # If path is a directory, find the appropriate file(s)
-    if path.is_dir():
-        if type == "sex":
-            pattern = re.compile(r"(Syu_01_1|01_1)\.(xls|xlsx)$")
-        elif type == "place":
-            pattern = re.compile(r"(Syu_02_1|02_1)\.(xls|xlsx)$")
-        else:
-            pattern = re.compile(r"Syu_0[12]_1\.(xls|xlsx)$")
-        files = [p for p in path.iterdir() if pattern.search(p.name)]
-    else:
-        files = [path]
-
-    frames: list[pl.DataFrame] = []
-    for file_path in sorted(files):
-        year = _infer_year_from_path(file_path) or 0
-        if year == 0:
-            logger.warning(f"Could not infer year from {file_path.name}, skipping")
-            continue
-
-        sheet_range = _sheet_range_for_year(year)
-        excel_frames = _read_excel_sheets(file_path, sheet_range)
-
-        # 1999 data starts at week 14 (sheet 2), so offset=12 makes sheet 2 -> week 14
-        week_offset = 12 if year == 1999 else -1
-        combined = _combine_confirmed_frames(excel_frames, year, week_offset=week_offset)
-        frames.append(combined)
-
-    if not frames:
-        return pl.DataFrame()
-
-    df = pl.concat(frames, how="diagonal_relaxed")
+def _confirmed_wide_to_long(df: pl.DataFrame) -> pl.DataFrame:
+    """Convert one confirmed-data wide block to normalized long form."""
+    if df.is_empty():
+        return df
 
     # Calculate date column from year and week
     if "date" not in df.columns and "year" in df.columns and "week" in df.columns:
@@ -562,9 +534,60 @@ def _read_confirmed_pl(
     )
 
     # Add source column
-    long_df = long_df.with_columns(pl.lit("Confirmed cases").alias("source"))
+    return long_df.with_columns(pl.lit("Confirmed cases").alias("source"))
 
-    return long_df
+
+def _read_confirmed_pl(
+    path: Path,
+    *,
+    type: DatasetName | None = None,
+) -> pl.DataFrame:
+    """Read confirmed cases data from Excel file(s).
+
+    Args:
+        path: Path to file or directory containing Excel files.
+        type: Dataset type ("sex" or "place"), used for filename pattern matching.
+
+    Returns:
+        DataFrame in long format with columns: prefecture, year, week, date,
+        disease, category, count.
+    """
+    # If path is a directory, find the appropriate file(s)
+    if path.is_dir():
+        if type == "sex":
+            pattern = re.compile(r"(Syu_01_1|01_1)\.(xls|xlsx)$")
+        elif type == "place":
+            pattern = re.compile(r"(Syu_02_1|02_1)\.(xls|xlsx)$")
+        else:
+            pattern = re.compile(r"Syu_0[12]_1\.(xls|xlsx)$")
+        files = [p for p in path.iterdir() if pattern.search(p.name)]
+    else:
+        files = [path]
+
+    frames: list[pl.DataFrame] = []
+    for file_path in sorted(files):
+        year = _infer_year_from_path(file_path) or 0
+        if year == 0:
+            logger.warning(f"Could not infer year from {file_path.name}, skipping")
+            continue
+
+        sheet_range = _sheet_range_for_year(year)
+        excel_frames = _read_excel_sheets(file_path, sheet_range)
+
+        # 1999 data starts at week 14 (sheet 2), so offset=12 makes sheet 2 -> week 14
+        week_offset = 12 if year == 1999 else -1
+        for sheet, frame in excel_frames:
+            week = sheet + week_offset
+            enhanced = frame.with_columns(
+                [pl.lit(year).alias("year"), pl.lit(week).alias("week")]
+            )
+            frames.append(_confirmed_wide_to_long(enhanced))
+
+    if not frames:
+        return pl.DataFrame()
+
+    df = pl.concat(frames, how="diagonal_relaxed")
+    return df
 
 
 def _read_bullet_pl(
@@ -860,8 +883,9 @@ def _sentinel_cumulative_to_weekly(df: pl.DataFrame) -> pl.DataFrame:
     Sentinel `teitenrui` files report year-to-date cumulative counts per
     prefecture and disease. This helper converts those cumulative counts into
     weekly counts by differencing against the previous week within each
-    year/prefecture/disease series. The first observed week in each yearly
-    series is kept as-is.
+    year/prefecture/disease series. If the first observed record for a yearly
+    series is not week 1, or if a cumulative source correction would produce a
+    negative weekly value, the weekly value is set to null.
     """
     if df.height == 0:
         return df
@@ -874,24 +898,41 @@ def _sentinel_cumulative_to_weekly(df: pl.DataFrame) -> pl.DataFrame:
     sort_cols = [
         col for col in ["year", "prefecture", "disease", "week", "date"] if col in df.columns
     ]
-    out = df.sort(sort_cols, nulls_last=True).with_columns(
-        pl.col("count").fill_null(0.0).alias("_count_cum")
-    )
+    out = df.sort(sort_cols, nulls_last=True).with_columns(pl.col("count").alias("_count_cum"))
+    if "per_sentinel" in out.columns:
+        out = out.with_columns(
+            pl.when((pl.col("_count_cum") > 0) & (pl.col("per_sentinel") > 0))
+            .then(pl.col("_count_cum") / pl.col("per_sentinel"))
+            .otherwise(None)
+            .alias("_sentinel_sites")
+        )
 
     weekly_diff = pl.col("_count_cum") - pl.col("_count_cum").shift(1).over(group_cols)
-    out = out.with_columns(
-        pl.when(pl.col("week") == 1)
+    weekly_count = (
+        pl.when(pl.col("_count_cum").is_null())
+        .then(None)
+        .when(pl.col("week") == 1)
         .then(pl.col("_count_cum"))
+        .when(weekly_diff < 0)
+        .then(None)
         .otherwise(weekly_diff)
-        .alias("count")
-    ).with_columns(
-        pl.when(pl.col("count").is_null())
-        .then(pl.col("_count_cum"))
-        .otherwise(pl.col("count"))
-        .alias("count")
     )
+    out = out.with_columns(weekly_count.alias("count"))
 
-    return out.drop("_count_cum")
+    if "per_sentinel" in out.columns:
+        weekly_per_sentinel = (
+            pl.when(pl.col("count").is_null())
+            .then(None)
+            .when(pl.col("count") == 0)
+            .then(0.0)
+            .when(pl.col("_sentinel_sites").is_null() | (pl.col("_sentinel_sites") <= 0))
+            .then(None)
+            .otherwise(pl.col("count") / pl.col("_sentinel_sites"))
+        )
+        out = out.with_columns(weekly_per_sentinel.alias("per_sentinel"))
+
+    drop_cols = [col for col in ["_count_cum", "_sentinel_sites"] if col in out.columns]
+    return out.drop(drop_cols)
 
 
 def _extract_year_week_sentinel_en(

@@ -7,7 +7,7 @@ from typing import Any
 import polars as pl
 import pytest
 
-from jp_idwr_db.io import read
+from jp_idwr_db.io import _parse_excel_sheet_blocks, read
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -44,6 +44,47 @@ def test_read_bullet_pl() -> None:
     # Check that source column is present
     if "source" in df.columns:
         assert df["source"].unique().to_list() == ["Confirmed cases"]
+
+
+def test_parse_confirmed_excel_sheet_repeated_header_blocks() -> None:
+    """Repeated header blocks in one Excel sheet should stay separate."""
+    raw = pl.DataFrame(
+        [
+            ["title", None, None, None, None],
+            [None, "Disease A", None, "Disease B", None],
+            [None, "total", "Inside Japan", "total", "Inside Japan"],
+            ["Total No.", 10, 10, 20, 20],
+            ["Tokyo", 1, 1, 2, 2],
+            ["Osaka", 3, 3, 4, 4],
+            [None, "Disease C", None, "Disease D", None],
+            [None, "total", "Inside Japan", "total", "Inside Japan"],
+            ["Total No.", 50, 50, 60, 60],
+            ["Tokyo", 5, 5, 6, 6],
+            ["Osaka", 7, 7, 8, 8],
+        ],
+        schema=["c0", "c1", "c2", "c3", "c4"],
+        orient="row",
+    )
+
+    blocks = _parse_excel_sheet_blocks(raw)
+
+    assert len(blocks) == 2
+    assert blocks[0].columns == [
+        "prefecture",
+        "Disease A||total",
+        "Disease A||japan",
+        "Disease B||total",
+        "Disease B||japan",
+    ]
+    assert blocks[1].columns == [
+        "prefecture",
+        "Disease C||total",
+        "Disease C||japan",
+        "Disease D||total",
+        "Disease D||japan",
+    ]
+    assert blocks[0]["prefecture"].to_list() == ["Tokyo", "Osaka"]
+    assert blocks[1]["prefecture"].to_list() == ["Tokyo", "Osaka"]
 
 
 def test_read_bullet_downloaded_file_infers_year_and_drops_total(tmp_path: Path) -> None:
