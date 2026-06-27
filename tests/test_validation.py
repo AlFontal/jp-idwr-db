@@ -74,6 +74,19 @@ def test_validate_date_ranges_rejects_out_of_range_weeks() -> None:
         validation.validate_date_ranges(df)
 
 
+def test_validate_non_negative_counts_accepts_null_metrics() -> None:
+    df = pl.DataFrame({"count": [0.0, 1.0, None], "per_sentinel": [None, 0.5, 2.0]})
+
+    validation.validate_non_negative_counts(df)
+
+
+def test_validate_non_negative_counts_rejects_negative_count() -> None:
+    df = pl.DataFrame({"count": [0.0, -1.0], "per_sentinel": [0.0, 1.0]})
+
+    with pytest.raises(ValueError, match="negative count"):
+        validation.validate_non_negative_counts(df)
+
+
 def test_smart_merge_keeps_confirmed_and_adds_sentinel_only_diseases() -> None:
     confirmed = pl.DataFrame(
         {

@@ -198,7 +198,7 @@ def test_sentinel_cumulative_to_weekly_resets_each_year() -> None:
     df = pl.DataFrame(
         {
             "year": [2024, 2024, 2025, 2025],
-            "week": [51, 52, 1, 2],
+            "week": [1, 2, 1, 2],
             "prefecture": ["Tokyo", "Tokyo", "Tokyo", "Tokyo"],
             "disease": ["RSV", "RSV", "RSV", "RSV"],
             "count": [100.0, 130.0, 12.0, 30.0],
@@ -208,8 +208,8 @@ def test_sentinel_cumulative_to_weekly_resets_each_year() -> None:
     assert out["count"].to_list() == [100.0, 30.0, 12.0, 18.0]
 
 
-def test_sentinel_cumulative_to_weekly_missing_previous_week_uses_observed_value() -> None:
-    """If no prior observed week exists in the year, keep the observed cumulative value."""
+def test_sentinel_cumulative_to_weekly_missing_previous_week_is_unknown() -> None:
+    """If no prior observed week exists in the year, weekly incidence is unknown."""
     df = pl.DataFrame(
         {
             "year": [2024, 2024],
@@ -220,4 +220,38 @@ def test_sentinel_cumulative_to_weekly_missing_previous_week_uses_observed_value
         }
     )
     out = _sentinel_cumulative_to_weekly(df).sort(["year", "week"])
-    assert out["count"].to_list() == [22.0, 9.0]
+    assert out["count"].to_list() == [None, 9.0]
+
+
+def test_sentinel_cumulative_to_weekly_negative_correction_is_unknown() -> None:
+    """Source corrections must not produce negative weekly incidence."""
+    df = pl.DataFrame(
+        {
+            "year": [2024, 2024, 2024],
+            "week": [1, 2, 3],
+            "prefecture": ["Tokyo", "Tokyo", "Tokyo"],
+            "disease": ["RSV", "RSV", "RSV"],
+            "count": [20.0, 15.0, 30.0],
+            "per_sentinel": [2.0, 1.5, 3.0],
+        }
+    )
+    out = _sentinel_cumulative_to_weekly(df).sort(["year", "week"])
+    assert out["count"].to_list() == [20.0, None, 15.0]
+    assert out["per_sentinel"].to_list() == [2.0, None, 1.5]
+
+
+def test_sentinel_cumulative_to_weekly_derives_per_sentinel_from_current_denominator() -> None:
+    """Weekly per-sentinel rates use the current inferred sentinel-site denominator."""
+    df = pl.DataFrame(
+        {
+            "year": [2024, 2024],
+            "week": [1, 2],
+            "prefecture": ["Tokyo", "Tokyo"],
+            "disease": ["RSV", "RSV"],
+            "count": [10.0, 25.0],
+            "per_sentinel": [1.0, 5.0],
+        }
+    )
+    out = _sentinel_cumulative_to_weekly(df).sort(["year", "week"])
+    assert out["count"].to_list() == [10.0, 15.0]
+    assert out["per_sentinel"].to_list() == [1.0, 3.0]

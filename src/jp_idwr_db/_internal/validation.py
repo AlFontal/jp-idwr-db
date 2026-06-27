@@ -96,6 +96,25 @@ def validate_date_ranges(df: pl.DataFrame) -> None:
             raise ValueError(f"Week values out of valid range: {min_week}-{max_week}")
 
 
+def validate_non_negative_counts(df: pl.DataFrame) -> None:
+    """Validate that case-count metrics do not contain negative values.
+
+    Args:
+        df: DataFrame to validate.
+
+    Raises:
+        ValueError: If negative count or per-sentinel values are found.
+    """
+    metric_columns = [col for col in ["count", "per_sentinel"] if col in df.columns]
+    for column in metric_columns:
+        negative_rows = df.filter(pl.col(column) < 0)
+        if negative_rows.height > 0:
+            raise ValueError(
+                f"Found {negative_rows.height} rows with negative {column}. "
+                f"First few rows:\n{negative_rows.head(5)}"
+            )
+
+
 def smart_merge(
     zensu_df: pl.DataFrame,
     teiten_df: pl.DataFrame,

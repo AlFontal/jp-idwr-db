@@ -72,6 +72,7 @@ def _validate_dataset_output(name: str, df: pl.DataFrame) -> None:
     validation.validate_schema(df)
     validation.validate_no_duplicates(df)
     validation.validate_date_ranges(df)
+    validation.validate_non_negative_counts(df)
     logger.info(f"  ✓ {name} validation passed")
 
 
@@ -341,15 +342,13 @@ def build_sentinel():
                     # Add date column (week start date)
                     df = df.with_columns(
                         [
-                            pl.concat_str(
-                                [
-                                    pl.col("year").cast(pl.Utf8),
-                                    pl.lit("-W"),
-                                    pl.col("week").cast(pl.Utf8).str.zfill(2),
-                                    pl.lit("-1"),  # Monday
-                                ]
+                            pl.struct(["year", "week"])
+                            .map_elements(
+                                lambda value: date.fromisocalendar(
+                                    int(value["year"]), int(value["week"]), 1
+                                ),
+                                return_dtype=pl.Date,
                             )
-                            .str.strptime(pl.Date, "%Y-W%W-%w")
                             .alias("date")
                         ]
                     )
@@ -367,7 +366,6 @@ def build_sentinel():
 
     if dfs:
         full_df = pl.concat(dfs, how="diagonal_relaxed")
-        # teitenrui files provide cumulative year-to-date counts; convert to weekly incidence.
         full_df = io._sentinel_cumulative_to_weekly(full_df)
         full_df = _sort_for_output(full_df)
         _validate_dataset_output("sentinel", full_df)
