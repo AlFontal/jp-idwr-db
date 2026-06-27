@@ -1,6 +1,6 @@
 # Disease Coverage in Unified Dataset
 
-Coverage summary generated from `data/parquet/unified.parquet` (snapshot: 2026-06-26).
+Coverage summary generated from `data/parquet/unified.parquet` (snapshot: 2026-06-27).
 
 - Total diseases: **123**
 - Year span: **1999-2026**
@@ -12,26 +12,26 @@ Coverage summary generated from `data/parquet/unified.parquet` (snapshot: 2026-0
 | Acquired immunodeficiency syndrome (AIDS) | 2024-W01 | 2025-W52 | All-case reporting | 1,153 | 4,888 |
 | Acute Flaccid Paralysis (excluding Acute poliomyelitis) | 2018-W01 | 2026-W24 | All-case reporting, Confirmed cases | 436 | 20,680 |
 | Acute encephalitis(excluding JE and WNE) | 2006-W01 | 2026-W24 | All-case reporting, Confirmed cases | 9,254 | 50,102 |
-| Acute hemorrhagic conjunctivitis | 2012-W38 | 2026-W24 | Sentinel surveillance | 5,794 | 33,678 |
+| Acute hemorrhagic conjunctivitis | 2012-W38 | 2026-W24 | Sentinel surveillance | 3,613 | 33,678 |
 | Acute poliomyelitis | 1999-W14 | 2026-W24 | All-case reporting, Confirmed cases | 7 | 54,379 |
 | Acute viral hepatitis | 1999-W14 | 2005-W52 | Confirmed cases | 5,606 | 16,544 |
 | Amebiasis | 1999-W14 | 2026-W24 | All-case reporting, Confirmed cases | 19,365 | 66,646 |
 | Anthrax | 1999-W14 | 2026-W24 | All-case reporting, Confirmed cases | 0 | 66,646 |
-| Aseptic meningitis | 2012-W38 | 2026-W24 | Sentinel surveillance | 10,944 | 33,678 |
+| Aseptic meningitis | 2012-W38 | 2026-W24 | Sentinel surveillance | 6,876 | 33,678 |
 | Avian influenza (exclud. Avian influenza H5N1) | 2008-W01 | 2023-W52 | Confirmed cases | 0 | 39,198 |
 | Avian influenza (exclud. Avian influenza both H5N1 and H7N9) | 2024-W01 | 2026-W24 | All-case reporting | 0 | 6,016 |
 | Avian influenza H5N1 | 2008-W01 | 2026-W24 | All-case reporting, Confirmed cases | 0 | 45,214 |
 | Avian influenza H7N9 | 2013-W01 | 2026-W24 | All-case reporting, Confirmed cases | 0 | 32,947 |
 | Avian influenza virus infection | 2006-W01 | 2007-W52 | Confirmed cases | 0 | 4,888 |
 | B virus disease | 1999-W14 | 2026-W24 | All-case reporting, Confirmed cases | 2 | 61,758 |
-| Bacterial meningitis | 2012-W38 | 2026-W24 | Sentinel surveillance | 5,617 | 33,678 |
+| Bacterial meningitis | 2012-W38 | 2026-W24 | Sentinel surveillance | 4,285 | 33,678 |
 | Botulism | 2006-W01 | 2026-W24 | All-case reporting, Confirmed cases | 50 | 50,102 |
 | Brucellosis | 1999-W14 | 2026-W24 | All-case reporting, Confirmed cases | 58 | 66,646 |
-| COVID-19 | 2023-W19 | 2026-W24 | Sentinel surveillance | 3,845,415 | 7,614 |
+| COVID-19 | 2023-W19 | 2026-W24 | Sentinel surveillance | 506,213 | 7,614 |
 | Carbapenem-resistant Enterobacterales infection | 2014-W01 | 2026-W24 | All-case reporting, Confirmed cases | 20,753 | 30,503 |
-| Chickenpox | 2012-W38 | 2026-W24 | Sentinel surveillance | 872,275 | 33,490 |
+| Chickenpox | 2012-W38 | 2026-W24 | Sentinel surveillance | 180,189 | 33,490 |
 | Chikungunya fever | 2011-W01 | 2026-W24 | All-case reporting, Confirmed cases | 184 | 37,835 |
-| Chlamydial pneumonia(excluding psittacosis) | 2012-W38 | 2026-W24 | Sentinel surveillance | 2,772 | 33,652 |
+| Chlamydial pneumonia(excluding psittacosis) | 2012-W38 | 2026-W24 | Sentinel surveillance | 1,677 | 33,652 |
 | Cholera | 1999-W14 | 2026-W24 | All-case reporting, Confirmed cases | 561 | 66,646 |
 | Coccidioidomycosis | 1999-W14 | 2026-W24 | All-case reporting, Confirmed cases | 76 | 66,646 |
 | Congenital rubella syndrome | 1999-W14 | 2026-W24 | All-case reporting, Confirmed cases | 70 | 66,646 |
@@ -45,25 +45,25 @@ Coverage summary generated from `data/parquet/unified.parquet` (snapshot: 2026-0
 | Ebola hemorrhagic fever | 1999-W14 | 2026-W24 | All-case reporting, Confirmed cases | 0 | 66,646 |
 | Echinococcosis | 1999-W14 | 2026-W24 | All-case reporting, Confirmed cases | 574 | 66,646 |
 | Enterohemorrhagic Escherichia coli infection | 1999-W14 | 2026-W24 | All-case reporting, Confirmed cases | 102,045 | 66,646 |
-| Epidemic keratoconjunctivitis | 2012-W38 | 2026-W24 | Sentinel surveillance | 274,890 | 33,678 |
+| Epidemic keratoconjunctivitis | 2012-W38 | 2026-W24 | Sentinel surveillance | 61,601 | 33,678 |
 | Epidemic typhus | 1999-W14 | 2026-W24 | All-case reporting, Confirmed cases | 0 | 66,646 |
-| Erythema infection | 2012-W38 | 2026-W24 | Sentinel surveillance | 585,739 | 33,678 |
-| Exanthem subitum | 2012-W38 | 2026-W24 | Sentinel surveillance | 877,120 | 33,678 |
+| Erythema infection | 2012-W38 | 2026-W24 | Sentinel surveillance | 99,721 | 33,678 |
+| Exanthem subitum | 2012-W38 | 2026-W24 | Sentinel surveillance | 123,795 | 33,678 |
 | Giardiasis | 1999-W14 | 2026-W24 | All-case reporting, Confirmed cases | 1,857 | 66,646 |
 | Glanders | 2007-W01 | 2026-W24 | All-case reporting, Confirmed cases | 0 | 47,658 |
-| Group A streptococcal pharyngitis | 2012-W38 | 2026-W24 | Sentinel surveillance | 4,015,179 | 33,678 |
-| Hand, foot and mouth disease | 2012-W38 | 2026-W24 | Sentinel surveillance | 2,821,077 | 33,678 |
+| Group A streptococcal pharyngitis | 2012-W38 | 2026-W24 | Sentinel surveillance | 566,359 | 33,678 |
+| Hand, foot and mouth disease | 2012-W38 | 2026-W24 | Sentinel surveillance | 396,671 | 33,678 |
 | Hantavirus pulmonary syndrome | 1999-W14 | 2026-W24 | All-case reporting, Confirmed cases | 0 | 66,646 |
 | Hemorrhagic fever with renal syndrome | 1999-W14 | 2026-W24 | All-case reporting, Confirmed cases | 0 | 66,646 |
 | Hendra virus infection | 2007-W01 | 2026-W24 | All-case reporting, Confirmed cases | 0 | 47,658 |
 | Hepatitis A | 2006-W01 | 2026-W24 | All-case reporting, Confirmed cases | 4,787 | 50,102 |
 | Hepatitis E | 2006-W01 | 2026-W24 | All-case reporting, Confirmed cases | 5,705 | 50,102 |
-| Herpangina | 2012-W38 | 2026-W24 | Sentinel surveillance | 1,175,268 | 33,678 |
+| Herpangina | 2012-W38 | 2026-W24 | Sentinel surveillance | 193,952 | 33,678 |
 | Herpes B virus infection | 2024-W01 | 2025-W52 | All-case reporting | 0 | 4,888 |
 | Infant botulism | 1999-W14 | 2005-W52 | Confirmed cases | 1 | 16,544 |
-| Infectious gastroenteritis | 2012-W38 | 2026-W24 | Sentinel surveillance | 11,246,335 | 33,678 |
-| Infectious gastroenteritis (only by Rotavirus) | 2013-W42 | 2026-W24 | Sentinel surveillance | 29,696 | 31,020 |
-| Influenza(excld. avian influenza and pandemic influenza) | 2012-W38 | 2026-W24 | Sentinel surveillance | 18,983,165 | 33,678 |
+| Infectious gastroenteritis | 2012-W38 | 2026-W24 | Sentinel surveillance | 1,477,375 | 33,678 |
+| Infectious gastroenteritis (only by Rotavirus) | 2013-W42 | 2026-W24 | Sentinel surveillance | 10,546 | 31,020 |
+| Influenza(excld. avian influenza and pandemic influenza) | 2012-W38 | 2026-W24 | Sentinel surveillance | 4,506,490 | 33,678 |
 | Invasive haemophilus influenzae infection | 2013-W01 | 2026-W24 | All-case reporting, Confirmed cases | 4,700 | 32,947 |
 | Invasive meningococcal infection | 2013-W01 | 2026-W24 | All-case reporting, Confirmed cases | 453 | 32,947 |
 | Invasive streptococcal pneumoniae infection | 2013-W01 | 2026-W24 | All-case reporting, Confirmed cases | 29,991 | 32,947 |
@@ -87,20 +87,20 @@ Coverage summary generated from `data/parquet/unified.parquet` (snapshot: 2026-0
 | Multi-drug-resistant Pseudomonas aeruginosa infection | 2026-W15 | 2026-W24 | All-case reporting | 49 | 470 |
 | Multidrug-resistant Acinetobacter infection | 2014-W01 | 2023-W52 | Confirmed cases | 206 | 24,487 |
 | Multiple drug-resistant Acinetobacter infection | 2024-W01 | 2026-W24 | All-case reporting | 18 | 6,016 |
-| Mumps | 2012-W38 | 2026-W24 | Sentinel surveillance | 501,805 | 33,678 |
-| Mycoplasma pneumonia | 2012-W38 | 2026-W24 | Sentinel surveillance | 125,904 | 33,678 |
+| Mumps | 2012-W38 | 2026-W24 | Sentinel surveillance | 84,585 | 33,678 |
+| Mycoplasma pneumonia | 2012-W38 | 2026-W24 | Sentinel surveillance | 34,424 | 33,678 |
 | Nipah virus infection | 2006-W01 | 2026-W24 | All-case reporting, Confirmed cases | 0 | 50,102 |
 | Omsk hemorrhagic fever | 2007-W01 | 2026-W24 | All-case reporting, Confirmed cases | 0 | 47,658 |
 | Paratyphoid fever | 1999-W14 | 2026-W24 | All-case reporting, Confirmed cases | 651 | 66,646 |
 | Pertussis | 2018-W01 | 2026-W24 | All-case reporting, Confirmed cases | 115,304 | 20,680 |
-| Pharyngoconjunctival fever | 2012-W38 | 2026-W24 | Sentinel surveillance | 983,965 | 33,678 |
+| Pharyngoconjunctival fever | 2012-W38 | 2026-W24 | Sentinel surveillance | 159,200 | 33,678 |
 | Plague | 1999-W14 | 2026-W24 | All-case reporting, Confirmed cases | 0 | 66,646 |
 | Poliomyelitis | 2001-W01 | 2005-W52 | Confirmed cases | 0 | 12,267 |
 | Psittacosis | 1999-W14 | 2026-W24 | All-case reporting, Confirmed cases | 471 | 66,646 |
 | Q fever | 1999-W14 | 2026-W24 | All-case reporting, Confirmed cases | 187 | 66,646 |
 | Rabies | 1999-W14 | 2026-W24 | All-case reporting, Confirmed cases | 3 | 66,646 |
 | Relapsing fever | 1999-W14 | 2026-W24 | All-case reporting, Confirmed cases | 122 | 66,646 |
-| Respiratory syncytial virus infection | 2012-W38 | 2026-W24 | Sentinel surveillance | 1,656,246 | 33,678 |
+| Respiratory syncytial virus infection | 2012-W38 | 2026-W24 | Sentinel surveillance | 256,255 | 33,678 |
 | Rift valley fever | 2007-W01 | 2026-W24 | All-case reporting, Confirmed cases | 0 | 47,658 |
 | Rocky mountain spotted fever | 2007-W01 | 2026-W24 | All-case reporting, Confirmed cases | 0 | 47,658 |
 | Rubella | 2008-W01 | 2026-W24 | All-case reporting, Confirmed cases | 23,736 | 45,214 |
@@ -122,7 +122,7 @@ Coverage summary generated from `data/parquet/unified.parquet` (snapshot: 2026-0
 | Typhoid fever | 1999-W14 | 2026-W24 | All-case reporting, Confirmed cases | 1,239 | 66,646 |
 | Vancomycin-resistant Enterococcus infection | 1999-W14 | 2026-W24 | All-case reporting, Confirmed cases | 2,143 | 66,646 |
 | Vancomycin-resistant S. aureus infection | 2006-W01 | 2026-W24 | All-case reporting, Confirmed cases | 0 | 50,102 |
-| Varicella | 2025-W13 | 2025-W16 | Sentinel surveillance | 2,459 | 188 |
+| Varicella | 2025-W13 | 2025-W16 | Sentinel surveillance | 351 | 188 |
 | Varicella (limited to hospiltalized case) | 2014-W01 | 2026-W24 | All-case reporting, Confirmed cases | 4,530 | 30,503 |
 | Venezuelan equine encephalitis | 2007-W01 | 2026-W24 | All-case reporting, Confirmed cases | 0 | 47,658 |
 | Viral hepatitis(excluding hepatitis A and E) | 2006-W01 | 2026-W24 | All-case reporting, Confirmed cases | 4,900 | 50,102 |
