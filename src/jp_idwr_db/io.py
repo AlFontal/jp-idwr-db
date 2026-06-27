@@ -301,9 +301,7 @@ def _find_confirmed_header_rows(df_raw: pl.DataFrame) -> list[int]:
     header_rows: list[int] = []
     for idx in range(df_raw.height - 1):
         disease_row = [str(value) if value is not None else None for value in df_raw.row(idx)]
-        category_row = [
-            str(value) if value is not None else None for value in df_raw.row(idx + 1)
-        ]
+        category_row = [str(value) if value is not None else None for value in df_raw.row(idx + 1)]
         has_disease = any(_clean_cell_text(value) for value in disease_row[1:])
         if has_disease and _is_confirmed_category_row(category_row):
             header_rows.append(idx)
@@ -323,7 +321,9 @@ def _parse_excel_sheet_blocks(df_raw: pl.DataFrame) -> list[pl.DataFrame]:
         if data_start >= next_header_idx:
             continue
 
-        disease_row = [str(value) if value is not None else None for value in df_raw.row(header_idx)]
+        disease_row = [
+            str(value) if value is not None else None for value in df_raw.row(header_idx)
+        ]
         category_row = [
             str(value) if value is not None else None for value in df_raw.row(header_idx + 1)
         ]
@@ -578,9 +578,7 @@ def _read_confirmed_pl(
         week_offset = 12 if year == 1999 else -1
         for sheet, frame in excel_frames:
             week = sheet + week_offset
-            enhanced = frame.with_columns(
-                [pl.lit(year).alias("year"), pl.lit(week).alias("week")]
-            )
+            enhanced = frame.with_columns([pl.lit(year).alias("year"), pl.lit(week).alias("week")])
             frames.append(_confirmed_wide_to_long(enhanced))
 
     if not frames:
