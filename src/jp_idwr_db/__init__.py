@@ -25,5 +25,5 @@ __all__ = [
     "prefecture_map",
 ]
 
-__version__ = "2026.7.22"
+__version__ = "2026.8.5"
 __data_version__ = __version__
