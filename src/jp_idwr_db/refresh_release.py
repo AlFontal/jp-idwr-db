@@ -31,6 +31,8 @@ CHANGELOG_PATH = Path("CHANGELOG.md")
 PYPROJECT_PATH = Path("pyproject.toml")
 INIT_PATH = Path("src/jp_idwr_db/__init__.py")
 CONFIG_PATH = Path("src/jp_idwr_db/config.py")
+CITATION_PATH = Path("CITATION.cff")
+UV_LOCK_PATH = Path("uv.lock")
 
 
 @dataclass(frozen=True)
@@ -180,6 +182,30 @@ def update_version_files(repo_root: Path, version: str) -> None:
         encoding="utf-8",
     )
 
+    citation_path = repo_root / CITATION_PATH
+    citation_text = citation_path.read_text(encoding="utf-8")
+    citation_path.write_text(
+        _replace_once(
+            r"^version: .+$",
+            f"version: {version}",
+            citation_text,
+            citation_path,
+        ),
+        encoding="utf-8",
+    )
+
+    uv_lock_path = repo_root / UV_LOCK_PATH
+    uv_lock_text = uv_lock_path.read_text(encoding="utf-8")
+    uv_lock_path.write_text(
+        _replace_once(
+            r'(\[\[package\]\]\nname = "jp-idwr-db"\nversion = ")[^"]+("$)',
+            rf"\g<1>{version}\g<2>",
+            uv_lock_text,
+            uv_lock_path,
+        ),
+        encoding="utf-8",
+    )
+
 
 def _latest_year_week(path: Path) -> tuple[int, int]:
     """Read the latest ``(year, week)`` tuple from a parquet dataset."""
@@ -205,6 +231,20 @@ def _validate_release_outputs(repo_root: Path) -> None:
         validation.validate_schema(df)
         validation.validate_no_duplicates(df)
         validation.validate_date_ranges(df)
+        if "date" in df.columns:
+            validation.validate_iso_week_start_dates(df)
+        validation.validate_non_negative_counts(df)
+        allowed_prefecture_counts = (
+            {(2016, 37): 26} if rel_path.name == "sentinel.parquet" else None
+        )
+        validation.validate_prefecture_coverage(df, allowed_counts=allowed_prefecture_counts)
+        if rel_path.name == "sentinel.parquet":
+            validation.validate_max_null_rate(df, "count", max_rate=0.25, group_by=["year"])
+        elif rel_path.name == "unified.parquet":
+            sentinel_df = df.filter(pl.col("source") == "Sentinel surveillance")
+            validation.validate_max_null_rate(
+                sentinel_df, "count", max_rate=0.25, group_by=["year"]
+            )
 
 
 def prepend_changelog_entry(

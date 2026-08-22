@@ -3,7 +3,11 @@
 This document describes the parquet datasets published as GitHub Release assets.
 At runtime they are cached under `~/.cache/jp_idwr_db/data/<version>/` (OS-specific via `platformdirs`).
 
-All figures below reflect the repository snapshot on **2026-03-26**.
+All figures below reflect the repository snapshot on **2026-08-21**.
+
+The `date` column is the Monday at the start of the ISO surveillance week in
+every published dataset. Use `year` and `week` as the canonical surveillance
+period identifiers.
 
 ## Overview
 
@@ -84,7 +88,7 @@ Load with:
 
 ### `place_prefecture.parquet`
 
-- Rows: `22,061,988`
+- Rows: `16,482,336`
 - Columns: `prefecture, year, week, date, count, category, disease, source`
 - Years: `2001-2023`
 - Prefectures: `47`
@@ -92,29 +96,36 @@ Load with:
 
 ### `bullet.parquet`
 
-- Rows: `470,235`
+- Rows: `556,950`
 - Columns: `prefecture, disease, count, year, week, date, source`
 - Years: `2024-2026`
 - Prefectures: `47`
-- Diseases: `87`
+- Diseases: `88`
 
 ### `sentinel.parquet`
 
-- Rows: `612,476`
+- Rows: `631,229`
 - Columns: `prefecture, disease, year, week, date, count, per_sentinel, source`
 - Years: `2012-2026`
 - Prefectures: `47`
-- Diseases: `21`
+- Diseases: `20`
+- Null `count` rows: `65,819` (`10.43%`), primarily missing baselines and source corrections
 
 ### `unified.parquet`
 
-- Rows: `5,387,603`
+- Rows: `5,493,071`
 - Columns: `prefecture, year, week, date, count, category, disease, source, per_sentinel`
 - Years: `1999-2026`
 - Prefectures: `47`
-- Diseases: `122`
+- Diseases: `115`
 - Categories: `total` only
 - Sources: `Confirmed cases`, `All-case reporting`, `Sentinel surveillance`
+
+## Known Source Anomalies
+
+- Sentinel `2016-W37` contains 26 of 47 prefectures because the upstream CSV is
+  truncated after Kyoto. Consumers aggregating that period should treat it as
+  incomplete.
 
 ### `prefecture_en.parquet`
 

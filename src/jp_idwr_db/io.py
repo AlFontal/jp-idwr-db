@@ -45,6 +45,10 @@ _DISEASE_NAME_MAPPINGS = {
     "Epidemic louse-borne typhus": "Epidemic typhus",
     # B virus
     "Herpes B virus infection": "B virus disease",
+    # MERS
+    "Middle East Respiratory Syndrome Coronavirus": "Middle East Respiratory Syndrome (MERS)",
+    # Drug-resistant Acinetobacter
+    "Multiple drug-resistant Acinetobacter infection": "Multidrug-resistant Acinetobacter infection",
     # Scrub typhus / Tsutsugamushi
     "Scrub typhus (Tsutsugamushi disease)": "Scrub typhus",
     "Scrub typhus(Tsutsugamushi disease)": "Scrub typhus",
@@ -54,6 +58,10 @@ _DISEASE_NAME_MAPPINGS = {
     "Severe invasive streptococcal infections (TSLS)": "Severe invasive streptococcal infections",
     "Severe invasive streptococcal infections(TSLS)": "Severe invasive streptococcal infections",
     "Severe invasive streptococcal infections(TSLS": "Severe invasive streptococcal infections",
+    # SFTS
+    "Severe Fever with Thrombocytopenia Syndrome(SFTS)": "Severe Fever with Thrombocytopenia Syndrome",
+    # Varicella / chickenpox sentinel label
+    "Varicella": "Chickenpox",
     # VRE
     "VRE infection": "Vancomycin-resistant Enterococcus infection",
     # West Nile fever
@@ -492,12 +500,12 @@ def _confirmed_wide_to_long(df: pl.DataFrame) -> pl.DataFrame:
     if df.is_empty():
         return df
 
-    # Calculate date column from year and week
+    # Calculate a consistent ISO week-start date (Monday).
     if "date" not in df.columns and "year" in df.columns and "week" in df.columns:
         df = df.with_columns(
             pl.struct(["year", "week"])
             .map_elements(
-                lambda x: _iso_week_date(x["year"], x["week"]),
+                lambda x: _iso_week_start_date(x["year"], x["week"]),
                 return_dtype=pl.Date,
             )
             .alias("date")

@@ -37,24 +37,24 @@ print(df)
 ```
 
 ```text
-shape: (5_370_477, 6)
+shape: (5_493_071, 6)
 ┌────────────┬────────────┬──────────┬─────────────────────────────┬───────┬────────────────────┐
 │ date       ┆ prefecture ┆ category ┆ disease                     ┆ count ┆ source             │
 │ ---        ┆ ---        ┆ ---      ┆ ---                         ┆ ---   ┆ ---                │
 │ date       ┆ str        ┆ str      ┆ str                         ┆ f64   ┆ str                │
 ╞════════════╪════════════╪══════════╪═════════════════════════════╪═══════╪════════════════════╡
-│ 1999-04-11 ┆ Aichi      ┆ total    ┆ AIDS                        ┆ 0.0   ┆ Confirmed cases    │
-│ 1999-04-11 ┆ Aichi      ┆ total    ┆ Acute poliomyelitis         ┆ 0.0   ┆ Confirmed cases    │
-│ 1999-04-11 ┆ Aichi      ┆ total    ┆ Acute viral hepatitis       ┆ 4.0   ┆ Confirmed cases    │
-│ 1999-04-11 ┆ Aichi      ┆ total    ┆ Amebiasis                   ┆ 0.0   ┆ Confirmed cases    │
-│ 1999-04-11 ┆ Aichi      ┆ total    ┆ Anthrax                     ┆ 0.0   ┆ Confirmed cases    │
+│ 1999-04-05 ┆ Aichi      ┆ total    ┆ AIDS                        ┆ 0.0   ┆ Confirmed cases    │
+│ 1999-04-05 ┆ Aichi      ┆ total    ┆ Acute poliomyelitis         ┆ 0.0   ┆ Confirmed cases    │
+│ 1999-04-05 ┆ Aichi      ┆ total    ┆ Acute viral hepatitis       ┆ 4.0   ┆ Confirmed cases    │
+│ 1999-04-05 ┆ Aichi      ┆ total    ┆ Amebiasis                   ┆ 0.0   ┆ Confirmed cases    │
+│ 1999-04-05 ┆ Aichi      ┆ total    ┆ Anthrax                     ┆ 0.0   ┆ Confirmed cases    │
 │ …          ┆ …          ┆ …        ┆ …                           ┆ …     ┆ …                  │
-│ 2026-02-09 ┆ Yamanashi  ┆ total    ┆ Viral hepatitis(excluding   ┆ 0.0   ┆ All-case reporting │
+│ 2026-08-03 ┆ Yamanashi  ┆ total    ┆ Viral hepatitis(excluding   ┆ 0.0   ┆ All-case reporting │
 │            ┆            ┆          ┆ hepa…                       ┆       ┆                    │
-│ 2026-02-09 ┆ Yamanashi  ┆ total    ┆ West Nile fever             ┆ 0.0   ┆ All-case reporting │
-│ 2026-02-09 ┆ Yamanashi  ┆ total    ┆ Western equine encephalitis ┆ 0.0   ┆ All-case reporting │
-│ 2026-02-09 ┆ Yamanashi  ┆ total    ┆ Yellow fever                ┆ 0.0   ┆ All-case reporting │
-│ 2026-02-09 ┆ Yamanashi  ┆ total    ┆ Zika virus infection        ┆ 0.0   ┆ All-case reporting │
+│ 2026-08-03 ┆ Yamanashi  ┆ total    ┆ West Nile fever             ┆ 0.0   ┆ All-case reporting │
+│ 2026-08-03 ┆ Yamanashi  ┆ total    ┆ Western equine encephalitis ┆ 0.0   ┆ All-case reporting │
+│ 2026-08-03 ┆ Yamanashi  ┆ total    ┆ Yellow fever                ┆ 0.0   ┆ All-case reporting │
+│ 2026-08-03 ┆ Yamanashi  ┆ total    ┆ Zika virus infection        ┆ 0.0   ┆ All-case reporting │
 └────────────┴────────────┴──────────┴─────────────────────────────┴───────┴────────────────────┘
 ```
 
@@ -277,6 +277,9 @@ Use `jp.load(...)` with:
 
 Note: teitenrui CSVs report year-to-date cumulative counts. `jp-idwr-db` converts these to
 weekly incidence (`count_t - count_{t-1}` within year/prefecture/disease; first week kept as-is).
+Null weekly values represent missing baselines or source corrections that cannot be safely
+converted into a non-negative weekly incidence. The `date` column is always the Monday at the
+start of the ISO surveillance week.
 
 Detailed schema and coverage are documented in [DATASETS.md](./docs/DATASETS.md).
 
@@ -298,10 +301,17 @@ Disease-by-disease temporal coverage is documented in [DISEASES.md](./docs/DISEA
 
 ## Data Source
 
-NIID/JIHS infectious disease surveillance publications:
+JIHS infectious disease surveillance publications:
 
 - Historical annual archive files (`Syu_01_1`, `Syu_02_1`)
 - Rapid weekly CSV reports (`zensuXX.csv`, `teitenruiXX.csv`)
+
+Source: [Japan Institute for Health Security, IDWR Surveillance Data Tables](https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/)
+(accessed 2026-08-21). See the official [terms of use](https://id-info.jihs.go.jp/en/term_of_use.pdf).
+
+Created by editing JIHS IDWR surveillance data: source files are parsed and normalized,
+and cumulative sentinel counts are converted to weekly incidence. This project is not an
+official JIHS publication.
 
 ## Development
 

@@ -91,8 +91,8 @@ jobs:
           restore-keys: |
             jp-idwr-db-http-${{ runner.os }}-${{ hashFiles('src/jp_idwr_db/http.py', 'src/jp_idwr_db/io.py', 'src/jp_idwr_db/urls.py', 'scripts/build_datasets.py') }}-
             jp-idwr-db-http-${{ runner.os }}-
-      - name: Install runtime dependencies (locked)
-        run: uv sync --frozen
+      - name: Install dependencies (locked)
+        run: uv sync --frozen --all-extras --dev
       - name: Refresh release
         id: refresh
         env:
@@ -107,6 +107,15 @@ jobs:
             args+=(--force-release)
           fi
           uv run --frozen python -m jp_idwr_db.refresh_release "${args[@]}"
+      - name: Validate code and rebuilt release data
+        if: steps.refresh.outputs.changed == 'true'
+        run: |
+          uv lock --check
+          uv run --frozen ruff format --check .
+          uv run --frozen ruff check .
+          uv run --frozen mypy src
+          uv run --frozen pytest -q
+          uv run --with duckdb python -m pytest -q tests/test_duckdb_build.py
       - name: Commit and push refresh release
         if: >
           steps.refresh.outputs.changed == 'true' &&
@@ -116,7 +125,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add CHANGELOG.md docs/DISEASES.md pyproject.toml src/jp_idwr_db/__init__.py src/jp_idwr_db/config.py data/parquet/bullet.parquet data/parquet/sentinel.parquet data/parquet/unified.parquet
+          git add CHANGELOG.md CITATION.cff uv.lock docs/DISEASES.md pyproject.toml src/jp_idwr_db/__init__.py src/jp_idwr_db/config.py data/parquet/bullet.parquet data/parquet/sentinel.parquet data/parquet/unified.parquet
           git commit -m "chore: refresh IDWR data for ${TAG}"
           git tag -a "${TAG}" -m "Release ${TAG}"
           git push origin HEAD:main "${TAG}"

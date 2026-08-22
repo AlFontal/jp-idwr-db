@@ -14,11 +14,13 @@ from typing import Any
 import pyarrow as pa  # type: ignore[import-untyped]
 import pyarrow.parquet as pq  # type: ignore[import-untyped]
 
-SPEC_VERSION = "1.0.0"
+SPEC_VERSION = "1.1.0"
 DATASET_ID = "jp_idwr_db"
 MANIFEST_NAME = "manifest.json"
 DEFAULT_LICENSE = "GPL-3.0-or-later"
 DEFAULT_HOMEPAGE = "https://github.com/AlFontal/jp-idwr-db"
+UPSTREAM_SOURCE_URL = "https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/"
+UPSTREAM_TERMS_URL = "https://id-info.jihs.go.jp/en/term_of_use.pdf"
 
 
 @dataclass(frozen=True)
@@ -287,6 +289,7 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
         "license",
         "homepage",
         "assets_base_url",
+        "sources",
         "tables",
     }
     missing = required - set(manifest)
@@ -295,6 +298,9 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
     tables = manifest["tables"]
     if not isinstance(tables, list) or not tables:
         raise ValueError("Invalid manifest: 'tables' must be a non-empty list")
+    sources = manifest["sources"]
+    if not isinstance(sources, list) or not sources:
+        raise ValueError("Invalid manifest: 'sources' must be a non-empty list")
 
     for table in tables:
         if not isinstance(table, dict):
@@ -331,15 +337,28 @@ def build_manifest(
 
     ordered_tables = [entry.payload for entry in sorted(entries, key=lambda item: item.name)]
     data_version = release_tag[1:] if release_tag.startswith("v") else release_tag
+    published_at = _published_at_utc()
     manifest: dict[str, Any] = {
         "spec_version": SPEC_VERSION,
         "dataset_id": DATASET_ID,
         "data_version": data_version,
         "release_tag": release_tag,
-        "published_at": _published_at_utc(),
+        "published_at": published_at,
         "license": DEFAULT_LICENSE,
         "homepage": DEFAULT_HOMEPAGE,
         "assets_base_url": base_url.rstrip("/"),
+        "sources": [
+            {
+                "name": "Japan Institute for Health Security IDWR surveillance data",
+                "url": UPSTREAM_SOURCE_URL,
+                "terms_url": UPSTREAM_TERMS_URL,
+                "accessed_at": published_at[:10],
+                "transformation_notice": (
+                    "Created by editing JIHS IDWR surveillance data: source files are parsed, "
+                    "normalized, and cumulative sentinel counts are converted to weekly incidence."
+                ),
+            }
+        ],
         "tables": ordered_tables,
     }
     validate_manifest(manifest)
