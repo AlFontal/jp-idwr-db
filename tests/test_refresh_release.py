@@ -9,6 +9,15 @@ import pytest
 from jp_idwr_db import refresh_release
 
 
+@pytest.fixture(autouse=True)
+def _allow_small_synthetic_prefecture_sets(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        refresh_release.validation,
+        "validate_prefecture_coverage",
+        lambda *args, **kwargs: None,
+    )
+
+
 def _write_refresh_repo(repo_root: Path) -> None:
     (repo_root / "data" / "parquet").mkdir(parents=True, exist_ok=True)
     (repo_root / "docs").mkdir(parents=True, exist_ok=True)
@@ -27,6 +36,11 @@ def _write_refresh_repo(repo_root: Path) -> None:
         "# Changelog\n\n## 0.2.5 - 2026-02-07\n\n- Previous release.\n", encoding="utf-8"
     )
     (repo_root / "docs" / "DISEASES.md").write_text("# Disease Coverage\n", encoding="utf-8")
+    (repo_root / "CITATION.cff").write_text("version: 0.2.5\n", encoding="utf-8")
+    (repo_root / "uv.lock").write_text(
+        '[[package]]\nname = "jp-idwr-db"\nversion = "0.2.5"\n',
+        encoding="utf-8",
+    )
 
     base_frame = {
         "prefecture": ["Tokyo"],
@@ -165,6 +179,8 @@ def test_prepare_refresh_release_updates_versions_and_changelog(
     assert "jp_idwr_db/2026.3.26" in (repo_root / "src" / "jp_idwr_db" / "config.py").read_text(
         encoding="utf-8"
     )
+    assert "version: 2026.3.26" in (repo_root / "CITATION.cff").read_text(encoding="utf-8")
+    assert 'version = "2026.3.26"' in (repo_root / "uv.lock").read_text(encoding="utf-8")
     changelog = (repo_root / "CHANGELOG.md").read_text(encoding="utf-8")
     assert changelog.startswith("# Changelog\n\n## 2026.3.26 - 2026-03-26\n")
     assert "2026-W11" in changelog
@@ -199,6 +215,25 @@ def test_validate_release_outputs_rejects_invalid_week(tmp_path: Path) -> None:
     ).write_parquet(repo_root / "data/parquet/bullet.parquet")
 
     with pytest.raises(ValueError, match="Week values out of valid range"):
+        refresh_release._validate_release_outputs(repo_root)
+
+
+def test_validate_release_outputs_rejects_sentinel_null_rate_spike(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    _write_refresh_repo(repo_root)
+    pl.DataFrame(
+        {
+            "prefecture": ["Tokyo", "Osaka"],
+            "year": [2026, 2026],
+            "week": [4, 4],
+            "disease": ["RSV", "RSV"],
+            "count": [None, None],
+            "per_sentinel": [None, None],
+        },
+        schema_overrides={"count": pl.Float64, "per_sentinel": pl.Float64},
+    ).write_parquet(repo_root / "data/parquet/sentinel.parquet")
+
+    with pytest.raises(ValueError, match=r"Null rate for count exceeds 25\.0%"):
         refresh_release._validate_release_outputs(repo_root)
 
 

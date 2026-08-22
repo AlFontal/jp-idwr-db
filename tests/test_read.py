@@ -7,9 +7,29 @@ from typing import Any
 import polars as pl
 import pytest
 
-from jp_idwr_db.io import _parse_excel_sheet_blocks, read
+from jp_idwr_db.io import (
+    _confirmed_wide_to_long,
+    _normalize_disease_name,
+    _parse_excel_sheet_blocks,
+    read,
+)
 
 FIXTURES = Path(__file__).parent / "fixtures"
+
+
+def test_confirmed_dates_use_iso_week_start() -> None:
+    wide = pl.DataFrame(
+        {
+            "prefecture": ["Tokyo"],
+            "year": [2024],
+            "week": [1],
+            "Tuberculosis||total": [3],
+        }
+    )
+
+    result = _confirmed_wide_to_long(wide)
+
+    assert result["date"].to_list() == [date(2024, 1, 1)]
 
 
 @pytest.mark.skip(reason="Fixture Syu_01_1_2024.xlsx is incomplete/invalid for full logic test")
@@ -156,3 +176,22 @@ Tokyo,6,60,1,8
     assert "AIDS" in diseases
     assert "B virus disease" in diseases
     assert "Acquired immunodeficiency syndrome (AIDS)" not in diseases
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("Middle East Respiratory Syndrome Coronavirus", "Middle East Respiratory Syndrome (MERS)"),
+        (
+            "Multiple drug-resistant Acinetobacter infection",
+            "Multidrug-resistant Acinetobacter infection",
+        ),
+        (
+            "Severe Fever with Thrombocytopenia Syndrome(SFTS)",
+            "Severe Fever with Thrombocytopenia Syndrome",
+        ),
+        ("Varicella", "Chickenpox"),
+    ],
+)
+def test_normalize_disease_name_cross_year_variants(raw: str, expected: str) -> None:
+    assert _normalize_disease_name(raw) == expected

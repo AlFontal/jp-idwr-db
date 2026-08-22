@@ -6,6 +6,7 @@ and ensuring data quality across different surveillance data sources.
 
 from __future__ import annotations
 
+from datetime import date
 from typing import cast
 
 import polars as pl
@@ -96,6 +97,28 @@ def validate_date_ranges(df: pl.DataFrame) -> None:
             raise ValueError(f"Week values out of valid range: {min_week}-{max_week}")
 
 
+def validate_iso_week_start_dates(df: pl.DataFrame) -> None:
+    """Require ``date`` to equal the Monday of its ISO year/week."""
+    required = {"year", "week", "date"}
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(f"Missing ISO date columns: {sorted(missing)}")
+
+    periods = df.select(["year", "week", "date"]).unique()
+    mismatches = periods.filter(
+        pl.col("date")
+        != pl.struct(["year", "week"]).map_elements(
+            lambda value: date.fromisocalendar(int(value["year"]), int(value["week"]), 1),
+            return_dtype=pl.Date,
+        )
+    )
+    if mismatches.height > 0:
+        raise ValueError(
+            "Date must be the Monday at the start of its ISO year/week. "
+            f"First mismatches:\n{mismatches.head(10)}"
+        )
+
+
 def validate_non_negative_counts(df: pl.DataFrame) -> None:
     """Validate that case-count metrics do not contain negative values.
 
@@ -113,6 +136,84 @@ def validate_non_negative_counts(df: pl.DataFrame) -> None:
                 f"Found {negative_rows.height} rows with negative {column}. "
                 f"First few rows:\n{negative_rows.head(5)}"
             )
+
+
+def validate_max_null_rate(
+    df: pl.DataFrame,
+    column: str,
+    *,
+    max_rate: float,
+    group_by: list[str] | None = None,
+) -> None:
+    """Reject datasets whose null rate exceeds a stable quality threshold.
+
+    Args:
+        df: DataFrame to validate.
+        column: Column whose null rate is checked.
+        max_rate: Maximum allowed null share in the inclusive range 0-1.
+        group_by: Optional columns used to apply the threshold per group.
+
+    Raises:
+        ValueError: If the column is missing, the threshold is invalid, or any
+            checked group exceeds the threshold.
+    """
+    if column not in df.columns:
+        raise ValueError(f"Missing null-rate column: {column}")
+    if not 0 <= max_rate <= 1:
+        raise ValueError("max_rate must be between 0 and 1")
+
+    grouping = group_by or []
+    if grouping:
+        missing_groups = [name for name in grouping if name not in df.columns]
+        if missing_groups:
+            raise ValueError(f"Missing null-rate grouping columns: {missing_groups}")
+        rates = df.group_by(grouping).agg(
+            (pl.col(column).null_count() / pl.len()).alias("null_rate")
+        )
+    else:
+        rates = df.select((pl.col(column).null_count() / pl.len()).alias("null_rate"))
+
+    failures = rates.filter(pl.col("null_rate") > max_rate)
+    if failures.height > 0:
+        raise ValueError(
+            f"Null rate for {column} exceeds {max_rate:.1%}. "
+            f"Failing groups:\n{failures.sort(grouping).head(10) if grouping else failures}"
+        )
+
+
+def validate_prefecture_coverage(
+    df: pl.DataFrame,
+    *,
+    expected: int = 47,
+    allowed_counts: dict[tuple[int, int], int] | None = None,
+) -> None:
+    """Require the expected prefecture count for every observed year/week.
+
+    Args:
+        df: Dataset with ``year``, ``week``, and ``prefecture`` columns.
+        expected: Normal number of prefectures per period.
+        allowed_counts: Explicit source anomalies keyed by ``(year, week)``.
+
+    Raises:
+        ValueError: If a period has an unexpected prefecture count.
+    """
+    required = {"year", "week", "prefecture"}
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(f"Missing prefecture-coverage columns: {sorted(missing)}")
+
+    exceptions = allowed_counts or {}
+    coverage = df.group_by(["year", "week"]).agg(
+        pl.col("prefecture").n_unique().alias("prefecture_count")
+    )
+    failures = [
+        row
+        for row in coverage.iter_rows(named=True)
+        if int(row["prefecture_count"])
+        != exceptions.get((int(row["year"]), int(row["week"])), expected)
+    ]
+    if failures:
+        raise ValueError(f"Unexpected prefecture coverage. First failures: {failures[:10]}")
 
 
 def smart_merge(

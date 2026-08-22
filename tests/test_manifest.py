@@ -37,6 +37,9 @@ def test_build_manifest_includes_file_size_and_sha256(
     assert manifest_path.exists()
     assert manifest["release_tag"] == "v1.2.3"
     assert manifest["published_at"] == "2025-01-01T00:00:00Z"
+    assert manifest["spec_version"] == "1.1.0"
+    assert manifest["sources"][0]["accessed_at"] == "2025-01-01"
+    assert "Created by editing" in manifest["sources"][0]["transformation_notice"]
     table = manifest["tables"][0]
     assert table["file"] == "unified.parquet"
     assert table["size_bytes"] == parquet_path.stat().st_size

@@ -72,7 +72,15 @@ def _validate_dataset_output(name: str, df: pl.DataFrame) -> None:
     validation.validate_schema(df)
     validation.validate_no_duplicates(df)
     validation.validate_date_ranges(df)
+    validation.validate_iso_week_start_dates(df)
     validation.validate_non_negative_counts(df)
+    allowed_prefecture_counts = {(2016, 37): 26} if name == "sentinel" else None
+    validation.validate_prefecture_coverage(df, allowed_counts=allowed_prefecture_counts)
+    if name == "sentinel":
+        validation.validate_max_null_rate(df, "count", max_rate=0.25, group_by=["year"])
+    elif name == "unified":
+        sentinel_df = df.filter(pl.col("source") == "Sentinel surveillance")
+        validation.validate_max_null_rate(sentinel_df, "count", max_rate=0.25, group_by=["year"])
     logger.info(f"  ✓ {name} validation passed")
 
 
@@ -281,6 +289,7 @@ def build_bullet():
 
     if dfs:
         full_df = pl.concat(dfs, how="diagonal_relaxed")
+        full_df = io._normalize_disease_column(full_df, "disease")
         full_df = _sort_for_output(full_df)
         _validate_dataset_output("bullet", full_df)
         full_df.write_parquet(out_path)
@@ -290,7 +299,7 @@ def build_bullet():
         logger.warning("No bullet data was loaded")
 
 
-def build_sentinel():
+def build_sentinel(*, full_rebuild: bool = False, source_dir: Path | None = None) -> None:
     logger.info(f"\nBuilding sentinel dataset (2012-{CURRENT_YEAR})...")
     # Release assets currently cover sentinel data from the English teitenrui archive
     # starting in 2012. Earlier years are not part of the published dataset.
@@ -300,7 +309,7 @@ def build_sentinel():
     dfs: list[pl.DataFrame] = []
     existing_years: set[int] = set()
 
-    if out_path.exists():
+    if out_path.exists() and not full_rebuild:
         existing_df = pl.read_parquet(out_path)
         existing_years = {int(year) for year in existing_df["year"].unique().to_list()}
         preserved_years = sorted(year for year in existing_years if year < CURRENT_YEAR)
@@ -317,7 +326,16 @@ def build_sentinel():
         final_week = _year_week_upper_bound(year)
         try:
             logger.info(f"  Processing year {year}...")
-            paths = download.download("sentinel", year, week=range(1, final_week + 1))
+            if source_dir is None:
+                paths = download.download("sentinel", year, week=range(1, final_week + 1))
+            else:
+                year_dir = source_dir / str(year)
+                paths = [
+                    path
+                    for path in sorted(year_dir.glob("teitenrui*.csv"))
+                    if (year_week := io._extract_year_week(path))[1] is not None
+                    and int(year_week[1]) <= final_week
+                ]
             if not paths:
                 logger.warning(f"    No data found for year {year}")
                 continue
@@ -358,7 +376,9 @@ def build_sentinel():
                     if i == len(paths):
                         logger.info(f"    Loaded weeks 1-{i} for {year}")
 
-                dfs.extend(year_dfs)
+                year_df = pl.concat(year_dfs, how="diagonal_relaxed")
+                year_df = io._sentinel_cumulative_to_weekly(year_df)
+                dfs.append(year_df)
                 total_weeks += len(paths)
                 logger.info(f"  ✓ Completed year {year}: {len(paths)} weeks loaded")
         except Exception as e:
@@ -366,7 +386,7 @@ def build_sentinel():
 
     if dfs:
         full_df = pl.concat(dfs, how="diagonal_relaxed")
-        full_df = io._sentinel_cumulative_to_weekly(full_df)
+        full_df = io._normalize_disease_column(full_df, "disease")
         full_df = _sort_for_output(full_df)
         _validate_dataset_output("sentinel", full_df)
         full_df.write_parquet(out_path)
@@ -521,12 +541,25 @@ def main():
         "--sentinel-only", action="store_true", help="Build only the sentinel dataset"
     )
     parser.add_argument(
+        "--sentinel-full-rebuild",
+        action="store_true",
+        help="Rebuild sentinel history from raw cumulative source files",
+    )
+    parser.add_argument(
+        "--sentinel-source-dir",
+        type=Path,
+        help="Use an existing raw sentinel directory organized by year",
+    )
+    parser.add_argument(
         "--unified-only",
         action="store_true",
         help="Build only the unified dataset (from existing files)",
     )
 
     args = parser.parse_args()
+
+    if args.sentinel_source_dir is not None and not args.sentinel_full_rebuild:
+        parser.error("--sentinel-source-dir requires --sentinel-full-rebuild")
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -536,6 +569,7 @@ def main():
         or args.place_only
         or args.bullet_only
         or args.sentinel_only
+        or args.sentinel_full_rebuild
         or args.unified_only
     )
 
@@ -548,8 +582,11 @@ def main():
     if build_all or args.bullet_only:
         build_bullet()
 
-    if build_all or args.sentinel_only:
-        build_sentinel()
+    if build_all or args.sentinel_only or args.sentinel_full_rebuild:
+        build_sentinel(
+            full_rebuild=args.sentinel_full_rebuild,
+            source_dir=args.sentinel_source_dir,
+        )
 
     if build_all or args.unified_only:
         build_unified()
