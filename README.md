@@ -1,38 +1,38 @@
 # jp-idwr-db
+
 [![PyPI version](https://img.shields.io/pypi/v/jp-idwr-db)](https://pypi.org/project/jp-idwr-db/)
 [![Python versions](https://img.shields.io/pypi/pyversions/jp-idwr-db)](https://pypi.org/project/jp-idwr-db/)
-[![CI](https://img.shields.io/github/actions/workflow/status/AlFontal/jp-idwr-db/ci.yml?branch=main&label=CI)](https://github.com/AlFontal/jp-idwr-db/actions/workflows/ci.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/AlFontal/jp-idwr-db/ci.yml?branch=main\&label=CI)](https://github.com/AlFontal/jp-idwr-db/actions/workflows/ci.yml)
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/License-GPL--3.0--or--later-blue.svg)](https://github.com/AlFontal/jp-idwr-db/blob/main/LICENSE)
 
-`jp-idwr-db` publishes Japan’s infectious disease surveillance data (NIID/JIHS IDWR) as a
-versioned, language-agnostic data product: Parquet tables plus a machine-readable
-`manifest.json` (and an optional DuckDB file with views).
+`jp-idwr-db` makes Japan's IDWR infectious disease surveillance data easier to use.
 
-The Python package adds a convenient API and local caching on top of those release assets.
-Internally, data wrangling is Polars-first for speed and consistent transforms.
+It collects the official NIID/JIHS files, cleans and combines data published across different formats and archives, and releases analysis-ready weekly data as Parquet. You can use it through the Python package or read the release files directly with DuckDB, R, Arrow, Spark, or any other tool that supports Parquet.
 
-The goal is to skip the usual work of chasing week-by-week files across changing archives and formats, so you can get straight to building time series and doing epidemiology instead of spending hours on data munging.
+<p align="center">
+  <img src="docs/assets/jp-idwr-db-overview.png" alt="jp-idwr-db data pipeline" width="100%">
+</p>
 
-The package provides an easier interface to the data, but you can also query the Parquet files directly with any tool that supports them (DuckDB, Arrow, Spark, etc.) using the `manifest.json` for file locations and schema. Direct-access examples are included below.
+IDWR reports are published weekly. `jp-idwr-db` checks for new data and publishes an updated, versioned snapshot every two weeks via GitHub Actions and releases.
 
-## Python Install
+## Install
 
 ```bash
 pip install jp-idwr-db
 ```
 
-## Quick Start
+## Quick start
 
-To fetch the full unified dataset with a single call:
+Load the combined dataset:
 
 ```python
 import jp_idwr_db as jp
-import polars as pl
 
 df = (
     jp.load("unified", version="latest")
     .select(["date", "prefecture", "category", "disease", "count", "source"])
 )
+
 print(df)
 ```
 
@@ -49,8 +49,6 @@ shape: (5_493_071, 6)
 │ 1999-04-05 ┆ Aichi      ┆ total    ┆ Amebiasis                   ┆ 0.0   ┆ Confirmed cases    │
 │ 1999-04-05 ┆ Aichi      ┆ total    ┆ Anthrax                     ┆ 0.0   ┆ Confirmed cases    │
 │ …          ┆ …          ┆ …        ┆ …                           ┆ …     ┆ …                  │
-│ 2026-08-03 ┆ Yamanashi  ┆ total    ┆ Viral hepatitis(excluding   ┆ 0.0   ┆ All-case reporting │
-│            ┆            ┆          ┆ hepa…                       ┆       ┆                    │
 │ 2026-08-03 ┆ Yamanashi  ┆ total    ┆ West Nile fever             ┆ 0.0   ┆ All-case reporting │
 │ 2026-08-03 ┆ Yamanashi  ┆ total    ┆ Western equine encephalitis ┆ 0.0   ┆ All-case reporting │
 │ 2026-08-03 ┆ Yamanashi  ┆ total    ┆ Yellow fever                ┆ 0.0   ┆ All-case reporting │
@@ -58,19 +56,21 @@ shape: (5_493_071, 6)
 └────────────┴────────────┴──────────┴─────────────────────────────┴───────┴────────────────────┘
 ```
 
-You can also filter at the source with `jp.get_data(...)`:
+For most analyses, `unified` is the dataset you want.
+
+You can also filter while loading:
 
 ```python
-
-# Fetch only tuberculosis data for 2024 in Tokyo, Osaka, and Hokkaido
 tb = (
     jp.get_data(
         disease="Tuberculosis",
         year=2024,
         prefecture=["Tokyo", "Osaka", "Hokkaido"],
-        version="latest")
+        version="latest",
+    )
     .select(["date", "prefecture", "disease", "count", "source"])
 )
+
 print(tb)
 ```
 
@@ -79,7 +79,7 @@ shape: (156, 5)
 ┌────────────┬────────────┬──────────────┬───────┬────────────────────┐
 │ date       ┆ prefecture ┆ disease      ┆ count ┆ source             │
 │ ---        ┆ ---        ┆ ---          ┆ ---   ┆ ---                │
-│ date       ┆ str        ┆ str          ┆ f64   ┆ str                │
+│ date       ┆ str        ┆ str          ┆ str   ┆ f64                │
 ╞════════════╪════════════╪══════════════╪═══════╪════════════════════╡
 │ 2024-01-01 ┆ Hokkaido   ┆ Tuberculosis ┆ 2.0   ┆ All-case reporting │
 │ 2024-01-01 ┆ Osaka      ┆ Tuberculosis ┆ 3.0   ┆ All-case reporting │
@@ -87,253 +87,94 @@ shape: (156, 5)
 │ 2024-01-08 ┆ Hokkaido   ┆ Tuberculosis ┆ 4.0   ┆ All-case reporting │
 │ 2024-01-08 ┆ Osaka      ┆ Tuberculosis ┆ 17.0  ┆ All-case reporting │
 │ …          ┆ …          ┆ …            ┆ …     ┆ …                  │
-│ 2024-12-16 ┆ Osaka      ┆ Tuberculosis ┆ 17.0  ┆ All-case reporting │
-│ 2024-12-16 ┆ Tokyo      ┆ Tuberculosis ┆ 41.0  ┆ All-case reporting │
 │ 2024-12-23 ┆ Hokkaido   ┆ Tuberculosis ┆ 5.0   ┆ All-case reporting │
 │ 2024-12-23 ┆ Osaka      ┆ Tuberculosis ┆ 16.0  ┆ All-case reporting │
 │ 2024-12-23 ┆ Tokyo      ┆ Tuberculosis ┆ 53.0  ┆ All-case reporting │
 └────────────┴────────────┴──────────────┴───────┴────────────────────┘
 ```
 
-```python
-
-# Sentinel-only diseases from recent years in Tokyo prefecture
-sentinel_df = (
-    jp.get_data(
-        source="sentinel",
-        prefecture="Tokyo",
-        year=(2024, 2026),
-        version="latest")
-    .select(["date", "prefecture", "disease", "count", "per_sentinel"])
-)
-print(sentinel_df)
-```
-
-```text
-shape: (2_052, 5)
-┌────────────┬────────────┬─────────────────────────────────┬─────────┬──────────────┐
-│ date       ┆ prefecture ┆ disease                         ┆ count   ┆ per_sentinel │
-│ ---        ┆ ---        ┆ ---                             ┆ ---     ┆ ---          │
-│ date       ┆ str        ┆ str                             ┆ f64     ┆ f64          │
-╞════════════╪════════════╪═════════════════════════════════╪═════════╪══════════════╡
-│ 2024-01-07 ┆ Tokyo      ┆ Acute hemorrhagic conjunctivit… ┆ null    ┆ null         │
-│ 2024-01-07 ┆ Tokyo      ┆ Aseptic meningitis              ┆ null    ┆ null         │
-│ 2024-01-07 ┆ Tokyo      ┆ Bacterial meningitis            ┆ null    ┆ null         │
-│ 2024-01-07 ┆ Tokyo      ┆ COVID-19                        ┆ 1365.0  ┆ 3.38         │
-│ 2024-01-07 ┆ Tokyo      ┆ Chickenpox                      ┆ 31.0    ┆ 0.12         │
-│ …          ┆ …          ┆ …                               ┆ …       ┆ …            │
-│ 2026-01-25 ┆ Tokyo      ┆ Influenza(excld. avian influen… ┆ 13082.0 ┆ 34.07        │
-│ 2026-01-25 ┆ Tokyo      ┆ Mumps                           ┆ 30.0    ┆ 0.12         │
-│ 2026-01-25 ┆ Tokyo      ┆ Mycoplasma pneumonia            ┆ 32.0    ┆ 1.28         │
-│ 2026-01-25 ┆ Tokyo      ┆ Pharyngoconjunctival fever      ┆ 115.0   ┆ 0.47         │
-│ 2026-01-25 ┆ Tokyo      ┆ Respiratory syncytial virus in… ┆ 242.0   ┆ 1.0          │
-└────────────┴────────────┴─────────────────────────────────┴─────────┴──────────────┘
-```
-
-<details>
-<summary><strong>Data Download Model</strong></summary>
-
-- Package wheels do not ship the large parquet tables.
-- On first call to `jp.load(..., version="latest")` (or `jp.get_data(..., version="latest")`), the package downloads parquet assets listed in the latest published release `manifest.json`.
-- By default, the package uses the packaged data version that matches the installed wheel. Use `version="latest"` when you want the freshest published snapshot.
-- Cache path defaults to:
-  - macOS: `~/Library/Caches/jp_idwr_db/data/<version>/`
-  - Linux: `~/.cache/jp_idwr_db/data/<version>/`
-  - Windows: `%LOCALAPPDATA%\\jp_idwr_db\\Cache\\data\\<version>\\`
-
-Prefetch explicitly:
-
-```bash
-python -m jp_idwr_db data download
-python -m jp_idwr_db data download --version latest --force
-```
-
-Environment overrides:
-
-- `JPINFECT_DATA_VERSION`: choose a specific release tag or `latest` (example: `latest`)
-- `JPINFECT_DATA_BASE_URL`: override asset host base URL
-- `JPINFECT_CACHE_DIR`: override local cache root
-</details>
-
-## Language-independent data access
-
-Release data assets are published as:
-
-- `manifest.json`
-- one or more `.parquet` tables (including `unified.parquet`)
-- optional `jp_idwr_db.duckdb` (views over the parquet files)
-
-Manifest schema reference: [`docs/manifest.schema.json`](./docs/manifest.schema.json).
-
-Fetch the manifest:
-
-```bash
-curl -L "https://github.com/AlFontal/jp-idwr-db/releases/latest/download/manifest.json"
-```
-
-Query with DuckDB CLI (when `jp_idwr_db.duckdb` and parquet files are in the same directory):
-
-```bash
-duckdb jp_idwr_db.duckdb -c "SELECT year, week, COUNT(*) AS rows FROM unified GROUP BY 1,2 ORDER BY 1 DESC, 2 DESC LIMIT 5;"
-```
-
-### Download assets for any language
-
-```bash
-BASE="https://github.com/AlFontal/jp-idwr-db/releases/latest/download"
-
-mkdir -p jp-idwr-assets
-cd jp-idwr-assets
-curl -L -O "${BASE}/manifest.json"
-curl -L -O "${BASE}/unified.parquet"
-curl -L -O "${BASE}/jp_idwr_db.duckdb"
-```
-
-### R example (DuckDB, local)
-
-This example opens the local `jp_idwr_db.duckdb` artifact (downloaded with the parquet files)
-and queries the `unified` view. Run it from the directory where `jp_idwr_db.duckdb`
-and the parquet files are located:
-
-```r
-con <- DBI::dbConnect(duckdb::duckdb(), "jp_idwr_db.duckdb", read_only = TRUE)
-
-tb <- DBI::dbGetQuery(
-  con,
-  "SELECT date, prefecture, disease, count, source
-   FROM unified
-   WHERE year = 2024 AND disease = 'Tuberculosis'
-   ORDER BY date, prefecture
-   LIMIT 20"
-)
-
-print(tb)
-DBI::dbDisconnect(con, shutdown = TRUE)
-```
-
-```text
-        date prefecture      disease count             source
-1 2024-01-01      Aichi Tuberculosis     5 All-case reporting
-2 2024-01-01      Akita Tuberculosis     1 All-case reporting
-3 2024-01-01     Aomori Tuberculosis     0 All-case reporting
-4 2024-01-01      Chiba Tuberculosis     7 All-case reporting
-5 2024-01-01      Ehime Tuberculosis     1 All-case reporting
-6 2024-01-01      Fukui Tuberculosis     1 All-case reporting
-...
-```
-
-### R example (Arrow, remote)
-
-You can also query the parquet files directly from the GitHub Release URL without downloading first:
-
-```r
-library(magrittr)
-
-url <- "https://github.com/AlFontal/jp-idwr-db/releases/latest/download/unified.parquet"
-
-tb <- arrow::read_parquet(url) %>%
-  dplyr::filter(year == 2024, disease == "Tuberculosis") %>%
-  dplyr::select(date, prefecture, disease, count, source) %>%
-  dplyr::arrange(date, prefecture)
-
-print(as.data.frame(tb))
-```
-
-```text
-        date prefecture      disease count             source
-1 2024-01-01      Aichi Tuberculosis     5 All-case reporting
-2 2024-01-01      Akita Tuberculosis     1 All-case reporting
-3 2024-01-01     Aomori Tuberculosis     0 All-case reporting
-4 2024-01-01      Chiba Tuberculosis     7 All-case reporting
-5 2024-01-01      Ehime Tuberculosis     1 All-case reporting
-6 2024-01-01      Fukui Tuberculosis     1 All-case reporting
-...
-```
-
-## Main API
-
-Top-level API exported by `jp_idwr_db`:
-
-- `load(name)`
-- `get_data(...)`
-- `list_diseases(source="all")`
-- `list_prefectures()`
-- `get_latest_week()`
-- `prefecture_map()`
-- `attach_prefecture_id(df, prefecture_col="prefecture", id_col="prefecture_id")`
-- `merge(...)`, `pivot(...)`
-- `configure(...)`, `get_config()`
-
+Release data are downloaded on first use and cached locally. Use `version="latest"` when you want the newest published snapshot.
 
 ## Datasets
 
-Use `jp.load(...)` with:
+| Dataset    | Contents                                                                        |
+| ---------- | ------------------------------------------------------------------------------- |
+| `unified`  | Combined, deduplicated weekly surveillance data. Recommended for most analyses. |
+| `bullet`   | Modern weekly all-case reporting (`zensu`)                                      |
+| `sentinel` | Modern weekly sentinel surveillance (`teitenrui`)                               |
+| `sex`      | Historical sex-disaggregated surveillance                                       |
+| `place`    | Historical place-category surveillance                                          |
 
-- `"sex"`: historical sex-disaggregated surveillance
-- `"place"`: historical place-category surveillance
-- `"bullet"`: modern all-case weekly reports (rapid zensu)
-- `"sentinel"`: sentinel reports (teitenrui; 2012+ in release data assets)
-- `"unified"`: deduplicated combined dataset (sex-total + modern bullet/sentinel, recommended)
+The unified dataset combines historical confirmed-case data with modern all-case and sentinel reporting while avoiding overlapping records.
 
-Note: teitenrui CSVs report year-to-date cumulative counts. `jp-idwr-db` converts these to
-weekly incidence (`count_t - count_{t-1}` within year/prefecture/disease; first week kept as-is).
-Null weekly values represent missing baselines or source corrections that cannot be safely
-converted into a non-negative weekly incidence. The `date` column is always the Monday at the
-start of the ISO surveillance week.
+One important transformation is applied to the sentinel data: the source `teitenrui` files report year-to-date cumulative counts, so `jp-idwr-db` converts them to weekly incidence within each year, prefecture, and disease.
 
-Detailed schema and coverage are documented in [DATASETS.md](./docs/DATASETS.md).
-
-## Raw Download and Parsing
-
-Raw file workflows are available in `jp_idwr_db.io`:
-
-- `jp_idwr_db.io.download(...)`
-- `jp_idwr_db.io.download_recent(...)`
-- `jp_idwr_db.io.read(...)`
-
-These are useful for refreshing local raw weekly files or debugging parser behavior.
-
-## Data Wrangling Examples
-
-See [EXAMPLES.md](./docs/EXAMPLES.md) for data wrangling recipes (grouping, trends, regional slices, source-aware filtering).
-
-Disease-by-disease temporal coverage is documented in [DISEASES.md](./docs/DISEASES.md).
-
-## Data Source
-
-JIHS infectious disease surveillance publications:
-
-- Historical annual archive files (`Syu_01_1`, `Syu_02_1`)
-- Rapid weekly CSV reports (`zensuXX.csv`, `teitenruiXX.csv`)
-
-Source: [Japan Institute for Health Security, IDWR Surveillance Data Tables](https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/)
-(accessed 2026-08-21). See the official [terms of use](https://id-info.jihs.go.jp/en/term_of_use.pdf).
-
-Created by editing JIHS IDWR surveillance data: source files are parsed and normalized,
-and cumulative sentinel counts are converted to weekly incidence. This project is not an
-official JIHS publication.
-
-## Development
-
-```bash
-uv sync --all-extras --dev
-uv run ruff check .
-uv run mypy src
-uv run pytest
-
-# Build release data assets (manifest + duckdb + parquet metadata)
-  uv run --with duckdb --with jsonschema jp-idwr-db-build-assets \
-  --data-dir data/parquet \
-  --release-tag vYYYY.M.D \
-  --base-url https://github.com/AlFontal/jp-idwr-db/releases/download/vYYYY.M.D \
-  --schema-path docs/manifest.schema.json
+```text
+weekly_count = cumulative_count[t] - cumulative_count[t - 1]
 ```
 
-## Security and Integrity
+The `date` column represents the Monday at the start of the corresponding ISO surveillance week.
 
-- Release assets include a `manifest.json` with SHA256 checksums and file sizes.
-- `ensure_data()` verifies each downloaded parquet checksum and size before marking cache complete.
-- For PyPI publishing, prefer Trusted Publishing (OIDC) over long-lived API tokens.
+See [DATASETS.md](./docs/DATASETS.md) for detailed schema and coverage, and [DISEASES.md](./docs/DISEASES.md) for disease-by-disease temporal coverage.
+
+## Use the data without Python
+
+The data releases are regular Parquet files, so the Python package is optional.
+
+Each GitHub release contains:
+
+* `unified.parquet` and the other dataset tables
+* `manifest.json` with file metadata, schemas, sizes, and checksums
+* an optional `jp_idwr_db.duckdb` database with views over the Parquet files
+
+For example, with DuckDB:
+
+```sql
+SELECT date, prefecture, disease, count
+FROM read_parquet('unified.parquet')
+WHERE disease = 'Tuberculosis'
+  AND year = 2024
+ORDER BY date, prefecture;
+```
+
+Or query the packaged DuckDB database directly:
+
+```bash
+duckdb jp_idwr_db.duckdb
+```
+
+The same Parquet files can be read from R, Arrow, Spark, Polars, pandas, or any other compatible tool.
+
+## Data source and updates
+
+The package builds on official infectious disease surveillance data published by the National Institute of Infectious Diseases (NIID) and the Japan Institute for Health Security (JIHS).
+
+The source archive has changed over time:
+
+* historical annual surveillance tables are published as `.xls` / `.xlsx`
+* modern all-case reports (`zensu`) are published weekly as `.csv`
+* modern sentinel reports (`teitenrui`) are published weekly as `.csv`
+
+Source: [JIHS IDWR Surveillance Data Tables](https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/)
+
+The underlying IDWR surveillance data are weekly. `jp-idwr-db` refreshes its published release approximately every two weeks, incorporating newly available reports into a new versioned snapshot.
+
+Source files are parsed, cleaned, normalized, and combined by this project. Sentinel cumulative counts are converted to weekly incidence as described above.
+
+`jp-idwr-db` is an independent project and is not an official NIID or JIHS publication. 
+
+It is inspired by the R package by Tomonori Hoshi, [`jpinfect`](https://github.com/TomonoriHoshi/jpinfect) and adapted for Python and more generalized usage.
+
+
+See the official [JIHS terms of use](https://id-info.jihs.go.jp/en/term_of_use.pdf).
+
+## More documentation
+
+* [Dataset schemas and coverage](./docs/DATASETS.md)
+* [Disease coverage](./docs/DISEASES.md)
+* [Data wrangling examples](./docs/EXAMPLES.md)
+* [Contributing](./CONTRIBUTING.md)
+* [Changelog](./CHANGELOG.md)
 
 ## License
 
