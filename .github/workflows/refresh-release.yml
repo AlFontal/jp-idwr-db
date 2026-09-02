@@ -107,6 +107,9 @@ jobs:
             args+=(--force-release)
           fi
           uv run --frozen python -m jp_idwr_db.refresh_release "${args[@]}"
+      - name: Refresh generated documentation
+        if: steps.refresh.outputs.changed == 'true'
+        run: uv run --frozen python scripts/update_release_docs.py
       - name: Validate code and rebuilt release data
         if: steps.refresh.outputs.changed == 'true'
         run: |
@@ -125,7 +128,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add CHANGELOG.md CITATION.cff uv.lock docs/DISEASES.md pyproject.toml src/jp_idwr_db/__init__.py src/jp_idwr_db/config.py data/parquet/bullet.parquet data/parquet/sentinel.parquet data/parquet/unified.parquet
+          git add CHANGELOG.md CITATION.cff uv.lock README.md docs/DATASETS.md docs/DISEASES.md pyproject.toml src/jp_idwr_db/__init__.py src/jp_idwr_db/config.py data/parquet/bullet.parquet data/parquet/sentinel.parquet data/parquet/unified.parquet
           git commit -m "chore: refresh IDWR data for ${TAG}"
           git tag -a "${TAG}" -m "Release ${TAG}"
           git push origin HEAD:main "${TAG}"
