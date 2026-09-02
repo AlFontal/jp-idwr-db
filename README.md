@@ -36,25 +36,28 @@ df = (
 print(df)
 ```
 
+<!-- BEGIN GENERATED UNIFIED SNAPSHOT -->
 ```text
-shape: (5_493_071, 6)
-┌────────────┬────────────┬──────────┬─────────────────────────────┬───────┬────────────────────┐
-│ date       ┆ prefecture ┆ category ┆ disease                     ┆ count ┆ source             │
-│ ---        ┆ ---        ┆ ---      ┆ ---                         ┆ ---   ┆ ---                │
-│ date       ┆ str        ┆ str      ┆ str                         ┆ f64   ┆ str                │
-╞════════════╪════════════╪══════════╪═════════════════════════════╪═══════╪════════════════════╡
-│ 1999-04-05 ┆ Aichi      ┆ total    ┆ AIDS                        ┆ 0.0   ┆ Confirmed cases    │
-│ 1999-04-05 ┆ Aichi      ┆ total    ┆ Acute poliomyelitis         ┆ 0.0   ┆ Confirmed cases    │
-│ 1999-04-05 ┆ Aichi      ┆ total    ┆ Acute viral hepatitis       ┆ 4.0   ┆ Confirmed cases    │
-│ 1999-04-05 ┆ Aichi      ┆ total    ┆ Amebiasis                   ┆ 0.0   ┆ Confirmed cases    │
-│ 1999-04-05 ┆ Aichi      ┆ total    ┆ Anthrax                     ┆ 0.0   ┆ Confirmed cases    │
-│ …          ┆ …          ┆ …        ┆ …                           ┆ …     ┆ …                  │
-│ 2026-08-03 ┆ Yamanashi  ┆ total    ┆ West Nile fever             ┆ 0.0   ┆ All-case reporting │
-│ 2026-08-03 ┆ Yamanashi  ┆ total    ┆ Western equine encephalitis ┆ 0.0   ┆ All-case reporting │
-│ 2026-08-03 ┆ Yamanashi  ┆ total    ┆ Yellow fever                ┆ 0.0   ┆ All-case reporting │
-│ 2026-08-03 ┆ Yamanashi  ┆ total    ┆ Zika virus infection        ┆ 0.0   ┆ All-case reporting │
-└────────────┴────────────┴──────────┴─────────────────────────────┴───────┴────────────────────┘
+shape: (5_503_129, 6)
+┌────────────┬────────────┬──────────┬────────────────────────────────┬───────┬────────────────────┐
+│ date       ┆ prefecture ┆ category ┆ disease                        ┆ count ┆ source             │
+│ ---        ┆ ---        ┆ ---      ┆ ---                            ┆ ---   ┆ ---                │
+│ date       ┆ str        ┆ str      ┆ str                            ┆ f64   ┆ str                │
+╞════════════╪════════════╪══════════╪════════════════════════════════╪═══════╪════════════════════╡
+│ 1999-04-05 ┆ Aichi      ┆ total    ┆ AIDS                           ┆ 0.0   ┆ Confirmed cases    │
+│ 1999-04-05 ┆ Aichi      ┆ total    ┆ Acute poliomyelitis            ┆ 0.0   ┆ Confirmed cases    │
+│ 1999-04-05 ┆ Aichi      ┆ total    ┆ Acute viral hepatitis          ┆ 4.0   ┆ Confirmed cases    │
+│ 1999-04-05 ┆ Aichi      ┆ total    ┆ Amebiasis                      ┆ 0.0   ┆ Confirmed cases    │
+│ 1999-04-05 ┆ Aichi      ┆ total    ┆ Anthrax                        ┆ 0.0   ┆ Confirmed cases    │
+│ …          ┆ …          ┆ …        ┆ …                              ┆ …     ┆ …                  │
+│ 2026-08-17 ┆ Yamanashi  ┆ total    ┆ Viral hepatitis(excluding hep… ┆ 0.0   ┆ All-case reporting │
+│ 2026-08-17 ┆ Yamanashi  ┆ total    ┆ West Nile fever                ┆ 0.0   ┆ All-case reporting │
+│ 2026-08-17 ┆ Yamanashi  ┆ total    ┆ Western equine encephalitis    ┆ 0.0   ┆ All-case reporting │
+│ 2026-08-17 ┆ Yamanashi  ┆ total    ┆ Yellow fever                   ┆ 0.0   ┆ All-case reporting │
+│ 2026-08-17 ┆ Yamanashi  ┆ total    ┆ Zika virus infection           ┆ 0.0   ┆ All-case reporting │
+└────────────┴────────────┴──────────┴────────────────────────────────┴───────┴────────────────────┘
 ```
+<!-- END GENERATED UNIFIED SNAPSHOT -->
 
 For most analyses, `unified` is the dataset you want.
 

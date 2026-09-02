@@ -279,7 +279,7 @@ wheels = [
 
 [[package]]
 name = "jp-idwr-db"
-version = "2026.8.19"
+version = "2026.9.2"
 source = { editable = "." }
 dependencies = [
     { name = "fastexcel" },
