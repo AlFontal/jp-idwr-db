@@ -40,7 +40,7 @@ def _data_path(name: str, version: str | None = None, force: bool = False) -> Pa
 
 
 def load_dataset(
-    name: DatasetName | Literal["sex_prefecture", "place_prefecture", "unified", "sentinel"],
+    name: DatasetName | Literal["sex_prefecture", "place_prefecture"],
     *,
     version: str | None = None,
     force_download: bool = False,
@@ -52,7 +52,7 @@ def load_dataset(
             - "sex": Sex-disaggregated data (1999-2023)
             - "place": Place of infection data (2001-2023)
             - "bullet": Confirmed cases (2024+)
-            - "sentinel": Sentinel surveillance (2023+) - RSV, HFMD, etc.
+            - "sentinel": Sentinel surveillance (2012+) - RSV, HFMD, etc.
             - "unified": Combined dataset (1999-2026) - RECOMMENDED
             Aliases: "sex_prefecture", "place_prefecture"
         version: Optional data release version.
@@ -78,7 +78,7 @@ def load_dataset(
 
 
 def scan_dataset(
-    name: DatasetName | Literal["sex_prefecture", "place_prefecture", "unified", "sentinel"],
+    name: DatasetName | Literal["sex_prefecture", "place_prefecture"],
     *,
     version: str | None = None,
     force_download: bool = False,

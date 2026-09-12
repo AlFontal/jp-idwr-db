@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data" / "parquet"
 DATASETS_MD = ROOT / "docs" / "DATASETS.md"
 README = ROOT / "README.md"
+PYPROJECT = ROOT / "pyproject.toml"
 
 README_BEGIN = "<!-- BEGIN GENERATED UNIFIED SNAPSHOT -->"
 README_END = "<!-- END GENERATED UNIFIED SNAPSHOT -->"
@@ -95,7 +96,9 @@ def update_dataset_reference(snapshot_date: date | None = None) -> None:
             )
 
         documentation = (
-            documentation[: section_match.start(1)] + section + documentation[section_match.end(1) :]
+            documentation[: section_match.start(1)]
+            + section
+            + documentation[section_match.end(1) :]
         )
 
     DATASETS_MD.write_text(documentation, encoding="utf-8")
@@ -110,8 +113,21 @@ def _render_unified_snapshot() -> str:
         return str(df)
 
 
-def update_readme_snapshot() -> None:
-    """Replace the generated unified quick-start output in ``README.md``."""
+def _project_version() -> str:
+    """Read the release version from project metadata."""
+    match = re.search(
+        r'^version = "([^"]+)"$',
+        PYPROJECT.read_text(encoding="utf-8"),
+        flags=re.MULTILINE,
+    )
+    if match is None:
+        raise ValueError("Could not locate project version")
+    return match.group(1)
+
+
+def update_readme_snapshot(snapshot_date: date | None = None) -> None:
+    """Replace generated README output and release source attribution."""
+    resolved_date = snapshot_date or date.today()
     readme = README.read_text(encoding="utf-8")
     generated = f"{README_BEGIN}\n```text\n{_render_unified_snapshot()}\n```\n{README_END}"
 
@@ -123,6 +139,15 @@ def update_readme_snapshot() -> None:
         readme, count = re.subn(initial_pattern, generated, readme, count=1, flags=re.DOTALL)
         if count != 1:
             raise ValueError("Could not locate README unified quick-start output")
+
+    readme, count = re.subn(
+        r"accessed \d{4}-\d{2}-\d{2} for release `v[^`]+`\.",
+        f"accessed {resolved_date.isoformat()} for release `v{_project_version()}`.",
+        readme,
+        count=1,
+    )
+    if count != 1:
+        raise ValueError("Could not update README source attribution")
 
     README.write_text(readme, encoding="utf-8")
 

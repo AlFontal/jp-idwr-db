@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import polars as pl
 
+_IDENTIFIER_COLUMNS = ("prefecture", "year", "week", "date", "category", "source")
+
 
 def _infer_dataset_type(df: pl.DataFrame) -> str:
     """Infer the dataset type from column names.
@@ -71,9 +73,9 @@ def _col_join_rename(df: pl.DataFrame) -> pl.DataFrame:
 def merge(*dfs: pl.DataFrame) -> pl.DataFrame:
     """Merge multiple datasets with automatic column renaming.
 
-    Performs a full outer join on the first two DataFrames using key columns
-    (prefecture, year, week, date), then concatenates any additional DataFrames
-    vertically with schema relaxation.
+    Normalized long-form datasets are concatenated and deduplicated by their
+    analytical key. Legacy wide-form inputs are full-joined on their shared
+    surveillance period columns.
 
     Args:
         *dfs: Two or more Polars DataFrames to merge.
@@ -85,12 +87,21 @@ def merge(*dfs: pl.DataFrame) -> pl.DataFrame:
         ValueError: If fewer than two DataFrames are provided.
 
     Example:
-        >>> df1 = jp.read("file1.xlsx", type="sex")
-        >>> df2 = jp.read("file2.xlsx", type="place")
+        >>> df1 = jp.load("bullet")
+        >>> df2 = jp.load("sentinel")
         >>> merged = jp.merge(df1, df2)
     """
     if len(dfs) < 2:
         raise ValueError("merge requires at least two dataframes")
+
+    if all({"disease", "count"}.issubset(df.columns) for df in dfs):
+        merged = pl.concat(dfs, how="diagonal_relaxed")
+        keys = ["prefecture", "year", "week", "disease"]
+        if "category" in merged.columns:
+            keys.append("category")
+        if "source" in merged.columns:
+            keys.append("source")
+        return merged.unique(subset=keys, keep="first", maintain_order=True)
 
     polars_frames = [_col_join_rename(df) for df in dfs]
 
@@ -103,15 +114,26 @@ def merge(*dfs: pl.DataFrame) -> pl.DataFrame:
     return merged
 
 
-def pivot(df: pl.DataFrame) -> pl.DataFrame:
+def pivot(
+    df: pl.DataFrame,
+    *,
+    values: str | None = None,
+    index: list[str] | None = None,
+) -> pl.DataFrame:
     """Pivot between wide and long formats.
 
-    Automatically detects the input format and converts:
-    - Long format (disease, cases columns) → Wide format (disease columns)
-    - Wide format (disease columns) → Long format (disease, cases columns)
+    Automatically detects the input format and converts between normalized
+    long form and disease-column wide form. Current datasets use ``count``;
+    callers working with the legacy ``cases`` metric can select it explicitly.
 
     Args:
         df: Input Polars DataFrame.
+        values: Metric column for long-to-wide conversion, or output metric
+            name for wide-to-long conversion. Defaults to ``count`` when
+            present, otherwise ``cases`` for legacy long-form inputs; defaults
+            to ``count`` for wide-form inputs.
+        index: Identifier columns to preserve. Defaults to the surveillance
+            identifiers present in the frame.
 
     Returns:
         Pivoted Polars DataFrame.
@@ -120,26 +142,36 @@ def pivot(df: pl.DataFrame) -> pl.DataFrame:
         ValueError: If the DataFrame is missing required columns for pivoting.
 
     Example:
-        >>> long_df = jp.load("sex")  # Has disease, cases columns
+        >>> long_df = jp.load("sex")  # Has disease and count columns
         >>> wide_df = jp.pivot(long_df)  # Now has disease names as columns
         >>> long_again = jp.pivot(wide_df)  # Back to long format
     """
     frame = df
-    key_cols = ["prefecture", "year", "week", "date"]
     cols = set(frame.columns)
+    index_cols = index or [name for name in _IDENTIFIER_COLUMNS if name in cols]
 
-    if "disease" in cols and "cases" in cols:
+    if "disease" in cols:
         # Long -> Wide
-        result = frame.pivot(values="cases", index=key_cols, on="disease")
+        value_col = values or ("count" if "count" in cols else "cases" if "cases" in cols else None)
+        if value_col is None or value_col not in cols:
+            raise ValueError("long-form pivot requires a 'count' or 'cases' metric column")
+        result = frame.pivot(values=value_col, index=index_cols, on="disease")
     else:
         # Wide -> Long
-        missing = [col for col in key_cols if col not in cols]
+        required_keys = ["prefecture", "year", "week", "date"]
+        missing = [col for col in required_keys if col not in cols]
         if missing:
             missing_labels = ", ".join(missing)
             raise ValueError(
-                "pivot expects either long-form data with 'disease' and 'cases' "
+                "pivot expects either long-form data with 'disease' and a metric "
                 f"or wide-form data with key columns. Missing: {missing_labels}"
             )
-        result = frame.unpivot(index=key_cols, variable_name="disease", value_name="cases")
+        value_name = values or "count"
+        result = frame.unpivot(
+            index=index_cols,
+            on=[name for name in frame.columns if name not in index_cols],
+            variable_name="disease",
+            value_name=value_name,
+        )
 
     return result

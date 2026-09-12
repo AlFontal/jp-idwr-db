@@ -4,6 +4,7 @@ from .api import get_data, get_latest_week, list_diseases, list_prefectures
 from .config import Config, configure, get_config
 from .data_manager import ensure_data
 from .datasets import load_dataset as load
+from .datasets import load_prefecture_en
 from .transform import merge, pivot
 from .types import DatasetName
 from .utils import attach_prefecture_id, prefecture_map
@@ -20,6 +21,7 @@ __all__ = [
     "list_diseases",
     "list_prefectures",
     "load",
+    "load_prefecture_en",
     "merge",
     "pivot",
     "prefecture_map",

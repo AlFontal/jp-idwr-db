@@ -118,7 +118,8 @@ jobs:
           uv run --frozen ruff check .
           uv run --frozen mypy src
           uv run --frozen pytest -q
-          uv run --with duckdb python -m pytest -q tests/test_duckdb_build.py
+          uv run --with duckdb python -m pytest -q \
+            tests/test_duckdb_build.py tests/test_release_data_integrity.py
       - name: Commit and push refresh release
         if: >
           steps.refresh.outputs.changed == 'true' &&

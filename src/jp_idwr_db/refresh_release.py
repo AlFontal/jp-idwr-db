@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import os
 import re
@@ -18,6 +17,8 @@ from pathlib import Path
 import polars as pl
 
 from ._internal import validation
+from ._internal.release_utils import sha256 as file_sha256
+from .utils import PREFECTURE_ISO_MAP
 
 TARGET_OUTPUTS = (
     Path("data/parquet/bullet.parquet"),
@@ -33,6 +34,15 @@ INIT_PATH = Path("src/jp_idwr_db/__init__.py")
 CONFIG_PATH = Path("src/jp_idwr_db/config.py")
 CITATION_PATH = Path("CITATION.cff")
 UV_LOCK_PATH = Path("uv.lock")
+BACKED_UP_OUTPUTS = (
+    *TARGET_OUTPUTS,
+    CHANGELOG_PATH,
+    PYPROJECT_PATH,
+    INIT_PATH,
+    CONFIG_PATH,
+    CITATION_PATH,
+    UV_LOCK_PATH,
+)
 
 
 @dataclass(frozen=True)
@@ -65,12 +75,7 @@ def _sha256(path: Path) -> str | None:
     """Compute a SHA256 digest or return ``None`` when the file is absent."""
     if not path.exists():
         return None
-
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+    return file_sha256(path)
 
 
 def _snapshot_paths(repo_root: Path) -> dict[str, str | None]:
@@ -80,7 +85,7 @@ def _snapshot_paths(repo_root: Path) -> dict[str, str | None]:
 
 def _backup_targets(repo_root: Path, backup_root: Path) -> None:
     """Copy existing generated outputs into a temporary backup directory."""
-    for rel_path in TARGET_OUTPUTS:
+    for rel_path in BACKED_UP_OUTPUTS:
         source = repo_root / rel_path
         if not source.exists():
             continue
@@ -91,7 +96,7 @@ def _backup_targets(repo_root: Path, backup_root: Path) -> None:
 
 def _restore_targets(repo_root: Path, backup_root: Path) -> None:
     """Restore generated outputs from backup, removing newly created files."""
-    for rel_path in TARGET_OUTPUTS:
+    for rel_path in BACKED_UP_OUTPUTS:
         source = backup_root / rel_path
         dest = repo_root / rel_path
         if source.exists():
@@ -209,9 +214,78 @@ def update_version_files(repo_root: Path, version: str) -> None:
 
 def _latest_year_week(path: Path) -> tuple[int, int]:
     """Read the latest ``(year, week)`` tuple from a parquet dataset."""
-    df = pl.read_parquet(path).select(["year", "week"]).sort(["year", "week"])
-    latest = df.tail(1)
+    latest = (
+        pl.scan_parquet(path)
+        .select(["year", "week"])
+        .unique()
+        .sort(["year", "week"], descending=True)
+        .head(1)
+        .collect()
+    )
+    if latest.is_empty():
+        raise ValueError(f"Dataset contains no surveillance periods: {path}")
     return int(latest["year"][0]), int(latest["week"][0])
+
+
+def _historical_signature(path: Path, before_year: int) -> tuple[tuple[str, ...], int, int, int]:
+    """Return an order-independent signature for immutable historical rows."""
+    scan = pl.scan_parquet(path).filter(pl.col("year") < before_year)
+    columns = tuple(scan.collect_schema().names())
+    signature = scan.select(
+        pl.len().alias("rows"),
+        pl.struct(pl.all()).hash(seed=0).sum().alias("hash_0"),
+        pl.struct(pl.all()).hash(seed=1).sum().alias("hash_1"),
+    ).collect()
+    return (
+        columns,
+        int(signature["rows"][0]),
+        int(signature["hash_0"][0] or 0),
+        int(signature["hash_1"][0] or 0),
+    )
+
+
+def _period_row_counts(path: Path) -> dict[tuple[int, int], int]:
+    """Return row counts for every observed surveillance period."""
+    counts = pl.scan_parquet(path).group_by(["year", "week"]).agg(pl.len().alias("rows")).collect()
+    return {
+        (int(row["year"]), int(row["week"])): int(row["rows"])
+        for row in counts.iter_rows(named=True)
+    }
+
+
+def _validate_release_preservation(repo_root: Path, backup_root: Path) -> None:
+    """Reject refreshes that regress recency or alter stable historical data."""
+    for rel_path in VALIDATED_OUTPUTS:
+        previous = backup_root / rel_path
+        rebuilt = repo_root / rel_path
+        if not previous.exists():
+            continue
+
+        previous_latest = _latest_year_week(previous)
+        rebuilt_latest = _latest_year_week(rebuilt)
+        if rebuilt_latest < previous_latest:
+            raise ValueError(
+                f"Latest period regressed for {rel_path}: {previous_latest} -> {rebuilt_latest}"
+            )
+
+        previous_counts = _period_row_counts(previous)
+        rebuilt_counts = _period_row_counts(rebuilt)
+        regressed_periods = [
+            (period, rows, rebuilt_counts.get(period, 0))
+            for period, rows in previous_counts.items()
+            if rebuilt_counts.get(period, 0) < rows
+        ]
+        if regressed_periods:
+            raise ValueError(
+                f"Previously published periods lost rows in {rel_path}. "
+                f"First regressions: {sorted(regressed_periods)[:10]}"
+            )
+
+        stable_before_year = previous_latest[0]
+        if _historical_signature(previous, stable_before_year) != _historical_signature(
+            rebuilt, stable_before_year
+        ):
+            raise ValueError(f"Stable historical rows changed in {rel_path}")
 
 
 def _format_year_week(path: Path) -> str:
@@ -229,13 +303,33 @@ def _validate_release_outputs(repo_root: Path) -> None:
 
         df = pl.read_parquet(dataset_path)
         validation.validate_schema(df)
+        identifier_columns = ["prefecture", "year", "week", "disease"]
+        identifier_columns.extend(
+            column for column in ["category", "source"] if column in df.columns
+        )
+        validation.validate_required_values(df, identifier_columns)
+        validation.validate_allowed_values(df, "prefecture", set(PREFECTURE_ISO_MAP))
+        expected_sources = {
+            "bullet.parquet": {"All-case reporting"},
+            "sentinel.parquet": {"Sentinel surveillance"},
+            "unified.parquet": {
+                "Confirmed cases",
+                "All-case reporting",
+                "Sentinel surveillance",
+            },
+        }
+        validation.validate_allowed_values(df, "source", expected_sources[rel_path.name])
+        if rel_path.name == "unified.parquet":
+            validation.validate_allowed_values(df, "category", {"total"})
         validation.validate_no_duplicates(df)
         validation.validate_date_ranges(df)
         if "date" in df.columns:
             validation.validate_iso_week_start_dates(df)
         validation.validate_non_negative_counts(df)
-        allowed_prefecture_counts = (
-            {(2016, 37): 26} if rel_path.name == "sentinel.parquet" else None
+        allowed_prefecture_counts: dict[validation.CoverageKey, int | set[int]] | None = (
+            {(2016, 37, "Sentinel surveillance"): 26}
+            if rel_path.name in {"sentinel.parquet", "unified.parquet"}
+            else None
         )
         validation.validate_prefecture_coverage(df, allowed_counts=allowed_prefecture_counts)
         if rel_path.name == "sentinel.parquet":
@@ -289,16 +383,19 @@ def prepare_refresh_release(
         backup_root = Path(tmp_dir)
         before = _snapshot_paths(resolved_root)
         _backup_targets(resolved_root, backup_root)
+        completed = False
 
         try:
             rebuild_release_outputs(resolved_root)
             _validate_release_outputs(resolved_root)
+            _validate_release_preservation(resolved_root, backup_root)
             after = _snapshot_paths(resolved_root)
             changed = before != after or force_release
             latest_bullet_week = _format_year_week(resolved_root / TARGET_OUTPUTS[0])
             latest_sentinel_week = _format_year_week(resolved_root / TARGET_OUTPUTS[1])
 
             if dry_run:
+                completed = True
                 return RefreshOutputs(
                     changed=changed,
                     version=version,
@@ -317,6 +414,7 @@ def prepare_refresh_release(
                     release_date=resolved_release_date,
                 )
 
+            completed = True
             return RefreshOutputs(
                 changed=changed,
                 version=version,
@@ -325,7 +423,7 @@ def prepare_refresh_release(
                 latest_sentinel_week=latest_sentinel_week,
             )
         finally:
-            if dry_run:
+            if dry_run or not completed:
                 _restore_targets(resolved_root, backup_root)
 
 

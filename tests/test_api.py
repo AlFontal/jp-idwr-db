@@ -142,3 +142,30 @@ def test_get_data_passes_version_to_loader(monkeypatch: pytest.MonkeyPatch) -> N
         "version": "latest",
         "force_download": True,
     }
+
+
+def test_get_data_does_not_hide_loader_failures(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fail_load(*args: object, **kwargs: object) -> pl.DataFrame:
+        raise ValueError("checksum mismatch")
+
+    monkeypatch.setattr(api, "load_dataset", fail_load)
+
+    with pytest.raises(ValueError, match="checksum mismatch"):
+        api.get_data()
+
+
+def test_get_data_treats_disease_filter_as_literal(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        api,
+        "load_dataset",
+        lambda *args, **kwargs: pl.DataFrame(
+            {
+                "disease": ["Middle East Respiratory Syndrome (MERS)", "Measles"],
+                "source": ["All-case reporting", "All-case reporting"],
+            }
+        ),
+    )
+
+    result = api.get_data(disease="(MERS)")
+
+    assert result.get_column("disease").to_list() == ["Middle East Respiratory Syndrome (MERS)"]

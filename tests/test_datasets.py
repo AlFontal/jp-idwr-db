@@ -5,8 +5,9 @@ from pathlib import Path
 import polars as pl
 import pytest
 
+import jp_idwr_db as jp
 from jp_idwr_db import datasets
-from jp_idwr_db.datasets import load_dataset, scan_dataset
+from jp_idwr_db.datasets import load_dataset, load_prefecture_en, scan_dataset
 
 
 def test_load_dataset() -> None:
@@ -55,3 +56,8 @@ def test_scan_dataset_supports_aliases(tmp_path: Path, monkeypatch: pytest.Monke
     collected = scan_dataset("sex").collect()
 
     assert collected.to_dict(as_series=False) == {"count": [1]}
+
+
+def test_load_prefecture_en_is_exported() -> None:
+    assert jp.load_prefecture_en is load_prefecture_en
+    assert jp.load_prefecture_en() == ["Hokkaido", "Osaka", "Tokyo"]

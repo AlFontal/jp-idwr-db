@@ -8,10 +8,6 @@ import pytest
 from jp_idwr_db._internal import validation
 
 
-def test_get_sentinel_only_diseases_returns_empty_set() -> None:
-    assert validation.get_sentinel_only_diseases() == set()
-
-
 def test_validate_schema_accepts_expected_columns() -> None:
     df = pl.DataFrame(
         {
@@ -31,6 +27,20 @@ def test_validate_schema_rejects_missing_columns() -> None:
 
     with pytest.raises(ValueError, match="Missing required columns"):
         validation.validate_schema(df)
+
+
+def test_validate_required_values_rejects_blank_identifier() -> None:
+    df = pl.DataFrame({"prefecture": ["Tokyo"], "year": [2026], "week": [1], "disease": [""]})
+
+    with pytest.raises(ValueError, match="null or blank values in disease"):
+        validation.validate_required_values(df)
+
+
+def test_validate_allowed_values_rejects_unknown_value() -> None:
+    df = pl.DataFrame({"source": ["unknown"]})
+
+    with pytest.raises(ValueError, match="Unexpected values in source"):
+        validation.validate_allowed_values(df, "source", {"Confirmed cases"})
 
 
 def test_validate_no_duplicates_uses_category_when_present() -> None:
@@ -98,7 +108,14 @@ def test_validate_non_negative_counts_accepts_null_metrics() -> None:
 def test_validate_non_negative_counts_rejects_negative_count() -> None:
     df = pl.DataFrame({"count": [0.0, -1.0], "per_sentinel": [0.0, 1.0]})
 
-    with pytest.raises(ValueError, match="negative count"):
+    with pytest.raises(ValueError, match="negative or non-finite count"):
+        validation.validate_non_negative_counts(df)
+
+
+def test_validate_non_negative_counts_rejects_non_finite_count() -> None:
+    df = pl.DataFrame({"count": [float("inf")]})
+
+    with pytest.raises(ValueError, match="negative or non-finite count"):
         validation.validate_non_negative_counts(df)
 
 
@@ -152,6 +169,37 @@ def test_validate_prefecture_coverage_rejects_unregistered_gap() -> None:
 
     with pytest.raises(ValueError, match="Unexpected prefecture coverage"):
         validation.validate_prefecture_coverage(df, expected=3)
+
+
+def test_validate_prefecture_coverage_checks_each_disease() -> None:
+    df = pl.DataFrame(
+        {
+            "year": [2026, 2026, 2026],
+            "week": [1, 1, 1],
+            "disease": ["A", "A", "B"],
+            "prefecture": ["Tokyo", "Osaka", "Tokyo"],
+        }
+    )
+
+    with pytest.raises(ValueError, match="Unexpected prefecture coverage"):
+        validation.validate_prefecture_coverage(df, expected=2)
+
+
+def test_validate_prefecture_coverage_anomaly_does_not_replace_normal_count() -> None:
+    df = pl.DataFrame(
+        {
+            "year": [2016, 2016, 2016],
+            "week": [37, 37, 37],
+            "disease": ["A", "A", "B"],
+            "prefecture": ["Tokyo", "Osaka", "Tokyo"],
+        }
+    )
+
+    validation.validate_prefecture_coverage(
+        df,
+        expected=2,
+        allowed_counts={(2016, 37): 1},
+    )
 
 
 def test_smart_merge_keeps_confirmed_and_adds_sentinel_only_diseases() -> None:

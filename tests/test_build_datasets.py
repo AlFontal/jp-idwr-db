@@ -50,8 +50,8 @@ def test_build_bullet_skips_unpublished_future_weeks(
             }
         )
 
-    monkeypatch.setattr(build_datasets.download, "download", fake_download)
-    monkeypatch.setattr(build_datasets.read, "read", fake_read)
+    monkeypatch.setattr(build_datasets.io, "download", fake_download)
+    monkeypatch.setattr(build_datasets.io, "read", fake_read)
 
     build_datasets.build_bullet()
 
@@ -75,12 +75,12 @@ def test_build_bullet_runs_validation_before_writing(
     )
 
     monkeypatch.setattr(
-        build_datasets.download,
+        build_datasets.io,
         "download",
         lambda name, year, week: [tmp_path / "2026" / "zensu01.csv"],
     )
     monkeypatch.setattr(
-        build_datasets.read,
+        build_datasets.io,
         "read",
         lambda path, type: pl.DataFrame(
             {
@@ -141,7 +141,7 @@ def test_build_sentinel_does_not_redifference_preserved_history(
 
     paths = [tmp_path / "teitenrui01.csv", tmp_path / "teitenrui02.csv"]
     monkeypatch.setattr(
-        build_datasets.download,
+        build_datasets.io,
         "download",
         lambda name, year, week: paths,
     )
@@ -170,3 +170,43 @@ def test_build_sentinel_does_not_redifference_preserved_history(
     assert result.filter(pl.col("year") == 2025)["count"].to_list() == [7.0, 8.0]
     assert result.filter(pl.col("year") == 2026)["count"].to_list() == [10.0, 15.0]
     assert result["disease"].unique().to_list() == ["AIDS"]
+
+
+def test_build_bullet_fails_closed_when_download_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    build_datasets = _load_build_module()
+    monkeypatch.setattr(build_datasets, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(build_datasets, "LAST_HISTORICAL_YEAR", 2025)
+    monkeypatch.setattr(build_datasets, "CURRENT_YEAR", 2026)
+    monkeypatch.setattr(build_datasets, "CURRENT_WEEK", 2)
+    monkeypatch.setattr(build_datasets.io, "download", lambda *args, **kwargs: [])
+
+    with pytest.raises(RuntimeError, match="Failed to build bullet data for 2026"):
+        build_datasets.build_bullet()
+
+    assert not (tmp_path / "bullet.parquet").exists()
+
+
+def test_build_sentinel_fails_closed_when_parser_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    build_datasets = _load_build_module()
+    monkeypatch.setattr(build_datasets, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(build_datasets, "CURRENT_YEAR", 2026)
+    monkeypatch.setattr(build_datasets, "CURRENT_WEEK", 2)
+    monkeypatch.setattr(
+        build_datasets.io,
+        "download",
+        lambda *args, **kwargs: [tmp_path / "teitenrui01.csv"],
+    )
+
+    def fail_read(path: Path) -> pl.DataFrame:
+        raise ValueError("bad CSV")
+
+    monkeypatch.setattr(build_datasets.io, "_read_sentinel_en_pl", fail_read)
+
+    with pytest.raises(RuntimeError, match="Failed to build sentinel data for 2012"):
+        build_datasets.build_sentinel()
+
+    assert not (tmp_path / "sentinel.parquet").exists()

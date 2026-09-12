@@ -69,7 +69,6 @@ indent-width = 4
 src = ["src", "tests"]
 exclude = [
   "scripts/",
-  "verify_urls.py",
   ".venv",
   "__pycache__",
 ]
