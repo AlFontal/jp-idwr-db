@@ -10,7 +10,8 @@ from pathlib import Path
 import polars as pl
 
 from jp_idwr_db import io
-from jp_idwr_db._internal import download, read, validation
+from jp_idwr_db._internal import validation
+from jp_idwr_db.utils import PREFECTURE_ISO_MAP
 
 # Configure logging
 logging.basicConfig(
@@ -70,11 +71,32 @@ def _validate_dataset_output(name: str, df: pl.DataFrame) -> None:
     """Validate a built dataset before it is written to disk."""
     logger.info(f"Validating {name} dataset...")
     validation.validate_schema(df)
+    identifier_columns = ["prefecture", "year", "week", "disease"]
+    identifier_columns.extend(column for column in ["category", "source"] if column in df.columns)
+    validation.validate_required_values(df, identifier_columns)
+    validation.validate_allowed_values(df, "prefecture", set(PREFECTURE_ISO_MAP))
+    expected_sources = {
+        "sex_prefecture": {"Confirmed cases"},
+        "place_prefecture": {"Confirmed cases"},
+        "bullet": {"All-case reporting"},
+        "sentinel": {"Sentinel surveillance"},
+        "unified": {"Confirmed cases", "All-case reporting", "Sentinel surveillance"},
+    }
+    validation.validate_allowed_values(df, "source", expected_sources[name])
+    expected_categories = {
+        "sex_prefecture": {"total", "male", "female"},
+        "place_prefecture": {"total", "japan", "others", "unknown"},
+        "unified": {"total"},
+    }
+    if name in expected_categories:
+        validation.validate_allowed_values(df, "category", expected_categories[name])
     validation.validate_no_duplicates(df)
     validation.validate_date_ranges(df)
     validation.validate_iso_week_start_dates(df)
     validation.validate_non_negative_counts(df)
-    allowed_prefecture_counts = {(2016, 37): 26} if name == "sentinel" else None
+    allowed_prefecture_counts = (
+        {(2016, 37, "Sentinel surveillance"): 26} if name in {"sentinel", "unified"} else None
+    )
     validation.validate_prefecture_coverage(df, allowed_counts=allowed_prefecture_counts)
     if name == "sentinel":
         validation.validate_max_null_rate(df, "count", max_rate=0.25, group_by=["year"])
@@ -133,23 +155,21 @@ def _write_diseases_markdown(unified_df: pl.DataFrame) -> None:
     logger.info(f"Wrote disease coverage report to {DISEASES_MD.name}")
 
 
-def build_sex():
+def build_sex() -> None:
     logger.info("Building sex_prefecture dataset...")
     years = range(1999, LAST_HISTORICAL_YEAR + 1)
     dfs = []
     success_count = 0
-    fail_count = 0
 
     for year in years:
         try:
-            path = download.download("sex", year)
-            df = read.read(path, type="sex")
+            path = io.download("sex", year)
+            df = io.read(path, type="sex")
             dfs.append(df)
             success_count += 1
             logger.info(f"  ✓ Loaded year {year} ({df.height} rows)")
         except Exception as e:
-            fail_count += 1
-            logger.warning(f"  ✗ Failed year {year}: {e}")
+            raise RuntimeError(f"Failed to build sex data for {year}") from e
 
     if dfs:
         full_df = pl.concat(dfs, how="diagonal_relaxed")
@@ -186,27 +206,25 @@ def build_sex():
         full_df.write_parquet(out_path)
         logger.info(f"Saved to {out_path.name} ({full_df.height} rows, {success_count} years)")
 
-    if fail_count > 0:
-        logger.warning(f"Failed to load {fail_count} year(s)")
+    if not dfs:
+        raise RuntimeError("No sex data was loaded")
 
 
-def build_place():
+def build_place() -> None:
     logger.info("\nBuilding place_prefecture dataset...")
     years = range(2001, LAST_HISTORICAL_YEAR + 1)
     dfs = []
     success_count = 0
-    fail_count = 0
 
     for year in years:
         try:
-            path = download.download("place", year)
-            df = read.read(path, type="place")
+            path = io.download("place", year)
+            df = io.read(path, type="place")
             dfs.append(df)
             success_count += 1
             logger.info(f"  ✓ Loaded year {year} ({df.height} rows)")
         except Exception as e:
-            fail_count += 1
-            logger.warning(f"  ✗ Failed year {year}: {e}")
+            raise RuntimeError(f"Failed to build place data for {year}") from e
 
     if dfs:
         full_df = pl.concat(dfs, how="diagonal_relaxed")
@@ -216,11 +234,11 @@ def build_place():
         full_df.write_parquet(out_path)
         logger.info(f"Saved to {out_path.name} ({full_df.height} rows, {success_count} years)")
 
-    if fail_count > 0:
-        logger.warning(f"Failed to load {fail_count} year(s)")
+    if not dfs:
+        raise RuntimeError("No place data was loaded")
 
 
-def build_bullet():
+def build_bullet() -> None:
     logger.info(f"\nBuilding bullet dataset ({LAST_HISTORICAL_YEAR + 1}-{CURRENT_YEAR})...")
     out_path = DATA_DIR / "bullet.parquet"
     all_years = list(range(LAST_HISTORICAL_YEAR + 1, CURRENT_YEAR + 1))
@@ -244,48 +262,47 @@ def build_bullet():
         final_week = _year_week_upper_bound(year)
         try:
             logger.info(f"  Processing year {year}...")
-            paths = download.download("bullet", year, week=range(1, final_week + 1))
+            paths = io.download("bullet", year, week=range(1, final_week + 1))
             if not paths:
-                logger.warning(f"    No data found for year {year}")
-                continue
+                raise RuntimeError(f"No bullet data found for {year}")
 
-            if isinstance(paths, list):
-                year_dfs = []
-                for i, p in enumerate(paths, 1):
-                    df = read.read(p, type="bullet")
+            path_list = paths if isinstance(paths, list) else [paths]
+            year_dfs = []
+            for i, p in enumerate(path_list, 1):
+                df = io.read(p, type="bullet")
 
-                    additions: list[pl.Expr] = [pl.lit("All-case reporting").alias("source")]
-                    if "year" not in df.columns:
-                        additions.append(pl.lit(year).alias("year"))
+                additions: list[pl.Expr] = [pl.lit("All-case reporting").alias("source")]
+                if "year" not in df.columns:
+                    additions.append(pl.lit(year).alias("year"))
 
-                    # Filter out empty disease names (data quality issue)
-                    df = df.filter(pl.col("disease") != "")
+                # Filter out empty disease names (data quality issue)
+                df = df.filter(pl.col("disease") != "")
 
-                    if "date" not in df.columns and "year" in df.columns and "week" in df.columns:
-                        additions.append(
-                            pl.struct(["year", "week"])
-                            .map_elements(
-                                lambda value: date.fromisocalendar(
-                                    int(value["year"]), int(value["week"]), 1
-                                ),
-                                return_dtype=pl.Date,
-                            )
-                            .alias("date")
+                if "date" not in df.columns and "year" in df.columns and "week" in df.columns:
+                    additions.append(
+                        pl.struct(["year", "week"])
+                        .map_elements(
+                            lambda value: date.fromisocalendar(
+                                int(value["year"]), int(value["week"]), 1
+                            ),
+                            return_dtype=pl.Date,
                         )
+                        .alias("date")
+                    )
 
-                    if additions:
-                        df = df.with_columns(additions)
+                if additions:
+                    df = df.with_columns(additions)
 
-                    year_dfs.append(df)
-                    # Log progress on last week
-                    if i == len(paths):
-                        logger.info(f"    Loaded weeks 1-{i} for {year}")
+                year_dfs.append(df)
+                # Log progress on last week
+                if i == len(path_list):
+                    logger.info(f"    Loaded weeks 1-{i} for {year}")
 
-                dfs.extend(year_dfs)
-                total_weeks += len(paths)
-                logger.info(f"  ✓ Completed year {year}: {len(paths)} weeks loaded")
+            dfs.extend(year_dfs)
+            total_weeks += len(path_list)
+            logger.info(f"  ✓ Completed year {year}: {len(path_list)} weeks loaded")
         except Exception as e:
-            logger.error(f"  ✗ Failed year {year}: {e}")
+            raise RuntimeError(f"Failed to build bullet data for {year}") from e
 
     if dfs:
         full_df = pl.concat(dfs, how="diagonal_relaxed")
@@ -296,7 +313,7 @@ def build_bullet():
         logger.info(f"Saved to {out_path.name} ({full_df.height} rows, {total_weeks} weeks total)")
         logger.info(f"  Schema: {full_df.columns}")
     else:
-        logger.warning("No bullet data was loaded")
+        raise RuntimeError("No bullet data was loaded")
 
 
 def build_sentinel(*, full_rebuild: bool = False, source_dir: Path | None = None) -> None:
@@ -327,7 +344,7 @@ def build_sentinel(*, full_rebuild: bool = False, source_dir: Path | None = None
         try:
             logger.info(f"  Processing year {year}...")
             if source_dir is None:
-                paths = download.download("sentinel", year, week=range(1, final_week + 1))
+                paths = io.download("sentinel", year, week=range(1, final_week + 1))
             else:
                 year_dir = source_dir / str(year)
                 paths = [
@@ -337,52 +354,51 @@ def build_sentinel(*, full_rebuild: bool = False, source_dir: Path | None = None
                     and int(year_week[1]) <= final_week
                 ]
             if not paths:
-                logger.warning(f"    No data found for year {year}")
-                continue
+                raise RuntimeError(f"No sentinel data found for {year}")
 
-            if isinstance(paths, list):
-                year_dfs = []
-                for i, p in enumerate(paths, 1):
-                    # Read English sentinel data from /rapid/ endpoint
-                    df = io._read_sentinel_en_pl(p)
+            path_list = paths if isinstance(paths, list) else [paths]
+            year_dfs = []
+            for i, p in enumerate(path_list, 1):
+                # Read English sentinel data from /rapid/ endpoint
+                df = io._read_sentinel_en_pl(p)
 
-                    # Filter out empty disease names (data quality issue)
-                    df = df.filter(pl.col("disease") != "")
+                # Filter out empty disease names (data quality issue)
+                df = df.filter(pl.col("disease") != "")
 
-                    # Add year and source columns for consistency with historical data
-                    df = df.with_columns(
-                        [
-                            pl.lit(year).alias("year"),
-                            pl.lit("Sentinel surveillance").alias("source"),
-                        ]
-                    )
+                # Add year and source columns for consistency with historical data
+                df = df.with_columns(
+                    [
+                        pl.lit(year).alias("year"),
+                        pl.lit("Sentinel surveillance").alias("source"),
+                    ]
+                )
 
-                    # Add date column (week start date)
-                    df = df.with_columns(
-                        [
-                            pl.struct(["year", "week"])
-                            .map_elements(
-                                lambda value: date.fromisocalendar(
-                                    int(value["year"]), int(value["week"]), 1
-                                ),
-                                return_dtype=pl.Date,
-                            )
-                            .alias("date")
-                        ]
-                    )
+                # Add date column (week start date)
+                df = df.with_columns(
+                    [
+                        pl.struct(["year", "week"])
+                        .map_elements(
+                            lambda value: date.fromisocalendar(
+                                int(value["year"]), int(value["week"]), 1
+                            ),
+                            return_dtype=pl.Date,
+                        )
+                        .alias("date")
+                    ]
+                )
 
-                    year_dfs.append(df)
-                    # Log progress on last week
-                    if i == len(paths):
-                        logger.info(f"    Loaded weeks 1-{i} for {year}")
+                year_dfs.append(df)
+                # Log progress on last week
+                if i == len(path_list):
+                    logger.info(f"    Loaded weeks 1-{i} for {year}")
 
-                year_df = pl.concat(year_dfs, how="diagonal_relaxed")
-                year_df = io._sentinel_cumulative_to_weekly(year_df)
-                dfs.append(year_df)
-                total_weeks += len(paths)
-                logger.info(f"  ✓ Completed year {year}: {len(paths)} weeks loaded")
+            year_df = pl.concat(year_dfs, how="diagonal_relaxed")
+            year_df = io._sentinel_cumulative_to_weekly(year_df)
+            dfs.append(year_df)
+            total_weeks += len(path_list)
+            logger.info(f"  ✓ Completed year {year}: {len(path_list)} weeks loaded")
         except Exception as e:
-            logger.error(f"  ✗ Failed year {year}: {e}")
+            raise RuntimeError(f"Failed to build sentinel data for {year}") from e
 
     if dfs:
         full_df = pl.concat(dfs, how="diagonal_relaxed")
@@ -393,10 +409,10 @@ def build_sentinel(*, full_rebuild: bool = False, source_dir: Path | None = None
         logger.info(f"Saved to {out_path.name} ({full_df.height} rows, {total_weeks} weeks total)")
         logger.info(f"  Schema: {full_df.columns}")
     else:
-        logger.warning("No sentinel data was loaded")
+        raise RuntimeError("No sentinel data was loaded")
 
 
-def build_unified():
+def build_unified() -> None:
     """Build unified parquet dataset combining all sources with smart merge.
 
     This creates a single unified.parquet file that combines:
@@ -404,8 +420,8 @@ def build_unified():
     - Modern bullet/sentinel data
 
     Uses smart_merge() to prefer confirmed (zensu) data and only include
-    sentinel-exclusive diseases from teiten. Also deduplicates by preferring
-    modern data over historical data for overlapping years.
+    sentinel-exclusive diseases from teiten. Modern bullet years replace
+    overlapping historical years.
     """
     logger.info("\n" + "=" * 60)
     logger.info("Building unified dataset...")
@@ -420,9 +436,7 @@ def build_unified():
         zensu_df = bullet_df
         modern_years = set(zensu_df["year"].unique())
     else:
-        logger.warning(f"  ! Bullet data file not found: {bullet_path}")
-        zensu_df = None
-        modern_years = set()
+        raise FileNotFoundError(f"Bullet data file not found: {bullet_path}")
 
     # 2. Load sentinel (teiten) data
     sentinel_path = DATA_DIR / "sentinel.parquet"
@@ -432,10 +446,7 @@ def build_unified():
         logger.info(f"  ✓ Loaded {sentinel_df.height:,} rows")
         teiten_df = sentinel_df
     else:
-        logger.warning(f"  ! Sentinel data file not found: {sentinel_path}")
-        teiten_df = None
-
-    all_dfs = []
+        raise FileNotFoundError(f"Sentinel data file not found: {sentinel_path}")
 
     # 3. Load historical sex data.
     # Exclude only years covered by modern zensu/bullet data.
@@ -453,33 +464,20 @@ def build_unified():
             f"  ✓ Loaded {sex_df.height:,} rows "
             f"(total-only; excluded modern years: {sorted(list(modern_years)) if modern_years else 'none'})"
         )
-        all_dfs.append(sex_df)
     else:
-        logger.warning(f"  ! Sex data file not found: {sex_path}")
+        raise FileNotFoundError(f"Sex data file not found: {sex_path}")
 
     # 4. Smart merge modern data (prefer zensu, only sentinel-exclusive from teiten)
-    if zensu_df is not None and teiten_df is not None:
-        logger.info("\nApplying smart merge (prefer confirmed, sentinel-only from teiten)...")
-        merged_modern = validation.smart_merge(zensu_df, teiten_df)
-        logger.info(f"  ✓ Merged to {merged_modern.height:,} rows")
-        logger.info(
-            f"    (zensu: {zensu_df.height:,}, teiten filtered: {merged_modern.height - zensu_df.height:,})"
-        )
-        all_dfs.append(merged_modern)
-    elif zensu_df is not None:
-        logger.info("\nOnly zensu data available (no sentinel data to merge)")
-        all_dfs.append(zensu_df)
-    elif teiten_df is not None:
-        logger.info("\nOnly sentinel data available (no zensu data to merge)")
-        all_dfs.append(teiten_df)
+    logger.info("\nApplying smart merge (prefer confirmed, sentinel-only from teiten)...")
+    merged_modern = validation.smart_merge(zensu_df, teiten_df)
+    logger.info(f"  ✓ Merged to {merged_modern.height:,} rows")
+    logger.info(
+        f"    (zensu: {zensu_df.height:,}, teiten filtered: {merged_modern.height - zensu_df.height:,})"
+    )
 
-    # 5. Combine all dataframes
-    if not all_dfs:
-        logger.error("No data files found! Cannot build unified dataset.")
-        return
-
-    logger.info(f"\nCombining {len(all_dfs)} datasets...")
-    unified_df = pl.concat(all_dfs, how="diagonal_relaxed")
+    # 5. Combine historical totals with modern data.
+    logger.info("\nCombining historical and modern datasets...")
+    unified_df = pl.concat([sex_df, merged_modern], how="diagonal_relaxed")
     logger.info(f"  ✓ Combined to {unified_df.height:,} total rows")
 
     # Fill modern rows with category=total for a consistent schema.
@@ -490,21 +488,6 @@ def build_unified():
             .otherwise(pl.col("category"))
             .alias("category")
         )
-
-    # 5.5. Deduplicate - the source data itself may have duplicates
-    logger.info("\nDeduplicating records...")
-    dedup_keys = ["prefecture", "year", "week", "disease", "category"]
-
-    rows_before = unified_df.height
-    unified_df = unified_df.unique(subset=dedup_keys, keep="first")
-    rows_after = unified_df.height
-    rows_removed = rows_before - rows_after
-
-    if rows_removed > 0:
-        logger.info(f"  ✓ Removed {rows_removed:,} duplicate rows")
-        logger.info(f"  ✓ Deduplicated to {rows_after:,} unique rows")
-    else:
-        logger.info(f"  ✓ No duplicates found")
 
     # 6. Validate and save unified dataset
     out_path = DATA_DIR / "unified.parquet"
@@ -528,7 +511,7 @@ def build_unified():
     logger.info("=" * 60)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Build bundled datasets for jp_idwr_db")
     parser.add_argument(
         "--sex-only", action="store_true", help="Build only the sex_prefecture dataset"

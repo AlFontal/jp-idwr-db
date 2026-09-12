@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- Made refresh builds fail closed on missing or unreadable source years.
+- Added grain-level release validation, immutable-history signatures, period
+  preservation checks, and full shipped-Parquet integrity tests.
+- Stopped `get_data()` from hiding download, manifest, and checksum failures
+  behind partial or empty fallback datasets.
+- Aligned `merge()` and `pivot()` with the current normalized `count` schema.
+- Removed stale generated examples and obsolete release helpers.
+- Added `JP_IDWR_DB_*` configuration names while retaining `JPINFECT_*`
+  compatibility aliases.
+
 ## 2026.9.2 - 2026-09-02
 
 - Refreshed bullet release assets through 2026-W34 and sentinel assets through 2026-W34.

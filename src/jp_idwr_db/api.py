@@ -41,7 +41,7 @@ def get_data(
         week: Filter by single week or (start, end) range (inclusive).
             Examples: 10, (1, 52)
         source: Data source filter.
-            - "confirmed": Only zensu (all-case reporting) data
+            - "confirmed": Historical confirmed cases and modern all-case reporting
             - "sentinel": Only teiten (sentinel surveillance) data
             - "all": Both sources (default)
         version: Optional release selector for packaged parquet assets.
@@ -58,7 +58,7 @@ def get_data(
         - count: Weekly case count
         - per_sentinel: Per-sentinel rate (sentinel only, null for confirmed)
         - source: "Confirmed cases" or "Sentinel surveillance"
-        - category: "total", "male", "female" (when available)
+        - category: "total"
 
     Examples:
         >>> import jp_idwr_db as jp
@@ -85,16 +85,9 @@ def get_data(
         ...     source="all"
         ... )
     """
-    # Load unified dataset (cached locally, downloaded from releases on demand).
-    try:
-        df = load_dataset("unified", version=version, force_download=force_download)
-    except Exception:
-        logger.warning("Failed to load unified dataset, falling back to bullet dataset")
-        try:
-            df = load_dataset("bullet", version=version, force_download=force_download)
-        except Exception:
-            logger.warning("Failed to load bullet dataset, returning empty DataFrame")
-            df = pl.DataFrame()
+    # Loading and checksum failures must remain visible to callers. Silently
+    # substituting a partial dataset would make analytical failures look valid.
+    df = load_dataset("unified", version=version, force_download=force_download)
 
     if df.height == 0:
         return df
@@ -118,7 +111,7 @@ def get_data(
         disease_filter = pl.lit(False)
         for d in diseases:
             disease_filter = disease_filter | pl.col("disease").str.to_lowercase().str.contains(
-                d.lower()
+                d.lower(), literal=True
             )
         df = df.filter(disease_filter)
 
@@ -173,6 +166,7 @@ def list_diseases(
 def list_prefectures(*, version: str | None = None, force_download: bool = False) -> list[str]:
     """Get list of prefecture names.
 
+    Args:
         version: Optional packaged data release selector, including ``"latest"``.
         force_download: Force a fresh download of the selected packaged dataset snapshot.
 
@@ -196,6 +190,7 @@ def get_latest_week(
 ) -> tuple[int, int] | None:
     """Get the latest (year, week) with data available.
 
+    Args:
         version: Optional packaged data release selector, including ``"latest"``.
         force_download: Force a fresh download of the selected packaged dataset snapshot.
 

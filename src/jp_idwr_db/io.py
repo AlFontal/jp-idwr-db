@@ -1132,8 +1132,9 @@ def download(
         Path to the downloaded file (for sex/place) or list of Paths (for bullet/sentinel).
 
     Example:
-        >>> path = jp.download("sex", 2024)
-        >>> bullet_paths = jp.download("bullet", 2024, week=[1, 2])
+        >>> from jp_idwr_db.io import download
+        >>> path = download("sex", 2024)
+        >>> bullet_paths = download("bullet", 2024, week=[1, 2])
     """
     config = get_config()
     if out_dir is None:
@@ -1217,7 +1218,8 @@ def download_recent(
         List of paths to downloaded files.
 
     Example:
-        >>> paths = jp.download_recent()  # Download all 2024+ data
+        >>> from jp_idwr_db.io import download_recent
+        >>> paths = download_recent()  # Download all 2024+ data
         >>> len(paths)
         52
     """
@@ -1279,8 +1281,9 @@ def read(
         ValueError: If dataset type cannot be inferred from filename.
 
     Example:
-        >>> df = jp.read("Syu_01_1_2024.xlsx", type="sex")
-        >>> df_bullet = jp.read("2024-01-zensu.csv")  # Auto-detects as bullet
+        >>> from jp_idwr_db.io import read
+        >>> df = read("Syu_01_1_2024.xlsx", type="sex")
+        >>> df_bullet = read("2024-01-zensu.csv")  # Auto-detects as bullet
     """
     path = Path(path)
 
@@ -1322,9 +1325,9 @@ def get_disease_name_mappings() -> dict[str, str]:
         Dictionary mapping original disease names to normalized names.
 
     Example:
-        >>> import jp_idwr_db as jp
-        >>> df = jp.load("sex")  # Populates the tracker
-        >>> mappings = jp.get_disease_name_mappings()
+        >>> from jp_idwr_db.io import get_disease_name_mappings, read
+        >>> df = read("Syu_01_1_2024.xlsx", type="sex")  # Populates the tracker
+        >>> mappings = get_disease_name_mappings()
         >>> print(mappings.get("H5N1) (Avian influenza H5N1"))
         'Avian influenza H5N1'
     """

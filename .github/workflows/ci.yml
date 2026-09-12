@@ -85,7 +85,9 @@ jobs:
         run: uv sync --frozen --all-extras --dev
 
       - name: Pytest DuckDB build path
-        run: uv run --with duckdb python -m pytest -q tests/test_duckdb_build.py
+        run: >-
+          uv run --with duckdb python -m pytest -q
+          tests/test_duckdb_build.py tests/test_release_data_integrity.py
 
   build:
     runs-on: ubuntu-latest

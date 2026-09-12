@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import importlib
 import json
 import os
@@ -13,6 +12,9 @@ from typing import Any
 
 import pyarrow as pa  # type: ignore[import-untyped]
 import pyarrow.parquet as pq  # type: ignore[import-untyped]
+
+from ._internal.release_utils import quote_identifier
+from ._internal.release_utils import sha256 as file_sha256
 
 SPEC_VERSION = "1.1.0"
 DATASET_ID = "jp_idwr_db"
@@ -29,15 +31,6 @@ class _TableEntry:
 
     name: str
     payload: dict[str, Any]
-
-
-def _sha256(path: Path) -> str:
-    """Return the SHA-256 checksum for a file."""
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def _published_at_utc() -> str:
@@ -76,11 +69,6 @@ def _map_portable_dtype(dtype: pa.DataType) -> tuple[str, str | None]:
     if pa.types.is_string(dtype) or pa.types.is_large_string(dtype):
         return "string", None
     return "string", f"Unsupported Arrow dtype '{dtype}' mapped to portable dtype 'string'."
-
-
-def _quote_ident(identifier: str) -> str:
-    """Quote SQL identifiers for DuckDB queries."""
-    return '"' + identifier.replace('"', '""') + '"'
 
 
 def _scalar_to_iso(value: Any) -> str | None:
@@ -129,7 +117,7 @@ def _duckdb_date_min_max(path: Path, column: str) -> tuple[str | None, str | Non
     except ImportError:
         return None, None
 
-    quoted = _quote_ident(column)
+    quoted = quote_identifier(column)
     con = duckdb.connect()
     try:
         row = con.execute(
@@ -256,7 +244,7 @@ def _build_parquet_entry(path: Path) -> _TableEntry:
         "file": path.name,
         "format": "parquet",
         "size_bytes": path.stat().st_size,
-        "sha256": _sha256(path),
+        "sha256": file_sha256(path),
         "schema": schema_fields,
         "stats": stats,
     }
@@ -270,7 +258,7 @@ def _build_duckdb_entry(path: Path) -> _TableEntry:
         "file": path.name,
         "format": "duckdb",
         "size_bytes": path.stat().st_size,
-        "sha256": _sha256(path),
+        "sha256": file_sha256(path),
     }
     return _TableEntry(name=path.stem, payload=payload)
 

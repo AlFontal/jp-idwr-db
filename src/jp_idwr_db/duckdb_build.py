@@ -5,23 +5,18 @@ from __future__ import annotations
 import importlib
 import os
 from datetime import datetime, timezone
-from importlib.metadata import PackageNotFoundError
-from importlib.metadata import version as package_version
 from pathlib import Path
 
+from ._internal.release_utils import configured_value, installed_release_tag, quote_identifier
 from .manifest import DATASET_ID
 
 
 def _resolve_data_version() -> str:
     """Resolve data version for DuckDB metadata."""
-    env_version = os.getenv("JPINFECT_DATA_VERSION")
+    env_version = configured_value("DATA_VERSION")
     if env_version:
-        return env_version
-    try:
-        resolved = package_version("jp-idwr-db")
-    except PackageNotFoundError:
-        return "unknown"
-    return resolved if resolved.startswith("v") else f"v{resolved}"
+        return env_version if env_version.startswith("v") else f"v{env_version}"
+    return installed_release_tag()
 
 
 def _built_at_utc() -> str:
@@ -32,11 +27,6 @@ def _built_at_utc() -> str:
     else:
         dt = datetime.now(timezone.utc)
     return dt.replace(microsecond=0).isoformat().replace("+00:00", "Z")
-
-
-def _quote_ident(identifier: str) -> str:
-    """Quote SQL identifiers."""
-    return '"' + identifier.replace('"', '""') + '"'
 
 
 def _quote_literal(text: str) -> str:
@@ -83,7 +73,7 @@ def build_duckdb(data_dir: Path, out_path: Path) -> None:
         os.chdir(out_path.parent)
         try:
             for parquet_path in parquet_files:
-                view_name = _quote_ident(parquet_path.stem)
+                view_name = quote_identifier(parquet_path.stem)
                 relative_path = Path(
                     os.path.relpath(parquet_path.resolve(), start=out_path.parent.resolve())
                 ).as_posix()

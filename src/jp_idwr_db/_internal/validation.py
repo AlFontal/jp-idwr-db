@@ -11,15 +11,7 @@ from typing import cast
 
 import polars as pl
 
-
-def get_sentinel_only_diseases() -> set[str]:
-    """Get sentinel-only diseases (deprecated static helper).
-
-    Returns:
-        Empty set. Sentinel-only detection is now computed dynamically in
-        smart_merge() based on disease overlap with zensu data.
-    """
-    return set()
+CoverageKey = tuple[int, int] | tuple[int, int, str]
 
 
 def validate_schema(df: pl.DataFrame, required_columns: list[str] | None = None) -> None:
@@ -38,6 +30,35 @@ def validate_schema(df: pl.DataFrame, required_columns: list[str] | None = None)
     missing = [col for col in required_columns if col not in df.columns]
     if missing:
         raise ValueError(f"Missing required columns: {missing}")
+
+
+def validate_required_values(
+    df: pl.DataFrame,
+    columns: list[str] | None = None,
+) -> None:
+    """Reject null or blank analytical identifiers."""
+    required = columns or ["prefecture", "year", "week", "disease"]
+    missing = [column for column in required if column not in df.columns]
+    if missing:
+        raise ValueError(f"Missing required value columns: {missing}")
+
+    for column in required:
+        invalid = pl.col(column).is_null()
+        if df.schema[column] == pl.String:
+            invalid = invalid | (pl.col(column).str.strip_chars() == "")
+        invalid_count = df.select(invalid.sum()).item()
+        if invalid_count:
+            raise ValueError(f"Found {invalid_count} null or blank values in {column}")
+
+
+def validate_allowed_values(df: pl.DataFrame, column: str, allowed: set[str]) -> None:
+    """Require a categorical column to contain only its documented values."""
+    if column not in df.columns:
+        raise ValueError(f"Missing categorical column: {column}")
+    observed = set(df.get_column(column).drop_nulls().unique().to_list())
+    unexpected = observed - allowed
+    if unexpected:
+        raise ValueError(f"Unexpected values in {column}: {sorted(unexpected)}")
 
 
 def validate_no_duplicates(
@@ -130,11 +151,13 @@ def validate_non_negative_counts(df: pl.DataFrame) -> None:
     """
     metric_columns = [col for col in ["count", "per_sentinel"] if col in df.columns]
     for column in metric_columns:
-        negative_rows = df.filter(pl.col(column) < 0)
-        if negative_rows.height > 0:
+        invalid_rows = df.filter(
+            pl.col(column).is_not_null() & ((pl.col(column) < 0) | ~pl.col(column).is_finite())
+        )
+        if invalid_rows.height > 0:
             raise ValueError(
-                f"Found {negative_rows.height} rows with negative {column}. "
-                f"First few rows:\n{negative_rows.head(5)}"
+                f"Found {invalid_rows.height} rows with negative or non-finite {column}. "
+                f"First few rows:\n{invalid_rows.head(5)}"
             )
 
 
@@ -185,33 +208,52 @@ def validate_prefecture_coverage(
     df: pl.DataFrame,
     *,
     expected: int = 47,
-    allowed_counts: dict[tuple[int, int], int] | None = None,
+    allowed_counts: dict[CoverageKey, int | set[int]] | None = None,
+    group_by: list[str] | None = None,
 ) -> None:
-    """Require the expected prefecture count for every observed year/week.
+    """Require the expected prefecture count at every observed analytical grain.
 
     Args:
         df: Dataset with ``year``, ``week``, and ``prefecture`` columns.
         expected: Normal number of prefectures per period.
-        allowed_counts: Explicit source anomalies keyed by ``(year, week)``.
+        allowed_counts: Additional accepted prefecture counts for explicit source
+            anomalies, keyed by ``(year, week)`` or ``(year, week, source)``.
+        group_by: Grain columns other than prefecture. By default this uses
+            year/week/disease and category when those columns are present.
 
     Raises:
         ValueError: If a period has an unexpected prefecture count.
     """
-    required = {"year", "week", "prefecture"}
+    grouping = group_by or ["year", "week"]
+    if group_by is None:
+        if "disease" in df.columns:
+            grouping.append("disease")
+        if "category" in df.columns:
+            grouping.append("category")
+        if "source" in df.columns:
+            grouping.append("source")
+
+    required = {"year", "week", "prefecture", *grouping}
     missing = required - set(df.columns)
     if missing:
         raise ValueError(f"Missing prefecture-coverage columns: {sorted(missing)}")
 
     exceptions = allowed_counts or {}
-    coverage = df.group_by(["year", "week"]).agg(
-        pl.col("prefecture").n_unique().alias("prefecture_count")
-    )
-    failures = [
-        row
-        for row in coverage.iter_rows(named=True)
-        if int(row["prefecture_count"])
-        != exceptions.get((int(row["year"]), int(row["week"])), expected)
-    ]
+    coverage = df.group_by(grouping).agg(pl.col("prefecture").n_unique().alias("prefecture_count"))
+    failures = []
+    for row in coverage.iter_rows(named=True):
+        observed = int(row["prefecture_count"])
+        period = (int(row["year"]), int(row["week"]))
+        source = row.get("source")
+        source_period: tuple[int, int, str] | None = (
+            (*period, str(source)) if source is not None else None
+        )
+        allowed = exceptions.get(source_period) if source_period is not None else None
+        if allowed is None:
+            allowed = exceptions.get(period)
+        extra_allowed = {allowed} if isinstance(allowed, int) else allowed or set()
+        if observed != expected and observed not in extra_allowed:
+            failures.append(row)
     if failures:
         raise ValueError(f"Unexpected prefecture coverage. First failures: {failures[:10]}")
 

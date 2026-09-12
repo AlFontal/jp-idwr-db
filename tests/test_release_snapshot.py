@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pyarrow.parquet as pq
 
+import jp_idwr_db as jp
+
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover - exercised on Python 3.10
@@ -39,3 +41,23 @@ def test_release_version_metadata_stays_synchronized() -> None:
         uv_lock,
         flags=re.MULTILINE,
     )
+
+
+def test_documented_root_api_names_exist() -> None:
+    documentation = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in [ROOT / "README.md", *(ROOT / "docs").glob("*.md")]
+    )
+    names = set(re.findall(r"\bjp\.([A-Za-z_][A-Za-z0-9_]*)", documentation))
+
+    assert {name for name in names if not hasattr(jp, name)} == set()
+
+
+def test_dynamic_examples_do_not_embed_stale_output_tables() -> None:
+    examples = (ROOT / "docs" / "EXAMPLES.md").read_text(encoding="utf-8")
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert "```text" not in examples
+    assert readme.count("shape:") == 1
+    assert readme.count("<!-- BEGIN GENERATED UNIFIED SNAPSHOT -->") == 1
+    assert readme.count("<!-- END GENERATED UNIFIED SNAPSHOT -->") == 1

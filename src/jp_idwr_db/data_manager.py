@@ -2,20 +2,19 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
-import os
 import shutil
 import sys
 import tempfile
 import zipfile
-from importlib.metadata import PackageNotFoundError
-from importlib.metadata import version as package_version
 from pathlib import Path
 from typing import Any
 
 import httpx
 from platformdirs import user_cache_dir
+
+from ._internal.release_utils import configured_value, installed_release_tag, normalize_release_tag
+from ._internal.release_utils import sha256 as file_sha256
 
 PACKAGE_NAME = "jp_idwr_db"
 DEFAULT_REPO = "AlFontal/jp-idwr-db"
@@ -35,7 +34,7 @@ EXPECTED_DATASETS = {
 
 def get_cache_dir() -> Path:
     """Return the base cache directory for package data."""
-    override = os.getenv("JPINFECT_CACHE_DIR")
+    override = configured_value("CACHE_DIR")
     if override:
         return Path(override).expanduser()
     return Path(user_cache_dir(PACKAGE_NAME))
@@ -45,27 +44,20 @@ def _resolve_data_version(version: str | None) -> str:
     """Resolve data version from explicit arg, env var, or package version."""
     if version:
         return _normalize_data_version(version)
-    env_version = os.getenv("JPINFECT_DATA_VERSION")
+    env_version = configured_value("DATA_VERSION")
     if env_version:
         return _normalize_data_version(env_version)
-    try:
-        pkg_version = package_version("jp-idwr-db")
-    except PackageNotFoundError:
-        pkg_version = "0.0.0"
-    return _normalize_data_version(pkg_version)
+    return installed_release_tag()
 
 
 def _normalize_data_version(version: str) -> str:
     """Normalize a user-facing data version string into a release selector."""
-    normalized = version.strip()
-    if normalized == "latest":
-        return normalized
-    return normalized if normalized.startswith("v") else f"v{normalized}"
+    return normalize_release_tag(version)
 
 
 def _resolve_base_url(version: str) -> str:
     """Resolve base URL for release assets."""
-    base_url = os.getenv("JPINFECT_DATA_BASE_URL")
+    base_url = configured_value("DATA_BASE_URL")
     if base_url:
         return base_url.rstrip("/")
     if version == "latest":
@@ -82,15 +74,6 @@ def _resolve_latest_release_tag() -> str:
             raise ValueError("The 'latest' alias requires a manifest with a release_tag field")
         _verify_manifest(manifest)
         return _normalize_data_version(str(manifest["release_tag"]))
-
-
-def _sha256(path: Path) -> str:
-    """Compute SHA256 hash for a file path."""
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def _download_file(url: str, dest: Path) -> None:
@@ -173,7 +156,7 @@ def _download_and_verify_file(
     _download_file(f"{base_url}/{filename}", file_path)
 
     expected_hash = str(expected["sha256"])
-    if _sha256(file_path) != expected_hash:
+    if file_sha256(file_path) != expected_hash:
         raise ValueError(f"Checksum mismatch for {filename}")
 
     expected_size = int(expected["size_bytes"])
@@ -188,7 +171,7 @@ def _sync_from_legacy_manifest(base_url: str, data_dir: Path, manifest: dict[str
     archive_path = data_dir / archive_name
     _download_file(f"{base_url}/{archive_name}", archive_path)
 
-    archive_hash = _sha256(archive_path)
+    archive_hash = file_sha256(archive_path)
     if archive_hash != manifest["archive_sha256"]:
         raise ValueError("Archive checksum mismatch")
 
@@ -199,7 +182,7 @@ def _sync_from_legacy_manifest(base_url: str, data_dir: Path, manifest: dict[str
         if not file_path.exists():
             raise ValueError(f"Missing extracted data file: {rel_name}")
         expected_hash = str(file_info["sha256"])
-        if _sha256(file_path) != expected_hash:
+        if file_sha256(file_path) != expected_hash:
             raise ValueError(f"Checksum mismatch for {rel_name}")
 
 

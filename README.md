@@ -77,26 +77,14 @@ tb = (
 print(tb)
 ```
 
-```text
-shape: (156, 5)
-┌────────────┬────────────┬──────────────┬───────┬────────────────────┐
-│ date       ┆ prefecture ┆ disease      ┆ count ┆ source             │
-│ ---        ┆ ---        ┆ ---          ┆ ---   ┆ ---                │
-│ date       ┆ str        ┆ str          ┆ str   ┆ f64                │
-╞════════════╪════════════╪══════════════╪═══════╪════════════════════╡
-│ 2024-01-01 ┆ Hokkaido   ┆ Tuberculosis ┆ 2.0   ┆ All-case reporting │
-│ 2024-01-01 ┆ Osaka      ┆ Tuberculosis ┆ 3.0   ┆ All-case reporting │
-│ 2024-01-01 ┆ Tokyo      ┆ Tuberculosis ┆ 15.0  ┆ All-case reporting │
-│ 2024-01-08 ┆ Hokkaido   ┆ Tuberculosis ┆ 4.0   ┆ All-case reporting │
-│ 2024-01-08 ┆ Osaka      ┆ Tuberculosis ┆ 17.0  ┆ All-case reporting │
-│ …          ┆ …          ┆ …            ┆ …     ┆ …                  │
-│ 2024-12-23 ┆ Hokkaido   ┆ Tuberculosis ┆ 5.0   ┆ All-case reporting │
-│ 2024-12-23 ┆ Osaka      ┆ Tuberculosis ┆ 16.0  ┆ All-case reporting │
-│ 2024-12-23 ┆ Tokyo      ┆ Tuberculosis ┆ 53.0  ┆ All-case reporting │
-└────────────┴────────────┴──────────────┴───────┴────────────────────┘
-```
+The exact values depend on the selected release; the example intentionally
+omits a static output snapshot so it cannot drift from `version="latest"`.
 
 Release data are downloaded on first use and cached locally. Use `version="latest"` when you want the newest published snapshot.
+
+Cache and release resolution can be configured with `JP_IDWR_DB_CACHE_DIR`,
+`JP_IDWR_DB_DATA_VERSION`, and `JP_IDWR_DB_DATA_BASE_URL`. The former
+`JPINFECT_*` names remain accepted as compatibility aliases.
 
 ## Datasets
 
@@ -158,11 +146,14 @@ The source archive has changed over time:
 * modern all-case reports (`zensu`) are published weekly as `.csv`
 * modern sentinel reports (`teitenrui`) are published weekly as `.csv`
 
-Source: [JIHS IDWR Surveillance Data Tables](https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/)
+Source: [JIHS IDWR Surveillance Data Tables](https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/),
+accessed 2026-09-02 for release `v2026.9.2`.
 
 The underlying IDWR surveillance data are weekly. `jp-idwr-db` refreshes its published release approximately every two weeks, incorporating newly available reports into a new versioned snapshot.
 
-Source files are parsed, cleaned, normalized, and combined by this project. Sentinel cumulative counts are converted to weekly incidence as described above.
+Created by editing the JIHS IDWR surveillance data: source files are parsed,
+cleaned, normalized, and combined by this project, and sentinel cumulative
+counts are converted to weekly incidence as described above.
 
 `jp-idwr-db` is an independent project and is not an official NIID or JIHS publication. 
 

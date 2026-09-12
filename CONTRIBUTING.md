@@ -87,7 +87,8 @@ jp-idwr-db/
 
 ### Style Guidelines
 
-We use **Ruff** for both linting and formatting with strict rules:
+We use **Ruff** for linting and formatting of package and test code. Build scripts
+are exercised by tests but are currently excluded from the repository-wide Ruff pass:
 
 - **Line length**: 100 characters
 - **Docstrings**: Google-style, required for all public functions and classes
@@ -196,22 +197,16 @@ uv run pytest
 
 ### 4. Commit Your Changes
 
-Use the repository's **Lore commit protocol**: the first line explains **why** the
-change exists, and the body records constraints, rejected alternatives, and test
-coverage.
+Use a clear conventional subject. Add a short body only when it explains a
+non-obvious reason, constraint, or risk.
 
 Example:
 
 ```text
-Tighten release validation so broken manifests fail before publishing
+fix: reject release snapshots that lose historical rows
 
-Constraint: Release artifacts must remain language-agnostic and reproducible
-Rejected: Validate only in local scripts | would miss CI/release regressions
-Confidence: high
-Scope-risk: narrow
-Directive: Keep manifest schema validation in the automated release path
-Tested: uv run pytest --cov=jp_idwr_db --cov-report=term-missing
-Not-tested: Live GitHub Release publishing
+Preserve previously published periods so a partial upstream download cannot
+silently truncate the next release.
 ```
 
 ### 5. Push and Create Pull Request
@@ -288,6 +283,9 @@ If downstream code needs pandas, convert explicitly at the call site using
 - **HTTP cache**: `~/.cache/jp_idwr_db/http/` stores raw downloads with ETag metadata
 - **Data cache**: `~/.cache/jp_idwr_db/data/<version>/` stores release parquet assets
 - Files are copied from HTTP cache to data cache, not moved
+- Use `JP_IDWR_DB_CACHE_DIR`, `JP_IDWR_DB_DATA_VERSION`, and
+  `JP_IDWR_DB_DATA_BASE_URL` for runtime overrides. The old `JPINFECT_*` names
+  are compatibility aliases and should not be used in new integrations.
 
 ## Data Release Assets
 
