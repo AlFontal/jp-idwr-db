@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026.9.16 - 2026-09-16
+
+- Refreshed bullet release assets through 2026-W36 and sentinel assets through 2026-W36.
+- Automated bi-weekly data refresh release.
+
 ## Unreleased
 
 - Made refresh builds fail closed on missing or unreadable source years.
