@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -139,16 +140,66 @@ def test_unified_is_an_exact_composition_of_source_tables() -> None:
             """,
             [_parquet("sex_prefecture.parquet"), _parquet("unified.parquet")],
         ).fetchone()
-        unexpected_sentinel = con.execute(
+        # Sentinel rows are kept exactly for disease-years without confirmed coverage.
+        sentinel_mismatch = con.execute(
             """
-            SELECT COUNT(*) FROM read_parquet(?)
-            WHERE source = 'Sentinel surveillance'
-              AND disease IN (SELECT disease FROM read_parquet(?))
+            WITH confirmed AS (
+              SELECT DISTINCT disease, year FROM read_parquet($unified)
+              WHERE source <> 'Sentinel surveillance'
+            ),
+            expected AS (
+              SELECT prefecture, year, week, date, disease, count, per_sentinel, source
+              FROM read_parquet($sentinel) s
+              WHERE NOT EXISTS (
+                SELECT 1 FROM confirmed c WHERE c.disease = s.disease AND c.year = s.year
+              )
+            ),
+            actual AS (
+              SELECT prefecture, year, week, date, disease, count, per_sentinel, source
+              FROM read_parquet($unified) WHERE source = 'Sentinel surveillance'
+            )
+            SELECT
+              (SELECT COUNT(*) FROM (SELECT * FROM expected EXCEPT ALL SELECT * FROM actual)),
+              (SELECT COUNT(*) FROM (SELECT * FROM actual EXCEPT ALL SELECT * FROM expected))
             """,
-            [_parquet("unified.parquet"), _parquet("bullet.parquet")],
+            {"unified": _parquet("unified.parquet"), "sentinel": _parquet("sentinel.parquet")},
         ).fetchone()
         assert bullet_missing == (0,)
         assert historical_missing == (0,)
-        assert unexpected_sentinel == (0,)
+        assert sentinel_mismatch == (0, 0)
+    finally:
+        con.close()
+
+
+def _iso_weeks_between(start: tuple[int, int], end: tuple[int, int]) -> set[tuple[int, int]]:
+    weeks = set()
+    for year in range(start[0], end[0] + 1):
+        for week in range(1, date(year, 12, 28).isocalendar().week + 1):
+            if start <= (year, week) <= end:
+                weeks.add((year, week))
+    return weeks
+
+
+def test_release_series_have_no_missing_weeks() -> None:
+    con = duckdb.connect()
+    try:
+        series = {
+            "sex_prefecture.parquet": "TRUE",
+            "place_prefecture.parquet": "TRUE",
+            "bullet.parquet": "TRUE",
+            "sentinel.parquet": "TRUE",
+            "unified.parquet (confirmed)": "source <> 'Sentinel surveillance'",
+            "unified.parquet (sentinel)": "source = 'Sentinel surveillance'",
+        }
+        for label, condition in series.items():
+            filename = label.split(" ", maxsplit=1)[0]
+            observed = set(
+                con.execute(
+                    f"SELECT DISTINCT year, week FROM read_parquet(?) WHERE {condition}",
+                    [_parquet(filename)],
+                ).fetchall()
+            )
+            expected = _iso_weeks_between(min(observed), max(observed))
+            assert sorted(expected - observed) == [], label
     finally:
         con.close()

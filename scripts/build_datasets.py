@@ -11,7 +11,7 @@ import polars as pl
 
 from jp_idwr_db import io
 from jp_idwr_db._internal import validation
-from jp_idwr_db.utils import PREFECTURE_ISO_MAP
+from jp_idwr_db.utils import PREFECTURE_ISO_MAP, complete_years, iso_weeks_in_year
 
 # Configure logging
 logging.basicConfig(
@@ -21,24 +21,64 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-CURRENT_YEAR = datetime.now().year
-CURRENT_WEEK = datetime.now().isocalendar().week
+# Use the ISO calendar for both values so that early-January days that still belong
+# to the previous ISO year (e.g. 2027-01-01 is 2026-W53) resolve consistently.
+_TODAY_ISO = datetime.now().isocalendar()
+CURRENT_YEAR = _TODAY_ISO.year
+CURRENT_WEEK = _TODAY_ISO.week
 LAST_HISTORICAL_YEAR = 2023
+# Early in a new year the first weekly reports are not yet published (~2 week lag).
+# During this window an empty current year is expected rather than an error.
+NEW_YEAR_GRACE_WEEKS = 4
 DATA_DIR = Path(__file__).parent.parent / "data" / "parquet"
 DISEASES_MD = Path(__file__).parent.parent / "docs" / "DISEASES.md"
 
 
-def _max_iso_week(year: int) -> int:
-    """Return the number of ISO weeks in a year (52 or 53)."""
-    return date(year, 12, 28).isocalendar().week
-
-
 def _year_week_upper_bound(year: int) -> int:
     """Return the latest week to download for a given year."""
-    iso_max = _max_iso_week(year)
+    iso_max = iso_weeks_in_year(year)
     if year == CURRENT_YEAR:
         return min(CURRENT_WEEK, iso_max)
     return iso_max
+
+
+def _split_preserved_years(
+    existing_df: pl.DataFrame, name: str
+) -> tuple[pl.DataFrame | None, set[int]]:
+    """Split existing output into preserved years and years to re-fetch.
+
+    The previous year is only preserved once it reaches its final ISO week. If it
+    was last refreshed before its final weeks were published (at the
+    December/January rollover), it is downloaded again so its tail is not lost.
+    """
+    existing_years = {int(year) for year in existing_df["year"].unique().to_list()}
+    finished = complete_years(existing_df)
+    # Only the previous year can still be receiving late weeks; older years are
+    # final even when the source ended early (matches the release preservation guard).
+    incomplete_years = sorted(
+        year for year in existing_years if year == CURRENT_YEAR - 1 and year not in finished
+    )
+    preserved_years = sorted(
+        year for year in existing_years if year < CURRENT_YEAR and year not in incomplete_years
+    )
+    for year in incomplete_years:
+        logger.warning(
+            f"  Existing {name} data for {year} ends before ISO week "
+            f"{iso_weeks_in_year(year)}; re-fetching the full year"
+        )
+
+    if not preserved_years:
+        return None, set()
+    logger.info(
+        f"  Preserved existing {name} data for years: "
+        f"{preserved_years[0]}-{preserved_years[-1]}"
+    )
+    return existing_df.filter(pl.col("year").is_in(preserved_years)), set(preserved_years)
+
+
+def _allow_unpublished_current_year(year: int, loaded_frames: list[pl.DataFrame]) -> bool:
+    """Return whether an empty current year is expected at the start of a new year."""
+    return year == CURRENT_YEAR and CURRENT_WEEK <= NEW_YEAR_GRACE_WEEKS and bool(loaded_frames)
 
 
 def _format_number(value: int | float | None) -> str:
@@ -201,6 +241,10 @@ def build_sex() -> None:
             logger.info(f"  ✓ Derived female rows: {female_df.height:,}")
 
         out_path = DATA_DIR / "sex_prefecture.parquet"
+        # Keep the published column order (matches place_prefecture).
+        full_df = full_df.select(
+            ["prefecture", "year", "week", "date", "count", "category", "disease", "source"]
+        )
         full_df = _sort_for_output(full_df)
         _validate_dataset_output("sex_prefecture", full_df)
         full_df.write_parquet(out_path)
@@ -243,19 +287,16 @@ def build_bullet() -> None:
     out_path = DATA_DIR / "bullet.parquet"
     all_years = list(range(LAST_HISTORICAL_YEAR + 1, CURRENT_YEAR + 1))
     dfs: list[pl.DataFrame] = []
-    existing_years: set[int] = set()
+    preserved_years: set[int] = set()
 
     if out_path.exists():
-        existing_df = pl.read_parquet(out_path)
-        existing_years = {int(year) for year in existing_df["year"].unique().to_list()}
-        preserved_years = sorted(year for year in existing_years if year < CURRENT_YEAR)
-        if preserved_years:
-            dfs.append(existing_df.filter(pl.col("year").is_in(preserved_years)))
-            logger.info(
-                f"  Preserved existing bullet data for years: {preserved_years[0]}-{preserved_years[-1]}"
-            )
+        preserved_df, preserved_years = _split_preserved_years(
+            pl.read_parquet(out_path), "bullet"
+        )
+        if preserved_df is not None:
+            dfs.append(preserved_df)
 
-    years = [year for year in all_years if year == CURRENT_YEAR or year not in existing_years]
+    years = [year for year in all_years if year not in preserved_years]
     total_weeks = 0
 
     for year in years:
@@ -264,6 +305,9 @@ def build_bullet() -> None:
             logger.info(f"  Processing year {year}...")
             paths = io.download("bullet", year, week=range(1, final_week + 1))
             if not paths:
+                if _allow_unpublished_current_year(year, dfs):
+                    logger.info(f"  No bullet reports published yet for {year}; skipping")
+                    continue
                 raise RuntimeError(f"No bullet data found for {year}")
 
             path_list = paths if isinstance(paths, list) else [paths]
@@ -324,19 +368,16 @@ def build_sentinel(*, full_rebuild: bool = False, source_dir: Path | None = None
     out_path = DATA_DIR / "sentinel.parquet"
     all_years = list(range(start_year, CURRENT_YEAR + 1))
     dfs: list[pl.DataFrame] = []
-    existing_years: set[int] = set()
+    preserved_years: set[int] = set()
 
     if out_path.exists() and not full_rebuild:
-        existing_df = pl.read_parquet(out_path)
-        existing_years = {int(year) for year in existing_df["year"].unique().to_list()}
-        preserved_years = sorted(year for year in existing_years if year < CURRENT_YEAR)
-        if preserved_years:
-            dfs.append(existing_df.filter(pl.col("year").is_in(preserved_years)))
-            logger.info(
-                f"  Preserved existing sentinel data for years: {preserved_years[0]}-{preserved_years[-1]}"
-            )
+        preserved_df, preserved_years = _split_preserved_years(
+            pl.read_parquet(out_path), "sentinel"
+        )
+        if preserved_df is not None:
+            dfs.append(preserved_df)
 
-    years = [year for year in all_years if year == CURRENT_YEAR or year not in existing_years]
+    years = [year for year in all_years if year not in preserved_years]
     total_weeks = 0
 
     for year in years:
@@ -354,6 +395,9 @@ def build_sentinel(*, full_rebuild: bool = False, source_dir: Path | None = None
                     and int(year_week[1]) <= final_week
                 ]
             if not paths:
+                if _allow_unpublished_current_year(year, dfs):
+                    logger.info(f"  No sentinel reports published yet for {year}; skipping")
+                    continue
                 raise RuntimeError(f"No sentinel data found for {year}")
 
             path_list = paths if isinstance(paths, list) else [paths]
@@ -419,8 +463,8 @@ def build_unified() -> None:
     - Historical sex data (excluding years with modern zensu data)
     - Modern bullet/sentinel data
 
-    Uses smart_merge() to prefer confirmed (zensu) data and only include
-    sentinel-exclusive diseases from teiten. Modern bullet years replace
+    Uses smart_merge() to prefer confirmed data and only include sentinel rows
+    for disease-years without confirmed coverage. Modern bullet years replace
     overlapping historical years.
     """
     logger.info("\n" + "=" * 60)
@@ -467,18 +511,18 @@ def build_unified() -> None:
     else:
         raise FileNotFoundError(f"Sex data file not found: {sex_path}")
 
-    # 4. Smart merge modern data (prefer zensu, only sentinel-exclusive from teiten)
-    logger.info("\nApplying smart merge (prefer confirmed, sentinel-only from teiten)...")
-    merged_modern = validation.smart_merge(zensu_df, teiten_df)
-    logger.info(f"  ✓ Merged to {merged_modern.height:,} rows")
+    # 4. Combine historical and modern confirmed totals, then add sentinel rows only
+    # for disease-years that confirmed data does not cover. Merging against all
+    # confirmed years (not just bullet) keeps sentinel history for diseases that
+    # later became notifiable without duplicating historical confirmed rows.
+    logger.info("\nApplying smart merge (prefer confirmed, sentinel-only disease-years)...")
+    confirmed_df = pl.concat([sex_df, zensu_df], how="diagonal_relaxed")
+    unified_df = validation.smart_merge(confirmed_df, teiten_df)
     logger.info(
-        f"    (zensu: {zensu_df.height:,}, teiten filtered: {merged_modern.height - zensu_df.height:,})"
+        f"  ✓ Merged to {unified_df.height:,} rows "
+        f"(confirmed: {confirmed_df.height:,}, "
+        f"sentinel kept: {unified_df.height - confirmed_df.height:,})"
     )
-
-    # 5. Combine historical totals with modern data.
-    logger.info("\nCombining historical and modern datasets...")
-    unified_df = pl.concat([sex_df, merged_modern], how="diagonal_relaxed")
-    logger.info(f"  ✓ Combined to {unified_df.height:,} total rows")
 
     # Fill modern rows with category=total for a consistent schema.
     if "category" in unified_df.columns:

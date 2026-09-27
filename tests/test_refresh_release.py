@@ -273,12 +273,69 @@ def test_validate_release_preservation_rejects_historical_change(tmp_path: Path)
     for filename in ("bullet.parquet", "sentinel.parquet", "unified.parquet"):
         path = data_dir / filename
         current = pl.read_parquet(path)
-        historical = current.with_columns(pl.lit(2025).alias("year"))
+        # A complete previous year (reaches its final ISO week) is frozen.
+        historical = current.with_columns(pl.lit(2025).alias("year"), pl.lit(52).alias("week"))
         pl.concat([historical, current], how="diagonal_relaxed").write_parquet(path)
     refresh_release._backup_targets(repo_root, backup_root)
     path = data_dir / "bullet.parquet"
     pl.read_parquet(path).with_columns(
         pl.when(pl.col("year") == 2025).then(99).otherwise(pl.col("count")).alias("count")
+    ).write_parquet(path)
+
+    with pytest.raises(ValueError, match="Stable historical rows changed"):
+        refresh_release._validate_release_preservation(repo_root, backup_root)
+
+
+def _write_rollover_history(repo_root: Path, *, older_year_week: int) -> None:
+    """Add an older year and a previous year that stops at week 50 of 53."""
+    data_dir = repo_root / "data" / "parquet"
+    for filename in ("bullet.parquet", "sentinel.parquet", "unified.parquet"):
+        path = data_dir / filename
+        current = pl.read_parquet(path).with_columns(pl.lit(2027).alias("year"))
+        older = current.with_columns(
+            pl.lit(2024).alias("year"), pl.lit(older_year_week).alias("week")
+        )
+        previous = current.with_columns(pl.lit(2026).alias("year"), pl.lit(50).alias("week"))
+        pl.concat([older, previous, current], how="diagonal_relaxed").write_parquet(path)
+
+
+def _append_previous_year_week(path: Path, week: int) -> None:
+    current = pl.read_parquet(path)
+    extra = current.filter(pl.col("year") == 2026).with_columns(pl.lit(week).alias("week"))
+    pl.concat([current, extra], how="diagonal_relaxed").write_parquet(path)
+
+
+def test_validate_release_preservation_allows_late_weeks_for_incomplete_previous_year(
+    tmp_path: Path,
+) -> None:
+    repo_root = tmp_path / "repo"
+    backup_root = tmp_path / "backup"
+    _write_refresh_repo(repo_root)
+    _write_rollover_history(repo_root, older_year_week=52)
+    refresh_release._backup_targets(repo_root, backup_root)
+    data_dir = repo_root / "data" / "parquet"
+    for filename in ("bullet.parquet", "sentinel.parquet", "unified.parquet"):
+        path = data_dir / filename
+        pl.read_parquet(path).with_columns(
+            pl.when(pl.col("year") == 2026).then(5).otherwise(pl.col("count")).alias("count")
+        ).write_parquet(path)
+        _append_previous_year_week(path, 53)
+
+    refresh_release._validate_release_preservation(repo_root, backup_root)
+
+
+def test_validate_release_preservation_freezes_older_years_even_if_short(
+    tmp_path: Path,
+) -> None:
+    repo_root = tmp_path / "repo"
+    backup_root = tmp_path / "backup"
+    _write_refresh_repo(repo_root)
+    # 2024 ends at week 6: short, but older than the previous year, so still frozen.
+    _write_rollover_history(repo_root, older_year_week=6)
+    refresh_release._backup_targets(repo_root, backup_root)
+    path = repo_root / "data" / "parquet" / "bullet.parquet"
+    pl.read_parquet(path).with_columns(
+        pl.when(pl.col("year") == 2024).then(99).otherwise(pl.col("count")).alias("count")
     ).write_parquet(path)
 
     with pytest.raises(ValueError, match="Stable historical rows changed"):

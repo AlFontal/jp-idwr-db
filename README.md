@@ -38,7 +38,7 @@ print(df)
 
 <!-- BEGIN GENERATED UNIFIED SNAPSHOT -->
 ```text
-shape: (5_513_187, 6)
+shape: (5_530_274, 6)
 ┌────────────┬────────────┬──────────┬────────────────────────────────┬───────┬────────────────────┐
 │ date       ┆ prefecture ┆ category ┆ disease                        ┆ count ┆ source             │
 │ ---        ┆ ---        ┆ ---      ┆ ---                            ┆ ---   ┆ ---                │
@@ -147,7 +147,7 @@ The source archive has changed over time:
 * modern sentinel reports (`teitenrui`) are published weekly as `.csv`
 
 Source: [JIHS IDWR Surveillance Data Tables](https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/),
-accessed 2026-09-16 for release `v2026.9.16`.
+accessed 2026-09-27 for release `v2026.9.16`.
 
 The underlying IDWR surveillance data are weekly. `jp-idwr-db` refreshes its published release approximately every two weeks, incorporating newly available reports into a new versioned snapshot.
 

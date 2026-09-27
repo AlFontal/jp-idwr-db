@@ -28,6 +28,7 @@ from .config import get_config
 from .http import download_urls
 from .types import DatasetName
 from .urls import url_bullet, url_confirmed, url_sentinel
+from .utils import iso_weeks_in_year
 
 logger = logging.getLogger(__name__)
 
@@ -466,9 +467,8 @@ def _sheet_range_for_year(year: int) -> range:
     """
     if year == 1999:
         return range(2, 41)  # Started mid-year
-    if year in {2004, 2009, 2015}:  # Years with 53 weeks
-        return range(2, 55)
-    return range(2, 54)
+    # Sheet 1 is the annual total, followed by one sheet per ISO week (52 or 53).
+    return range(2, iso_weeks_in_year(year) + 2)
 
 
 def _iso_week_date(year: int, week: int) -> dt.date | None:

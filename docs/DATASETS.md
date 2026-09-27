@@ -3,7 +3,7 @@
 This document describes the parquet datasets published as GitHub Release assets.
 At runtime they are cached under `~/.cache/jp_idwr_db/data/<version>/` (OS-specific via `platformdirs`).
 
-All figures below reflect the repository snapshot on **2026-09-16**.
+All figures below reflect the repository snapshot on **2026-09-27**.
 
 The `date` column is the Monday at the start of the ISO surveillance week in
 every published dataset. Use `year` and `week` as the canonical surveillance
@@ -66,7 +66,9 @@ Load with:
 - Composition:
   - historical **sex dataset only** (category normalized to `total`)
   - modern `bullet`
-  - diseases from `sentinel` that are absent in `bullet` after smart merge
+  - `sentinel` rows for disease-years without confirmed or all-case coverage
+    (currently all sentinel rows, including pertussis 2012-2017 before it
+    became all-case notifiable in 2018)
 - The `place` dataset is **not fused** into unified.
 - Category policy: unified keeps only `category = total`.
 
@@ -80,7 +82,7 @@ Load with:
 
 ### `sex_prefecture.parquet`
 
-- Rows: `12,953,529`
+- Rows: `12,965,937`
 - Columns: `prefecture, year, week, date, count, category, disease, source`
 - Years: `1999-2023`
 - Prefectures: `47`
@@ -88,7 +90,7 @@ Load with:
 
 ### `place_prefecture.parquet`
 
-- Rows: `16,482,336`
+- Rows: `16,498,880`
 - Columns: `prefecture, year, week, date, count, category, disease, source`
 - Years: `2001-2023`
 - Prefectures: `47`
@@ -113,7 +115,7 @@ Load with:
 
 ### `unified.parquet`
 
-- Rows: `5,513,187`
+- Rows: `5,530,274`
 - Columns: `prefecture, year, week, date, count, category, disease, source, per_sentinel`
 - Years: `1999-2026`
 - Prefectures: `47`
@@ -121,16 +123,42 @@ Load with:
 - Categories: `total` only
 - Sources: `Confirmed cases`, `All-case reporting`, `Sentinel surveillance`
 
+### `prefecture_en.parquet`
+
+- Rows: `47`
+- Columns: `prefecture`
+
 ## Known Source Anomalies
 
 - Sentinel `2016-W37` contains 26 of 47 prefectures because the upstream CSV is
   truncated after Kyoto. Consumers aggregating that period should treat it as
   incomplete.
 
-### `prefecture_en.parquet`
+## Disease Names Across Periods
 
-- Rows: `47`
-- Columns: `prefecture`
+Disease names are kept exactly as published for each period. Series are **not**
+merged across renames or reclassifications, because it has not been verified
+that the case definitions are equivalent. A disease whose name first appears in
+a later year usually became notifiable that year; see
+[`DISEASES.md`](DISEASES.md) for first and last week per name.
+
+Names below look related but are kept separate. Filter on every name that is
+relevant to your analysis and check the case definitions before combining them.
+
+| Names in the data (confirmed / all-case years) | Notes |
+| --- | --- |
+| `Acute poliomyelitis` (1999-2000, 2006-2026); `Poliomyelitis` (2001-2005) | Labels alternate by period; the data does not show whether definitions match. |
+| `Acute viral hepatitis` (1999-2005); `Hepatitis A`, `Hepatitis E`, `Viral hepatitis(excluding hepatitis A and E)` (2006-2026) | One label until 2005, three labels from 2006. |
+| `Infant botulism` (1999-2005); `Botulism` (2006-2026) | Consecutive periods with different labels; scope may differ. |
+| `Meningococcal meningitis` (1999-2016); `Invasive meningococcal infection` (2013-2026) | Both exist in 2013-2016, so this is not a simple rename; adding them would double count. |
+| `Avian influenza virus infection` (2006-2007); `Avian influenza H5N1` (2008-2026); `Avian influenza (exclud. Avian influenza H5N1)` (2008-2023); `Avian influenza H7N9` (2013-2026); `Avian influenza (exclud. Avian influenza both H5N1 and H7N9)` (2024-2026) | Subtype-based labels change over time; some overlap in years. |
+| `Monkeypox` (2006-2022); `Mpox` (2023-2026) | Consecutive periods with different labels. |
+| `A/H1N1` (2009-2023) | Present in the annual tables only; no all-case counterpart from 2024. |
+| `Pertussis` sentinel (2012-2017); `Pertussis` confirmed / all-case (2018-2026) | Same name, different surveillance systems (sentinel sites vs all cases); counts are not comparable across 2017/2018. Use `source` to separate them. |
+
+The confirmed series also changes source in 2024: 1999-2023 comes from the
+annual tables (`Confirmed cases`) and 2024 onwards from the weekly reports
+(`All-case reporting`). The two may not be strictly comparable at that boundary.
 
 ## Prefecture IDs
 

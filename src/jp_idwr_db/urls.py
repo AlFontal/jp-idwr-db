@@ -135,9 +135,10 @@ def url_bullet(
         weeks = list(week)
 
     # Validate week range
-    weeks = [w for w in weeks if 1 <= w <= 52]
+    # ISO years with 53 weeks (e.g. 2026) publish a week-53 report.
+    weeks = [w for w in weeks if 1 <= w <= 53]
     if not weeks:
-        raise ValueError("Week must be between 1 and 52.")
+        raise ValueError("Week must be between 1 and 53.")
 
     urls: list[str] = []
     config = get_config()

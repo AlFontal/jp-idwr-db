@@ -17,3 +17,6 @@ dist/
 .env
 dist-data/
 .omx/
+
+# Local dashboard build dependencies
+dashboard/node_modules/

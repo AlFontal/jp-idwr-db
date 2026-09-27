@@ -11,6 +11,7 @@ from jp_idwr_db.io import (
     _confirmed_wide_to_long,
     _normalize_disease_name,
     _parse_excel_sheet_blocks,
+    _sheet_range_for_year,
     read,
 )
 
@@ -195,3 +196,11 @@ Tokyo,6,60,1,8
 )
 def test_normalize_disease_name_cross_year_variants(raw: str, expected: str) -> None:
     assert _normalize_disease_name(raw) == expected
+
+
+def test_sheet_range_for_year_includes_week_53_sheets() -> None:
+    # One total sheet plus one sheet per ISO week.
+    assert len(_sheet_range_for_year(2020)) == 53
+    assert len(_sheet_range_for_year(2015)) == 53
+    assert len(_sheet_range_for_year(2019)) == 52
+    assert len(_sheet_range_for_year(1999)) == 39

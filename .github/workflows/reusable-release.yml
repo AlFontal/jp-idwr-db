@@ -88,7 +88,9 @@ jobs:
 
   publish-pypi-token:
     runs-on: ubuntu-latest
-    needs: build
+    # The package resolves its default data release from its own version, so the
+    # GitHub release with data assets must exist before the package is published.
+    needs: [build, github-release]
     permissions:
       contents: read
     steps:
