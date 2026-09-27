@@ -105,12 +105,22 @@ def merge(*dfs: pl.DataFrame) -> pl.DataFrame:
 
     polars_frames = [_col_join_rename(df) for df in dfs]
 
-    key_cols = ["prefecture", "year", "week", "date"]
-    merged = polars_frames[0].join(polars_frames[1], on=key_cols, how="full")
-
-    if len(polars_frames) > 2:
-        merged = pl.concat([merged, *polars_frames[2:]], how="diagonal_relaxed")
-
+    # Join every frame on the period keys they all share. Keys are coalesced so
+    # rows present in only one frame keep their prefecture/year/week/date, and
+    # value columns already present are not duplicated with a suffix.
+    key_cols = [
+        col
+        for col in ("prefecture", "year", "week", "date")
+        if all(col in frame.columns for frame in polars_frames)
+    ]
+    if not key_cols:
+        raise ValueError("merge requires shared prefecture/year/week/date columns")
+    merged = polars_frames[0]
+    for frame in polars_frames[1:]:
+        new_cols = [col for col in frame.columns if col not in merged.columns]
+        merged = merged.join(
+            frame.select([*key_cols, *new_cols]), on=key_cols, how="full", coalesce=True
+        )
     return merged
 
 

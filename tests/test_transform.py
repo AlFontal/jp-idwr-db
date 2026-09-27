@@ -86,3 +86,14 @@ def test_merge_mixed_inputs() -> None:
     merged = merge(df1, df2)
     assert isinstance(merged, pl.DataFrame)
     assert merged.height == 1
+
+
+def test_merge_wide_frames_keeps_keys_of_unmatched_rows() -> None:
+    left = pl.DataFrame({"prefecture": ["Tokyo"], "year": [2024], "week": [1], "Measles": [1]})
+    right = pl.DataFrame({"prefecture": ["Osaka"], "year": [2024], "week": [1], "Mumps": [2]})
+    third = pl.DataFrame({"prefecture": ["Tokyo"], "year": [2024], "week": [1], "Rubella": [3]})
+
+    merged = merge(left, right, third).sort("prefecture")
+
+    assert merged.columns == ["prefecture", "year", "week", "Measles", "Mumps", "Rubella"]
+    assert merged.rows() == [("Osaka", 2024, 1, None, 2, None), ("Tokyo", 2024, 1, 1, None, 3)]
