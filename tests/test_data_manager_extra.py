@@ -72,3 +72,43 @@ def test_resolve_latest_release_tag_rejects_legacy_latest_manifest(
         ValueError, match="latest' alias requires a manifest with a release_tag field"
     ):
         data_manager._resolve_latest_release_tag()
+
+
+@pytest.mark.parametrize("tag", ["v/../../etc", "v..", "../v1", "v1/2", "2026.9.30/.."])
+def test_ensure_data_rejects_unsafe_release_tags(
+    tag: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("JP_IDWR_DB_CACHE_DIR", str(tmp_path))
+    with pytest.raises(ValueError, match="Invalid data release tag"):
+        data_manager.ensure_data(version=tag, force=True)
+
+
+def test_ensure_data_latest_falls_back_to_cache_when_offline(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("JP_IDWR_DB_CACHE_DIR", str(tmp_path))
+    for tag in ("v2026.9.2", "v2026.9.16", "v2026.10.1"):
+        (tmp_path / "data" / tag).mkdir(parents=True)
+    (tmp_path / "data" / "v2026.9.2" / ".complete").write_text("ok\n")
+    (tmp_path / "data" / "v2026.9.16" / ".complete").write_text("ok\n")  # newest complete
+
+    def offline() -> str:
+        raise data_manager.httpx.ConnectError("offline")
+
+    monkeypatch.setattr(data_manager, "_resolve_latest_release_tag", offline)
+
+    assert data_manager.ensure_data(version="latest") == tmp_path / "data" / "v2026.9.16"
+
+
+def test_ensure_data_latest_offline_without_cache_raises(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("JP_IDWR_DB_CACHE_DIR", str(tmp_path))
+
+    def offline() -> str:
+        raise data_manager.httpx.ConnectError("offline")
+
+    monkeypatch.setattr(data_manager, "_resolve_latest_release_tag", offline)
+
+    with pytest.raises(data_manager.httpx.ConnectError):
+        data_manager.ensure_data(version="latest")

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import sys
 import tempfile
@@ -53,6 +54,35 @@ def _resolve_data_version(version: str | None) -> str:
 def _normalize_data_version(version: str) -> str:
     """Normalize a user-facing data version string into a release selector."""
     return normalize_release_tag(version)
+
+
+# Release tags become cache directory names, so they must be a single safe
+# path component (e.g. v2026.9.30, v0.2.5, v2026.3.26.post1).
+_SAFE_TAG = re.compile(r"^v[0-9A-Za-z._+-]+$")
+
+
+def _validate_release_tag(tag: str) -> str:
+    """Reject release tags that are not a single safe path component."""
+    if not _SAFE_TAG.match(tag) or ".." in tag:
+        raise ValueError(f"Invalid data release tag: {tag!r}")
+    return tag
+
+
+def _cached_release_tags(cache_dir: Path) -> list[str]:
+    """Return fully downloaded release tags in the cache, newest first."""
+    data_root = cache_dir / "data"
+    if not data_root.is_dir():
+        return []
+    tags = [
+        path.name
+        for path in data_root.iterdir()
+        if (path / ".complete").exists() and _SAFE_TAG.match(path.name)
+    ]
+
+    def version_key(tag: str) -> tuple[int, ...]:
+        return tuple(int(part) for part in re.findall(r"\d+", tag))
+
+    return sorted(tags, key=version_key, reverse=True)
 
 
 def _resolve_base_url(version: str) -> str:
@@ -213,9 +243,29 @@ def ensure_data(version: str | None = None, force: bool = False) -> Path:
         Directory path containing parquet files for the resolved version.
     """
     requested = _resolve_data_version(version)
-    resolved = _resolve_latest_release_tag() if requested == "latest" else requested
     cache_dir = get_cache_dir()
+    if requested == "latest":
+        try:
+            resolved = _resolve_latest_release_tag()
+        except (httpx.TransportError, httpx.HTTPStatusError) as exc:
+            # Offline or GitHub unavailable: use the newest complete local copy.
+            status = getattr(getattr(exc, "response", None), "status_code", None)
+            cached = _cached_release_tags(cache_dir)
+            if (status is not None and status < 500) or not cached or force:
+                raise
+            resolved = cached[0]
+            print(
+                f"[jp_idwr_db] Could not resolve the latest release ({exc}); "
+                f"using cached {resolved}.",
+                file=sys.stderr,
+            )
+    else:
+        resolved = requested
+    resolved = _validate_release_tag(resolved)
+    data_root = (cache_dir / "data").resolve()
     data_dir = cache_dir / "data" / resolved
+    if data_dir.resolve().parent != data_root:
+        raise ValueError(f"Data directory escapes the cache: {data_dir}")
     marker = data_dir / ".complete"
 
     if marker.exists() and not force:
