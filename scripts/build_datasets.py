@@ -11,7 +11,7 @@ import polars as pl
 
 from jp_idwr_db import io
 from jp_idwr_db._internal import validation
-from jp_idwr_db.utils import PREFECTURE_ISO_MAP
+from jp_idwr_db.utils import PREFECTURE_ISO_MAP, complete_years, iso_weeks_in_year
 
 # Configure logging
 logging.basicConfig(
@@ -21,24 +21,64 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-CURRENT_YEAR = datetime.now().year
-CURRENT_WEEK = datetime.now().isocalendar().week
+# Use the ISO calendar for both values so that early-January days that still belong
+# to the previous ISO year (e.g. 2027-01-01 is 2026-W53) resolve consistently.
+_TODAY_ISO = datetime.now().isocalendar()
+CURRENT_YEAR = _TODAY_ISO.year
+CURRENT_WEEK = _TODAY_ISO.week
 LAST_HISTORICAL_YEAR = 2023
+# Early in a new year the first weekly reports are not yet published (~2 week lag).
+# During this window an empty current year is expected rather than an error.
+NEW_YEAR_GRACE_WEEKS = 4
 DATA_DIR = Path(__file__).parent.parent / "data" / "parquet"
 DISEASES_MD = Path(__file__).parent.parent / "docs" / "DISEASES.md"
 
 
-def _max_iso_week(year: int) -> int:
-    """Return the number of ISO weeks in a year (52 or 53)."""
-    return date(year, 12, 28).isocalendar().week
-
-
 def _year_week_upper_bound(year: int) -> int:
     """Return the latest week to download for a given year."""
-    iso_max = _max_iso_week(year)
+    iso_max = iso_weeks_in_year(year)
     if year == CURRENT_YEAR:
         return min(CURRENT_WEEK, iso_max)
     return iso_max
+
+
+def _split_preserved_years(
+    existing_df: pl.DataFrame, name: str
+) -> tuple[pl.DataFrame | None, set[int]]:
+    """Split existing output into preserved years and years to re-fetch.
+
+    The previous year is only preserved once it reaches its final ISO week. If it
+    was last refreshed before its final weeks were published (at the
+    December/January rollover), it is downloaded again so its tail is not lost.
+    """
+    existing_years = {int(year) for year in existing_df["year"].unique().to_list()}
+    finished = complete_years(existing_df)
+    # Only the previous year can still be receiving late weeks; older years are
+    # final even when the source ended early (matches the release preservation guard).
+    incomplete_years = sorted(
+        year for year in existing_years if year == CURRENT_YEAR - 1 and year not in finished
+    )
+    preserved_years = sorted(
+        year for year in existing_years if year < CURRENT_YEAR and year not in incomplete_years
+    )
+    for year in incomplete_years:
+        logger.warning(
+            f"  Existing {name} data for {year} ends before ISO week "
+            f"{iso_weeks_in_year(year)}; re-fetching the full year"
+        )
+
+    if not preserved_years:
+        return None, set()
+    logger.info(
+        f"  Preserved existing {name} data for years: "
+        f"{preserved_years[0]}-{preserved_years[-1]}"
+    )
+    return existing_df.filter(pl.col("year").is_in(preserved_years)), set(preserved_years)
+
+
+def _allow_unpublished_current_year(year: int, loaded_frames: list[pl.DataFrame]) -> bool:
+    """Return whether an empty current year is expected at the start of a new year."""
+    return year == CURRENT_YEAR and CURRENT_WEEK <= NEW_YEAR_GRACE_WEEKS and bool(loaded_frames)
 
 
 def _format_number(value: int | float | None) -> str:
@@ -243,19 +283,16 @@ def build_bullet() -> None:
     out_path = DATA_DIR / "bullet.parquet"
     all_years = list(range(LAST_HISTORICAL_YEAR + 1, CURRENT_YEAR + 1))
     dfs: list[pl.DataFrame] = []
-    existing_years: set[int] = set()
+    preserved_years: set[int] = set()
 
     if out_path.exists():
-        existing_df = pl.read_parquet(out_path)
-        existing_years = {int(year) for year in existing_df["year"].unique().to_list()}
-        preserved_years = sorted(year for year in existing_years if year < CURRENT_YEAR)
-        if preserved_years:
-            dfs.append(existing_df.filter(pl.col("year").is_in(preserved_years)))
-            logger.info(
-                f"  Preserved existing bullet data for years: {preserved_years[0]}-{preserved_years[-1]}"
-            )
+        preserved_df, preserved_years = _split_preserved_years(
+            pl.read_parquet(out_path), "bullet"
+        )
+        if preserved_df is not None:
+            dfs.append(preserved_df)
 
-    years = [year for year in all_years if year == CURRENT_YEAR or year not in existing_years]
+    years = [year for year in all_years if year not in preserved_years]
     total_weeks = 0
 
     for year in years:
@@ -264,6 +301,9 @@ def build_bullet() -> None:
             logger.info(f"  Processing year {year}...")
             paths = io.download("bullet", year, week=range(1, final_week + 1))
             if not paths:
+                if _allow_unpublished_current_year(year, dfs):
+                    logger.info(f"  No bullet reports published yet for {year}; skipping")
+                    continue
                 raise RuntimeError(f"No bullet data found for {year}")
 
             path_list = paths if isinstance(paths, list) else [paths]
@@ -324,19 +364,16 @@ def build_sentinel(*, full_rebuild: bool = False, source_dir: Path | None = None
     out_path = DATA_DIR / "sentinel.parquet"
     all_years = list(range(start_year, CURRENT_YEAR + 1))
     dfs: list[pl.DataFrame] = []
-    existing_years: set[int] = set()
+    preserved_years: set[int] = set()
 
     if out_path.exists() and not full_rebuild:
-        existing_df = pl.read_parquet(out_path)
-        existing_years = {int(year) for year in existing_df["year"].unique().to_list()}
-        preserved_years = sorted(year for year in existing_years if year < CURRENT_YEAR)
-        if preserved_years:
-            dfs.append(existing_df.filter(pl.col("year").is_in(preserved_years)))
-            logger.info(
-                f"  Preserved existing sentinel data for years: {preserved_years[0]}-{preserved_years[-1]}"
-            )
+        preserved_df, preserved_years = _split_preserved_years(
+            pl.read_parquet(out_path), "sentinel"
+        )
+        if preserved_df is not None:
+            dfs.append(preserved_df)
 
-    years = [year for year in all_years if year == CURRENT_YEAR or year not in existing_years]
+    years = [year for year in all_years if year not in preserved_years]
     total_weeks = 0
 
     for year in years:
@@ -354,6 +391,9 @@ def build_sentinel(*, full_rebuild: bool = False, source_dir: Path | None = None
                     and int(year_week[1]) <= final_week
                 ]
             if not paths:
+                if _allow_unpublished_current_year(year, dfs):
+                    logger.info(f"  No sentinel reports published yet for {year}; skipping")
+                    continue
                 raise RuntimeError(f"No sentinel data found for {year}")
 
             path_list = paths if isinstance(paths, list) else [paths]

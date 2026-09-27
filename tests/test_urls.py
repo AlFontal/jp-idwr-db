@@ -64,6 +64,24 @@ def test_url_bullet_skips_missing_weeks(monkeypatch: Any) -> None:
     assert result == ["https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/2026/11/zensu11.csv"]
 
 
+def test_url_bullet_includes_week_53(monkeypatch: Any) -> None:
+    """ISO years with 53 weeks publish a week-53 report."""
+
+    def fake_head(url: str, config: Any) -> Any:
+        class Resp:
+            status_code = 200
+            headers: typing.ClassVar = {"content-length": "100"}
+
+        return Resp()
+
+    monkeypatch.setattr(urls, "cached_head", fake_head)
+    result = urls.url_bullet(2026, [52, 53])
+    assert result == [
+        "https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/2026/52/zensu52.csv",
+        "https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/2026/53/zensu53.csv",
+    ]
+
+
 def test_url_sentinel_single_week(monkeypatch: Any) -> None:
     """Test sentinel URL generation for a single week."""
 

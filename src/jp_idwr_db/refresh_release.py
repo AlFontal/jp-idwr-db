@@ -18,7 +18,7 @@ import polars as pl
 
 from ._internal import validation
 from ._internal.release_utils import sha256 as file_sha256
-from .utils import PREFECTURE_ISO_MAP
+from .utils import PREFECTURE_ISO_MAP, iso_weeks_in_year
 
 TARGET_OUTPUTS = (
     Path("data/parquet/bullet.parquet"),
@@ -227,9 +227,43 @@ def _latest_year_week(path: Path) -> tuple[int, int]:
     return int(latest["year"][0]), int(latest["week"][0])
 
 
-def _historical_signature(path: Path, before_year: int) -> tuple[tuple[str, ...], int, int, int]:
+def _frozen_year_sources(path: Path, latest_year: int) -> pl.DataFrame:
+    """Return ``(year, source)`` pairs whose published rows must not change.
+
+    Every year before the previous calendar year is frozen. The previous year is
+    frozen per source only once it reaches its final ISO week, so a refresh after
+    the year rollover can still add the weeks published late (including week 53).
+    Completeness is tracked per source because ``unified`` mixes sources whose
+    publication can finish at different times for the same year.
+    """
+    scan = pl.scan_parquet(path)
+    source_expr = pl.col("source") if "source" in scan.collect_schema().names() else pl.lit("")
+    last_weeks = (
+        scan.filter(pl.col("year") < latest_year)
+        .group_by(pl.col("year"), source_expr.alias("_source"))
+        .agg(pl.col("week").max().alias("last_week"))
+        .collect()
+    )
+    is_complete = pl.col("last_week") >= pl.col("year").map_elements(
+        iso_weeks_in_year, return_dtype=pl.Int64
+    )
+    return last_weeks.filter((pl.col("year") < latest_year - 1) | is_complete).select(
+        ["year", "_source"]
+    )
+
+
+def _historical_signature(
+    path: Path, frozen: pl.DataFrame
+) -> tuple[tuple[str, ...], int, int, int]:
     """Return an order-independent signature for immutable historical rows."""
-    scan = pl.scan_parquet(path).filter(pl.col("year") < before_year)
+    scan = pl.scan_parquet(path)
+    source_expr = pl.col("source") if "source" in scan.collect_schema().names() else pl.lit("")
+    scan = scan.join(
+        frozen.lazy(),
+        left_on=[pl.col("year"), source_expr],
+        right_on=[pl.col("year"), pl.col("_source")],
+        how="semi",
+    )
     columns = tuple(scan.collect_schema().names())
     signature = scan.select(
         pl.len().alias("rows"),
@@ -281,10 +315,8 @@ def _validate_release_preservation(repo_root: Path, backup_root: Path) -> None:
                 f"First regressions: {sorted(regressed_periods)[:10]}"
             )
 
-        stable_before_year = previous_latest[0]
-        if _historical_signature(previous, stable_before_year) != _historical_signature(
-            rebuilt, stable_before_year
-        ):
+        frozen = _frozen_year_sources(previous, previous_latest[0])
+        if _historical_signature(previous, frozen) != _historical_signature(rebuilt, frozen):
             raise ValueError(f"Stable historical rows changed in {rel_path}")
 
 

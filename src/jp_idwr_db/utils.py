@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import date
+
 import polars as pl
 
 PREFECTURE_ISO_MAP: dict[str, str] = {
@@ -53,6 +55,23 @@ PREFECTURE_ISO_MAP: dict[str, str] = {
     "Kagoshima": "JP-46",
     "Okinawa": "JP-47",
 }
+
+
+def iso_weeks_in_year(year: int) -> int:
+    """Return the number of ISO weeks in a year (52 or 53)."""
+    return date(year, 12, 28).isocalendar().week
+
+
+def complete_years(df: pl.DataFrame) -> set[int]:
+    """Return years whose data reaches the final ISO week of that year."""
+    if df.is_empty():
+        return set()
+    last_weeks = df.group_by("year").agg(pl.col("week").max().alias("last_week"))
+    return {
+        int(row["year"])
+        for row in last_weeks.iter_rows(named=True)
+        if int(row["last_week"]) >= iso_weeks_in_year(int(row["year"]))
+    }
 
 
 def prefecture_map() -> dict[str, str]:
