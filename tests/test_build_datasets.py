@@ -716,3 +716,37 @@ def test_derive_female_works_per_disease() -> None:
     out = build_datasets._derive_female(pl.concat([measles, mumps]))
     female = out.filter(pl.col("category") == "female").sort("disease")
     assert female.select(["disease", "count"]).rows() == [("Measles", 2), ("Mumps", 3)]
+
+
+def test_build_bullet_fails_when_a_downloaded_week_parses_to_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    build_datasets = _load_build_module()
+    monkeypatch.setattr(build_datasets, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(build_datasets, "BULLET_FIRST_YEAR", 2026)
+    monkeypatch.setattr(build_datasets, "CURRENT_YEAR", 2026)
+    monkeypatch.setattr(build_datasets, "CURRENT_WEEK", 2)
+    monkeypatch.setattr(io, "download", lambda *args, **kwargs: [tmp_path / "zensu01.csv"])
+    # io.read logs and returns an empty frame for a file it cannot parse.
+    monkeypatch.setattr(io, "read", lambda path, type: pl.DataFrame())
+
+    with pytest.raises(RuntimeError, match="Failed to build bullet data for 2026") as exc:
+        build_datasets.build_bullet()
+    assert "zensu01.csv parsed to no rows" in str(exc.value.__cause__)
+
+
+def test_build_sentinel_fails_when_a_downloaded_week_parses_to_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    build_datasets = _load_build_module()
+    monkeypatch.setattr(build_datasets, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(build_datasets, "SENTINEL_FIRST_YEAR", 2026)
+    monkeypatch.setattr(build_datasets, "RAPID_SENTINEL_FIRST_YEAR", 2026)
+    monkeypatch.setattr(build_datasets, "CURRENT_YEAR", 2026)
+    monkeypatch.setattr(build_datasets, "CURRENT_WEEK", 2)
+    monkeypatch.setattr(io, "download", lambda *args, **kwargs: [tmp_path / "teitenrui01.csv"])
+    monkeypatch.setattr(io, "_read_sentinel_en_pl", lambda path: pl.DataFrame())
+
+    with pytest.raises(RuntimeError, match="Failed to build sentinel data for 2026") as exc:
+        build_datasets.build_sentinel()
+    assert "teitenrui01.csv parsed to no rows" in str(exc.value.__cause__)

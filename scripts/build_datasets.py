@@ -404,6 +404,10 @@ def build_bullet() -> None:
             year_dfs = []
             for i, p in enumerate(path_list, 1):
                 df = io.read(p, type="bullet")
+                # The reader logs and skips files it cannot parse; a published
+                # week must never disappear silently.
+                if df.is_empty():
+                    raise RuntimeError(f"{p.name} parsed to no rows")
 
                 additions: list[pl.Expr] = [pl.lit("All-case reporting").alias("source")]
                 if "year" not in df.columns:
@@ -633,6 +637,10 @@ def build_sentinel(*, full_rebuild: bool = False, source_dir: Path | None = None
             for i, p in enumerate(path_list, 1):
                 # Read English sentinel data from /rapid/ endpoint
                 df = io._read_sentinel_en_pl(p)
+                # The reader logs and skips files it cannot parse; a published
+                # week must never disappear silently.
+                if df.is_empty():
+                    raise RuntimeError(f"{p.name} parsed to no rows")
 
                 # Filter out empty disease names (data quality issue)
                 df = df.filter(pl.col("disease") != "")
