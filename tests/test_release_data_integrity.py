@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from datetime import date
 from pathlib import Path
 
@@ -8,7 +9,11 @@ import pytest
 duckdb = pytest.importorskip("duckdb")
 
 ROOT = Path(__file__).resolve().parents[1]
-DATA_DIR = ROOT / "data" / "parquet"
+# Datasets are not committed: seed them with scripts/fetch_release_data.py, or
+# point this at another directory (e.g. a refresh dry run's rebuilt outputs).
+DATA_DIR = Path(os.environ.get("JP_IDWR_DB_TEST_DATA_DIR", ROOT / "data" / "parquet"))
+if not (DATA_DIR / "unified.parquet").exists():
+    pytest.skip(f"No release datasets in {DATA_DIR}", allow_module_level=True)
 DATASETS = {
     "sex": ("sex_prefecture.parquet", "prefecture, year, week, disease, category"),
     "place": ("place_prefecture.parquet", "prefecture, year, week, disease, category"),

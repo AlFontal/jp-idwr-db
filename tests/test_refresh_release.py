@@ -496,3 +496,99 @@ def test_validate_release_preservation_rejects_preliminary_change_without_switch
 
     with pytest.raises(ValueError, match="Stable historical rows changed"):
         refresh_release._validate_release_preservation(repo_root, backup_root)
+
+
+def test_prepare_refresh_release_ignores_doc_only_changes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """DISEASES.md carries the build date; it must not make every run a release."""
+    repo_root = tmp_path / "repo"
+    _write_refresh_repo(repo_root)
+
+    def rebuild(root: Path) -> None:
+        (root / "docs" / "DISEASES.md").write_text("# Snapshot: tomorrow\n", encoding="utf-8")
+
+    monkeypatch.setattr(refresh_release, "rebuild_release_outputs", rebuild)
+
+    outputs = refresh_release.prepare_refresh_release(
+        repo_root=repo_root, dry_run=True, release_date=date(2026, 3, 26)
+    )
+    assert outputs.changed is False
+
+
+def test_prepare_refresh_release_full_rebuild_removes_seeded_datasets(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo_root = tmp_path / "repo"
+    _write_refresh_repo(repo_root)
+    pl.DataFrame({"prefecture": ["Tokyo"]}).write_parquet(
+        repo_root / "data/parquet/prefecture_en.parquet"
+    )
+    seen: dict[str, bool] = {}
+
+    def rebuild(root: Path) -> None:
+        data = root / "data" / "parquet"
+        seen["sentinel_present"] = (data / "sentinel.parquet").exists()
+        seen["prefecture_en_present"] = (data / "prefecture_en.parquet").exists()
+        _write_extended_refresh_outputs(root)
+        for name in ("sex_prefecture", "place_prefecture"):
+            refresh_release.shutil.copy2(tmp_path / f"{name}.parquet", data / f"{name}.parquet")
+
+    for name in ("sex_prefecture", "place_prefecture"):
+        refresh_release.shutil.copy2(
+            repo_root / f"data/parquet/{name}.parquet", tmp_path / f"{name}.parquet"
+        )
+    monkeypatch.setattr(refresh_release, "rebuild_release_outputs", rebuild)
+    keep = tmp_path / "kept"
+
+    refresh_release.prepare_refresh_release(
+        repo_root=repo_root,
+        dry_run=True,
+        full_rebuild=True,
+        keep_outputs=keep,
+        release_date=date(2026, 3, 26),
+    )
+
+    assert seen == {"sentinel_present": False, "prefecture_en_present": True}
+    # The dry run restores the seed, but the rebuilt data and summary are kept.
+    assert sorted(p.name for p in keep.iterdir()) == [
+        "bullet.parquet",
+        "place_prefecture.parquet",
+        "prefecture_en.parquet",
+        "sentinel.parquet",
+        "sex_prefecture.parquet",
+        "summary.md",
+        "unified.parquet",
+    ]
+    summary = (keep / "summary.md").read_text(encoding="utf-8")
+    assert "| `bullet.parquet` | 1 | 2 | 2026 |" in summary
+    assert (repo_root / "data/parquet/sentinel.parquet").exists()
+
+
+def test_allow_historical_changes_overrides_the_frozen_rows_guard(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo_root = tmp_path / "repo"
+    _write_refresh_repo(repo_root)
+    path = repo_root / "data" / "parquet" / "bullet.parquet"
+    frame = pl.read_parquet(path)
+    pl.concat(
+        [frame.with_columns(pl.lit(2024, dtype=frame.schema["year"]).alias("year")), frame]
+    ).write_parquet(path)
+
+    def rebuild(root: Path) -> None:
+        target = root / "data" / "parquet" / "bullet.parquet"
+        pl.read_parquet(target).with_columns(
+            pl.when(pl.col("year") == 2024).then(9).otherwise(pl.col("count")).alias("count")
+        ).write_parquet(target)
+
+    monkeypatch.setattr(refresh_release, "rebuild_release_outputs", rebuild)
+
+    with pytest.raises(ValueError, match="Stable historical rows changed"):
+        refresh_release.prepare_refresh_release(repo_root=repo_root, release_date=date(2026, 3, 26))
+    refresh_release.prepare_refresh_release(
+        repo_root=repo_root, allow_historical_changes=True, release_date=date(2026, 3, 26)
+    )
+    changelog = (repo_root / "CHANGELOG.md").read_text(encoding="utf-8")
+    assert "explicit override" in changelog
+    assert "Automated weekly data refresh release." in changelog

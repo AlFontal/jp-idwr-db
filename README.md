@@ -13,7 +13,7 @@ It collects the official NIID/JIHS files, cleans and combines data published acr
   <img src="docs/assets/jp-idwr-db-overview.png" alt="jp-idwr-db data pipeline" width="100%">
 </p>
 
-IDWR reports are published weekly. `jp-idwr-db` checks for new data and publishes an updated, versioned snapshot every two weeks via GitHub Actions and releases.
+IDWR reports are published weekly. `jp-idwr-db` checks for new data every week and publishes an updated, versioned snapshot via GitHub Actions and releases.
 
 ## Install
 
@@ -151,7 +151,7 @@ The source archive has changed over time:
 Source: [JIHS IDWR Surveillance Data Tables](https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/),
 accessed 2026-09-30 for release `v2026.9.30`.
 
-The underlying IDWR surveillance data are weekly. `jp-idwr-db` refreshes its published release approximately every two weeks, incorporating newly available reports into a new versioned snapshot.
+The underlying IDWR surveillance data are weekly. `jp-idwr-db` refreshes its published release every week, incorporating newly available reports into a new versioned snapshot.
 
 Created by editing the JIHS IDWR surveillance data: source files are parsed,
 cleaned, normalized, and combined by this project, and preliminary sentinel

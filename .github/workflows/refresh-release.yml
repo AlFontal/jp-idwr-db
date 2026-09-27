@@ -5,18 +5,23 @@ on:
     - cron: "0 6 * * 3"
   workflow_dispatch:
     inputs:
-      force_run:
-        description: "Bypass the bi-weekly cadence gate."
-        required: false
-        default: false
-        type: boolean
       force_release:
-        description: "Publish a refresh release even when generated outputs are unchanged."
+        description: "Publish a refresh release even when the data is unchanged."
         required: false
         default: false
         type: boolean
       dry_run:
-        description: "Prepare outputs and metadata without pushing or publishing."
+        description: "Rebuild and validate without publishing; uploads the rebuilt data for review."
+        required: false
+        default: false
+        type: boolean
+      full_rebuild:
+        description: "Rebuild every dataset from the IDWR source files (slow; review a dry run first)."
+        required: false
+        default: false
+        type: boolean
+      allow_historical_changes:
+        description: "Accept changes to frozen historical rows (review a dry run first)."
         required: false
         default: false
         type: boolean
@@ -29,43 +34,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  gate:
+  refresh:
     if: github.ref == 'refs/heads/main' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
     outputs:
-      should_run: ${{ steps.cadence.outputs.should_run }}
-      dry_run: ${{ steps.cadence.outputs.dry_run }}
-    steps:
-      - name: Apply bi-weekly cadence gate
-        id: cadence
-        env:
-          IS_MANUAL: ${{ github.event_name == 'workflow_dispatch' }}
-          FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.force_run || false }}
-          DRY_RUN_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
-        run: |
-          echo "dry_run=${DRY_RUN_INPUT}" >> "$GITHUB_OUTPUT"
-          if [[ "${IS_MANUAL}" == "true" || "${FORCE_RUN}" == "true" ]]; then
-            echo "should_run=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          ISO_WEEK=$(python - <<'PY'
-          from datetime import date
-          print(date.today().isocalendar().week)
-          PY
-          )
-          if (( ISO_WEEK % 2 == 0 )); then
-            echo "should_run=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "should_run=false" >> "$GITHUB_OUTPUT"
-          fi
-
-  refresh:
-    needs: gate
-    if: needs.gate.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
-    outputs:
-      dry_run: ${{ needs.gate.outputs.dry_run }}
+      dry_run: ${{ steps.options.outputs.dry_run }}
       changed: ${{ steps.refresh.outputs.changed }}
       version: ${{ steps.refresh.outputs.version }}
       tag: ${{ steps.refresh.outputs.tag }}
@@ -74,7 +47,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          lfs: true
           ref: main
           fetch-depth: 0
       - uses: actions/setup-python@v5
@@ -93,25 +65,47 @@ jobs:
             jp-idwr-db-http-${{ runner.os }}-
       - name: Install dependencies (locked)
         run: uv sync --frozen --all-extras --dev
+      - name: Resolve options
+        id: options
+        env:
+          DRY_RUN_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
+        run: echo "dry_run=${DRY_RUN_INPUT}" >> "$GITHUB_OUTPUT"
+      - name: Seed data from the release for the current version
+        # Datasets are not committed; the published release is the baseline for
+        # incremental builds, change detection and the history guard. The seed
+        # must be the release matching pyproject's version.
+        run: uv run --frozen python scripts/fetch_release_data.py
       - name: Refresh release
         id: refresh
         env:
+          DRY_RUN: ${{ steps.options.outputs.dry_run }}
           FORCE_RELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.force_release || false }}
-          DRY_RUN: ${{ needs.gate.outputs.dry_run }}
+          FULL_REBUILD: ${{ github.event_name == 'workflow_dispatch' && inputs.full_rebuild || false }}
+          ALLOW_HISTORICAL_CHANGES: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_historical_changes || false }}
         run: |
-          args=(--github-output "$GITHUB_OUTPUT")
-          if [[ "${DRY_RUN}" == "true" ]]; then
-            args+=(--dry-run)
-          fi
-          if [[ "${FORCE_RELEASE}" == "true" ]]; then
-            args+=(--force-release)
-          fi
+          args=(--github-output "$GITHUB_OUTPUT" --keep-outputs dist-refresh)
+          if [[ "${DRY_RUN}" == "true" ]]; then args+=(--dry-run); fi
+          if [[ "${FORCE_RELEASE}" == "true" ]]; then args+=(--force-release); fi
+          if [[ "${FULL_REBUILD}" == "true" ]]; then args+=(--full-rebuild); fi
+          if [[ "${ALLOW_HISTORICAL_CHANGES}" == "true" ]]; then args+=(--allow-historical-changes); fi
           uv run --frozen python -m jp_idwr_db.refresh_release "${args[@]}"
+          cat dist-refresh/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Validate rebuilt data (dry run)
+        if: steps.options.outputs.dry_run == 'true'
+        env:
+          JP_IDWR_DB_TEST_DATA_DIR: dist-refresh
+        run: uv run --with duckdb python -m pytest -q tests/test_release_data_integrity.py
+      - name: Upload rebuilt data for review (dry run)
+        if: steps.options.outputs.dry_run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: refresh-dry-run-data
+          path: dist-refresh/
       - name: Refresh generated documentation
-        if: steps.refresh.outputs.changed == 'true'
+        if: steps.refresh.outputs.changed == 'true' && steps.options.outputs.dry_run != 'true'
         run: uv run --frozen python scripts/update_release_docs.py
       - name: Validate code and rebuilt release data
-        if: steps.refresh.outputs.changed == 'true'
+        if: steps.refresh.outputs.changed == 'true' && steps.options.outputs.dry_run != 'true'
         run: |
           uv lock --check
           uv run --frozen ruff format --check .
@@ -120,27 +114,33 @@ jobs:
           uv run --frozen pytest -q
           uv run --with duckdb python -m pytest -q \
             tests/test_duckdb_build.py tests/test_release_data_integrity.py
+      - name: Upload release data
+        if: steps.refresh.outputs.changed == 'true' && steps.options.outputs.dry_run != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: refresh-release-data
+          path: dist-refresh/*.parquet
+          if-no-files-found: error
       - name: Commit and push refresh release
-        if: >
-          steps.refresh.outputs.changed == 'true' &&
-          needs.gate.outputs.dry_run != 'true'
+        if: steps.refresh.outputs.changed == 'true' && steps.options.outputs.dry_run != 'true'
         env:
           TAG: ${{ steps.refresh.outputs.tag }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add CHANGELOG.md CITATION.cff uv.lock README.md docs/DATASETS.md docs/DISEASES.md pyproject.toml src/jp_idwr_db/__init__.py src/jp_idwr_db/config.py data/parquet/sex_prefecture.parquet data/parquet/place_prefecture.parquet data/parquet/bullet.parquet data/parquet/sentinel.parquet data/parquet/unified.parquet
+          git add CHANGELOG.md CITATION.cff uv.lock README.md docs/DATASETS.md docs/DISEASES.md pyproject.toml src/jp_idwr_db/__init__.py src/jp_idwr_db/config.py
           git commit -m "chore: refresh IDWR data for ${TAG}"
           git tag -a "${TAG}" -m "Release ${TAG}"
           git push origin HEAD:main "${TAG}"
 
   publish:
-    needs: [gate, refresh]
+    needs: refresh
     if: >
       needs.refresh.outputs.changed == 'true' &&
-      needs.gate.outputs.dry_run != 'true'
+      needs.refresh.outputs.dry_run != 'true'
     uses: ./.github/workflows/reusable-release.yml
     with:
       release_tag: ${{ needs.refresh.outputs.tag }}
       git_ref: refs/tags/${{ needs.refresh.outputs.tag }}
+      data_artifact: refresh-release-data
     secrets: inherit

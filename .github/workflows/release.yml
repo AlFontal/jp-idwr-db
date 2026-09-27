@@ -1,9 +1,8 @@
 name: Release
 
+# Manual (code-only) releases republish the datasets of an existing release.
+# Data refreshes are published by the Refresh Release workflow.
 on:
-  push:
-    tags:
-      - "v*.*.*"
   workflow_dispatch:
     inputs:
       release_tag:
@@ -14,6 +13,10 @@ on:
         description: "Git ref to checkout, e.g. refs/tags/v2026.3.26"
         required: true
         type: string
+      data_tag:
+        description: "Existing release whose datasets are republished, e.g. v2026.3.19"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -22,6 +25,7 @@ jobs:
   publish:
     uses: ./.github/workflows/reusable-release.yml
     with:
-      release_tag: ${{ inputs.release_tag || github.ref_name }}
-      git_ref: ${{ inputs.git_ref || github.ref }}
+      release_tag: ${{ inputs.release_tag }}
+      git_ref: ${{ inputs.git_ref }}
+      data_tag: ${{ inputs.data_tag }}
     secrets: inherit

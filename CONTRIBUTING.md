@@ -21,6 +21,9 @@ uv sync --all-extras --dev
 
 # Install pre-commit hooks (optional but recommended)
 pre-commit install
+
+# Seed the release datasets (not committed; needed for builds and data tests)
+uv run python scripts/fetch_release_data.py
 ```
 
 ### Running Tests
@@ -73,7 +76,7 @@ jp-idwr-db/
 │   ├── types.py            # Type definitions
 │   ├── urls.py             # URL generation
 │   ├── utils.py            # Helper functions
-├── data/parquet/           # Source parquet files used to build release assets
+├── data/parquet/           # Release datasets, seeded from a release (gitignored)
 ├── tests/                  # Pytest test suite
 │   ├── fixtures/           # Test data
 │   └── test_*.py          # Test modules
@@ -309,6 +312,41 @@ uv run --with duckdb --with jsonschema jp-idwr-db-build-assets \
 This writes `manifest.json` next to the parquet files and optionally adds
 `jp_idwr_db.duckdb`. The reusable GitHub release workflow follows this same
 artifact model.
+
+## Data Refreshes and History Changes
+
+The datasets are **not committed**. The published GitHub release is the source
+of truth: `scripts/fetch_release_data.py` copies the release that matches
+`pyproject.toml`'s version into `data/parquet/` (checksum-verified).
+
+The **Refresh Release** workflow runs every Wednesday. It seeds that release,
+rebuilds incrementally from the IDWR sources, validates the result against the
+seed (no lost periods, frozen history unchanged), and, if the data changed,
+commits the version and docs, tags, and publishes the rebuilt datasets.
+
+Code changes that alter published history (a new derivation rule, a schema
+change, a parser fix) cannot be reviewed as a data diff in the PR, and CI's data
+job checks the *current* release against the new code, so it may fail by
+design. Instead, after merging:
+
+1. Run Refresh Release manually with `dry_run` (plus `full_rebuild` if
+   existing years must be rebuilt from source, and `allow_historical_changes`
+   if frozen history changes). The run summary lists rows and changed years
+   per dataset, and the `refresh-dry-run-data` artifact holds the rebuilt
+   datasets for inspection.
+2. When the dry run looks right, run it again without `dry_run`. The CHANGELOG
+   entry notes an `allow_historical_changes` override; describe the change in
+   the GitHub release notes.
+
+If the publish step fails after the refresh has pushed its version commit and
+tag, the rebuilt datasets exist only as that run's `refresh-release-data`
+artifact, and the next refresh will refuse to seed (main names a release that
+does not exist). Recover with **Re-run failed jobs** on that same run while the
+artifact is retained (90 days by default).
+
+A code-only release (no data change) is published with the manual **Release**
+workflow, which republishes the datasets of an explicit existing release
+(`data_tag`).
 
 ## Pull Request Guidelines
 
