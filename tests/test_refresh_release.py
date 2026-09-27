@@ -50,6 +50,21 @@ def _write_refresh_repo(repo_root: Path) -> None:
         "count": [1],
         "source": ["All-case reporting"],
     }
+    for name, categories in {
+        "sex_prefecture": ["total", "male", "female"],
+        "place_prefecture": ["total", "japan", "others", "unknown"],
+    }.items():
+        pl.DataFrame(
+            {
+                "prefecture": ["Tokyo"] * len(categories),
+                "year": [2023] * len(categories),
+                "week": [1] * len(categories),
+                "disease": ["Measles"] * len(categories),
+                "count": [1] * len(categories),
+                "category": categories,
+                "source": ["Confirmed cases"] * len(categories),
+            }
+        ).write_parquet(repo_root / f"data/parquet/{name}.parquet")
     pl.DataFrame(base_frame).write_parquet(repo_root / "data/parquet/bullet.parquet")
     pl.DataFrame(
         {
@@ -392,3 +407,92 @@ def test_write_outputs(tmp_path: Path) -> None:
         "latest_bullet_week=2026-W11",
         "latest_sentinel_week=2026-W11",
     ]
+
+
+def _unified_rows(year: int, source: str, count: float, status: str | None) -> pl.DataFrame:
+    return pl.DataFrame(
+        {
+            "prefecture": ["Tokyo"],
+            "year": [year],
+            "week": [10],
+            "disease": ["Mumps" if source == "Sentinel surveillance" else "Measles"],
+            "count": [count],
+            "source": [source],
+            "category": ["total"],
+            "count_status": [status],
+        },
+        schema_overrides={"count_status": pl.String},
+    )
+
+
+def _write_switch_scenario(repo_root: Path, backup_root: Path, rebuilt: list[pl.DataFrame]) -> None:
+    """Previous unified: 2023 annual; 2024 preliminary; 2026 latest."""
+    _write_refresh_repo(repo_root)
+    path = repo_root / "data/parquet/unified.parquet"
+    pl.concat(
+        [
+            _unified_rows(2023, "Confirmed cases", 1, None),
+            _unified_rows(2023, "Sentinel surveillance", 1, "annual"),
+            _unified_rows(2024, "All-case reporting", 2, None),
+            _unified_rows(2024, "Sentinel surveillance", 2, "derived"),
+            _unified_rows(2026, "All-case reporting", 3, None),
+        ]
+    ).write_parquet(path)
+    refresh_release._backup_targets(repo_root, backup_root)
+    pl.concat(rebuilt).write_parquet(path)
+
+
+def test_validate_release_preservation_allows_switch_to_annual_tables(tmp_path: Path) -> None:
+    repo_root, backup_root = tmp_path / "repo", tmp_path / "backup"
+    _write_switch_scenario(
+        repo_root,
+        backup_root,
+        [
+            _unified_rows(2023, "Confirmed cases", 1, None),
+            _unified_rows(2023, "Sentinel surveillance", 1, "annual"),
+            # 2024 now comes from the final annual tables, with revised values.
+            _unified_rows(2024, "Confirmed cases", 5, None),
+            _unified_rows(2024, "Sentinel surveillance", 6, "annual"),
+            _unified_rows(2026, "All-case reporting", 3, None),
+        ],
+    )
+
+    refresh_release._validate_release_preservation(repo_root, backup_root)
+
+
+def test_validate_release_preservation_keeps_annual_years_frozen(tmp_path: Path) -> None:
+    repo_root, backup_root = tmp_path / "repo", tmp_path / "backup"
+    _write_switch_scenario(
+        repo_root,
+        backup_root,
+        [
+            _unified_rows(2023, "Confirmed cases", 99, None),  # already annual: must not change
+            _unified_rows(2023, "Sentinel surveillance", 1, "annual"),
+            _unified_rows(2024, "Confirmed cases", 5, None),
+            _unified_rows(2024, "Sentinel surveillance", 6, "annual"),
+            _unified_rows(2026, "All-case reporting", 3, None),
+        ],
+    )
+
+    with pytest.raises(ValueError, match="Stable historical rows changed"):
+        refresh_release._validate_release_preservation(repo_root, backup_root)
+
+
+def test_validate_release_preservation_rejects_preliminary_change_without_switch(
+    tmp_path: Path,
+) -> None:
+    repo_root, backup_root = tmp_path / "repo", tmp_path / "backup"
+    _write_switch_scenario(
+        repo_root,
+        backup_root,
+        [
+            _unified_rows(2023, "Confirmed cases", 1, None),
+            _unified_rows(2023, "Sentinel surveillance", 1, "annual"),
+            _unified_rows(2024, "All-case reporting", 7, None),  # still preliminary, changed
+            _unified_rows(2024, "Sentinel surveillance", 2, "derived"),
+            _unified_rows(2026, "All-case reporting", 3, None),
+        ],
+    )
+
+    with pytest.raises(ValueError, match="Stable historical rows changed"):
+        refresh_release._validate_release_preservation(repo_root, backup_root)

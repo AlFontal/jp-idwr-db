@@ -59,9 +59,9 @@ def get_data(
         - per_sentinel: Per-sentinel rate (sentinel only, null for confirmed)
         - source: "Confirmed cases", "All-case reporting" or "Sentinel surveillance"
         - category: "total"
-        - count_status: Sentinel only: "derived", "weekly_report", or why the
-          count is null ("inconsistent", "correction", "gap", "series_start",
-          "missing"); null for confirmed rows
+        - count_status: Sentinel only: "annual" (final table), "derived"
+          (preliminary), or why the count is null ("inconsistent",
+          "correction", "gap", "series_start", "missing"); null for confirmed rows
 
     Examples:
         >>> import jp_idwr_db as jp

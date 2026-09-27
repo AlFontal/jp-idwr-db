@@ -7,6 +7,7 @@ from datetime import datetime
 import logging
 from pathlib import Path
 
+import httpx
 import polars as pl
 
 from jp_idwr_db import io
@@ -26,15 +27,19 @@ logger = logging.getLogger(__name__)
 _TODAY_ISO = datetime.now().isocalendar()
 CURRENT_YEAR = _TODAY_ISO.year
 CURRENT_WEEK = _TODAY_ISO.week
-LAST_HISTORICAL_YEAR = 2023
+# First year of the preliminary weekly all-case reports (bullet).
+BULLET_FIRST_YEAR = 2024
+# Annual tables exist from IDWR's start in 1999 (place of infection from 2001).
+SEX_FIRST_YEAR = 1999
+PLACE_FIRST_YEAR = 2001
+SENTINEL_FIRST_YEAR = 1999
+# First year of the English cumulative sentinel files (teitenrui).
+RAPID_SENTINEL_FIRST_YEAR = 2012
 # Early in a new year the first weekly reports are not yet published (~2 week lag).
 # During this window an empty current year is expected rather than an error.
 NEW_YEAR_GRACE_WEEKS = 4
 DATA_DIR = Path(__file__).parent.parent / "data" / "parquet"
 DISEASES_MD = Path(__file__).parent.parent / "docs" / "DISEASES.md"
-SENTINEL_WEEKLY_REPORTS = (
-    Path(__file__).parent.parent / "data" / "supplements" / "sentinel_weekly_reports.csv"
-)
 
 
 def _year_week_upper_bound(year: int) -> int:
@@ -73,10 +78,171 @@ def _split_preserved_years(
     if not preserved_years:
         return None, set()
     logger.info(
-        f"  Preserved existing {name} data for years: "
-        f"{preserved_years[0]}-{preserved_years[-1]}"
+        f"  Preserved existing {name} data for years: {preserved_years[0]}-{preserved_years[-1]}"
     )
     return existing_df.filter(pl.col("year").is_in(preserved_years)), set(preserved_years)
+
+
+def _annual_years(table: io.AnnualTable, first_year: int, known_years: set[int]) -> list[int]:
+    """Return the contiguous run of years with an annual table, starting at first_year.
+
+    A year counts as available if it is already built, its table is cached, or the
+    server publishes it. The first unavailable year ends the run, so a transient
+    network error can only delay a switch to annual data, never skip a year.
+    """
+    years: list[int] = []
+    year = first_year
+    while year < CURRENT_YEAR:
+        available = (
+            year in known_years
+            or io.annual_cache_path(table, year).exists()
+            or io.annual_table_available(table, year)
+        )
+        if not available:
+            break
+        years.append(year)
+        year += 1
+    return years
+
+
+def _annual_year_complete(
+    df: pl.DataFrame, year: int, name: str, required_diseases: set[str] | None = None
+) -> bool:
+    """Check that an annual table covers the full week x prefecture x disease grid.
+
+    A year switched to annual data is never re-read, so a partial table (missing
+    weeks, prefectures, or disease blocks) must not be accepted; the year then
+    stays on preliminary data until a later run. ``required_diseases`` must all be
+    present (e.g. the diseases already published from preliminary data).
+    """
+    first_week = 14 if year == 1999 else 1  # IDWR started in 1999-W14
+    weeks = pl.DataFrame({"week": list(range(first_week, iso_weeks_in_year(year) + 1))})
+    diseases = set(df["disease"].unique().to_list())
+    problems: list[str] = []
+    missing_diseases = sorted((required_diseases or set()) - diseases)
+    if missing_diseases:
+        problems.append(f"missing diseases {missing_diseases[:3]}")
+    expected = (
+        weeks.join(pl.DataFrame({"disease": sorted(diseases)}), how="cross")
+        .join(pl.DataFrame({"prefecture": list(PREFECTURE_ISO_MAP)}), how="cross")
+        .with_columns(pl.lit(year, dtype=pl.Int32).alias("year"))
+        .filter(io._in_surveillance_window())
+    )
+    keys = ["year", "week", "prefecture", "disease"]
+    observed = df.select(
+        pl.col("year").cast(pl.Int32), pl.col("week").cast(pl.Int64), "prefecture", "disease"
+    ).unique()
+    absent = expected.with_columns(pl.col("week").cast(pl.Int64)).join(
+        observed, on=keys, how="anti"
+    )
+    if absent.height:
+        sample = absent.select(["week", "prefecture", "disease"]).head(3).rows()
+        problems.append(f"{absent.height} missing week/prefecture/disease cells, e.g. {sample}")
+    if problems:
+        logger.warning(
+            f"  Annual {name} table for {year} is incomplete ({'; '.join(problems)}); "
+            "keeping preliminary data for this and later years"
+        )
+        return False
+    return True
+
+
+def _derive_female(df: pl.DataFrame) -> pl.DataFrame:
+    """Add female = total - male rows wherever a table yields total and male only."""
+    key_cols = ["prefecture", "year", "week", "date", "disease"]
+    if "source" in df.columns:
+        key_cols.append("source")
+    has_female = df.filter(pl.col("category") == "female").select(key_cols).unique()
+    candidates = df.join(has_female, on=key_cols, how="anti")
+    if candidates.is_empty():
+        return df
+    sex_wide = (
+        candidates.select([*key_cols, "category", "count"])
+        .group_by([*key_cols, "category"])
+        .agg(pl.col("count").sum().alias("count"))
+        .pivot(values="count", index=key_cols, on="category")
+    )
+    if not {"total", "male"}.issubset(sex_wide.columns):
+        return df
+    female_df = (
+        sex_wide.filter(pl.col("total").is_not_null() & pl.col("male").is_not_null())
+        .with_columns(
+            (pl.col("total") - pl.col("male")).cast(pl.Int64, strict=False).alias("count")
+        )
+        .with_columns(pl.lit("female").alias("category"))
+        .select([*key_cols, "category", "count"])
+    )
+    if female_df.height:
+        logger.info(f"  ✓ Derived female rows: {female_df.height:,}")
+    return pl.concat([df, female_df], how="diagonal_relaxed")
+
+
+def _build_annual_confirmed(name: str, table: io.AnnualTable, first_year: int) -> None:
+    """Incrementally build an annual confirmed dataset (sex or place of infection).
+
+    Annual tables are final, so years already built are kept and only newly
+    published years are added. The file is left untouched when nothing is new.
+    """
+    out_path = DATA_DIR / f"{name}.parquet"
+    existing = pl.read_parquet(out_path) if out_path.exists() else None
+    existing_years = set(existing["year"].unique().to_list()) if existing is not None else set()
+    years = _annual_years(table, first_year, existing_years)
+    if max(years, default=0) < BULLET_FIRST_YEAR - 1:
+        # Preliminary reports only start in 2024: a shorter annual run leaves a hole.
+        raise RuntimeError(
+            f"Annual {table} tables stop at {max(years, default=None)}; "
+            f"expected at least {BULLET_FIRST_YEAR - 1} (network error?)"
+        )
+    new_years = [year for year in years if year not in existing_years]
+    if not new_years:
+        logger.info(f"  {name}: no new annual tables (latest {max(years) if years else None})")
+        return
+
+    frames: list[pl.DataFrame] = []
+    for year in new_years:
+        try:
+            path = io.download(table, year)
+            frame = io.read(path, type=table)
+        except Exception as e:
+            raise RuntimeError(f"Failed to build {table} data for {year}") from e
+        totals = frame.filter(pl.col("category") == "total")
+        bullet_path = DATA_DIR / "bullet.parquet"
+        if bullet_path.exists():
+            # English labels differ between the two publications, so compare counts.
+            bullet_diseases = (
+                pl.scan_parquet(bullet_path)
+                .filter(pl.col("year") == year)
+                .select(pl.col("disease").n_unique())
+                .collect()
+                .item()
+            )
+            if totals["disease"].n_unique() < bullet_diseases:
+                logger.warning(
+                    f"  Annual {name} table for {year} has fewer diseases than the "
+                    "preliminary reports; keeping preliminary data"
+                )
+                break
+        if not _annual_year_complete(totals, year, name):
+            if year < BULLET_FIRST_YEAR:
+                raise RuntimeError(f"Historical annual {table} table for {year} is incomplete")
+            break
+        frames.append(frame)
+        logger.info(f"  ✓ Loaded {name} {year}")
+    if not frames:
+        return
+
+    new_df = pl.concat(frames, how="diagonal_relaxed")
+    if table == "sex":
+        new_df = _derive_female(new_df)
+    columns = ["prefecture", "year", "week", "date", "count", "category", "disease", "source"]
+    full_df = pl.concat(
+        [*([existing] if existing is not None else []), new_df.select(columns)],
+        how="diagonal_relaxed",
+    ).select(columns)
+    full_df = _sort_for_output(full_df)
+    _validate_dataset_output(name, full_df)
+    full_df.write_parquet(out_path)
+    logger.info(f"Saved {out_path.name} ({full_df.height} rows; added {new_years})")
 
 
 def _allow_unpublished_current_year(year: int, loaded_frames: list[pl.DataFrame]) -> bool:
@@ -118,6 +284,7 @@ def _validate_dataset_output(name: str, df: pl.DataFrame) -> None:
     identifier_columns.extend(column for column in ["category", "source"] if column in df.columns)
     validation.validate_required_values(df, identifier_columns)
     validation.validate_allowed_values(df, "prefecture", set(PREFECTURE_ISO_MAP))
+    validation.validate_clean_disease_names(df)
     expected_sources = {
         "sex_prefecture": {"Confirmed cases"},
         "place_prefecture": {"Confirmed cases"},
@@ -199,102 +366,23 @@ def _write_diseases_markdown(unified_df: pl.DataFrame) -> None:
 
 def build_sex() -> None:
     logger.info("Building sex_prefecture dataset...")
-    years = range(1999, LAST_HISTORICAL_YEAR + 1)
-    dfs = []
-    success_count = 0
-
-    for year in years:
-        try:
-            path = io.download("sex", year)
-            df = io.read(path, type="sex")
-            dfs.append(df)
-            success_count += 1
-            logger.info(f"  ✓ Loaded year {year} ({df.height} rows)")
-        except Exception as e:
-            raise RuntimeError(f"Failed to build sex data for {year}") from e
-
-    if dfs:
-        full_df = pl.concat(dfs, how="diagonal_relaxed")
-
-        # Some source years only provide total + male. Derive female when possible.
-        categories = set(full_df["category"].drop_nulls().unique().to_list())
-        if "female" not in categories and {"total", "male"}.issubset(categories):
-            key_cols = ["prefecture", "year", "week", "date", "disease"]
-            if "source" in full_df.columns:
-                key_cols.append("source")
-
-            sex_wide = (
-                full_df.select(key_cols + ["category", "count"])
-                .group_by(key_cols + ["category"])
-                .agg(pl.col("count").sum().alias("count"))
-                .pivot(values="count", index=key_cols, on="category")
-            )
-
-            female_df = (
-                sex_wide.filter(pl.col("total").is_not_null() & pl.col("male").is_not_null())
-                .with_columns(
-                    (pl.col("total") - pl.col("male")).cast(pl.Int64, strict=False).alias("count")
-                )
-                .with_columns(pl.lit("female").alias("category"))
-                .select(key_cols + ["category", "count"])
-            )
-
-            full_df = pl.concat([full_df, female_df], how="diagonal_relaxed")
-            logger.info(f"  ✓ Derived female rows: {female_df.height:,}")
-
-        out_path = DATA_DIR / "sex_prefecture.parquet"
-        # Keep the published column order (matches place_prefecture).
-        full_df = full_df.select(
-            ["prefecture", "year", "week", "date", "count", "category", "disease", "source"]
-        )
-        full_df = _sort_for_output(full_df)
-        _validate_dataset_output("sex_prefecture", full_df)
-        full_df.write_parquet(out_path)
-        logger.info(f"Saved to {out_path.name} ({full_df.height} rows, {success_count} years)")
-
-    if not dfs:
-        raise RuntimeError("No sex data was loaded")
+    _build_annual_confirmed("sex_prefecture", "sex", SEX_FIRST_YEAR)
 
 
 def build_place() -> None:
     logger.info("\nBuilding place_prefecture dataset...")
-    years = range(2001, LAST_HISTORICAL_YEAR + 1)
-    dfs = []
-    success_count = 0
-
-    for year in years:
-        try:
-            path = io.download("place", year)
-            df = io.read(path, type="place")
-            dfs.append(df)
-            success_count += 1
-            logger.info(f"  ✓ Loaded year {year} ({df.height} rows)")
-        except Exception as e:
-            raise RuntimeError(f"Failed to build place data for {year}") from e
-
-    if dfs:
-        full_df = pl.concat(dfs, how="diagonal_relaxed")
-        full_df = _sort_for_output(full_df)
-        out_path = DATA_DIR / "place_prefecture.parquet"
-        _validate_dataset_output("place_prefecture", full_df)
-        full_df.write_parquet(out_path)
-        logger.info(f"Saved to {out_path.name} ({full_df.height} rows, {success_count} years)")
-
-    if not dfs:
-        raise RuntimeError("No place data was loaded")
+    _build_annual_confirmed("place_prefecture", "place", PLACE_FIRST_YEAR)
 
 
 def build_bullet() -> None:
-    logger.info(f"\nBuilding bullet dataset ({LAST_HISTORICAL_YEAR + 1}-{CURRENT_YEAR})...")
+    logger.info(f"\nBuilding bullet dataset ({BULLET_FIRST_YEAR}-{CURRENT_YEAR})...")
     out_path = DATA_DIR / "bullet.parquet"
-    all_years = list(range(LAST_HISTORICAL_YEAR + 1, CURRENT_YEAR + 1))
+    all_years = list(range(BULLET_FIRST_YEAR, CURRENT_YEAR + 1))
     dfs: list[pl.DataFrame] = []
     preserved_years: set[int] = set()
 
     if out_path.exists():
-        preserved_df, preserved_years = _split_preserved_years(
-            pl.read_parquet(out_path), "bullet"
-        )
+        preserved_df, preserved_years = _split_preserved_years(pl.read_parquet(out_path), "bullet")
         if preserved_df is not None:
             dfs.append(preserved_df)
 
@@ -362,35 +450,160 @@ def build_bullet() -> None:
         raise RuntimeError("No bullet data was loaded")
 
 
-def _load_sentinel_weekly_reports(year: int) -> pl.DataFrame | None:
-    """Load weekly-report values that fill weeks missing from cumulative files."""
-    if not SENTINEL_WEEKLY_REPORTS.exists():
-        return None
-    reports = pl.read_csv(
-        SENTINEL_WEEKLY_REPORTS,
-        schema_overrides={"count": pl.Float64, "per_sentinel": pl.Float64},
-    ).filter(pl.col("year") == year)
-    if reports.is_empty():
-        return None
-    return reports.with_columns(pl.col("year").cast(pl.Int32), pl.col("week").cast(pl.Int32))
+class IncompleteAnnualTableError(Exception):
+    """An annual table is published but does not cover the whole year yet."""
+
+
+# Diseases reported by pediatric sentinel clinics (小児科定点); they share one
+# per-sentinel denominator per prefecture and week.
+PEDIATRIC_SENTINEL_DISEASES = {
+    "Respiratory syncytial virus infection",
+    "Pharyngoconjunctival fever",
+    "Group A streptococcal pharyngitis",
+    "Infectious gastroenteritis",
+    "Chickenpox",
+    "Hand, foot and mouth disease",
+    "Erythema infection",
+    "Exanthem subitum",
+    "Herpangina",
+    "Mumps",
+}
+RSV = "Respiratory syncytial virus infection"
+
+
+def _read_annual_sentinel_year(year: int) -> pl.DataFrame:
+    """Read one year of final weekly sentinel counts (and rates) from annual tables."""
+    keys = ["prefecture", "year", "week"]
+    counts = io.read_annual_sentinel(io.download_annual("sentinel", year), year)
+    if io.url_annual(year, "sentinel_rate") is None:
+        counts = counts.with_columns(pl.lit(None, dtype=pl.Float64).alias("per_sentinel"))
+        not_reported = pl.lit(False)
+    else:
+        rates = io.read_annual_sentinel(
+            io.download_annual("sentinel_rate", year), year, value_name="per_sentinel"
+        )
+        # Rates must cover every counted disease (RSV had no rate column before 2018).
+        required = set(counts["disease"].unique().to_list()) - {RSV}
+        if not _annual_year_complete(rates, year, "sentinel rate", required_diseases=required):
+            raise IncompleteAnnualTableError(f"sentinel rate table for {year}")
+        counts = counts.join(
+            rates.select([*keys, "disease", "per_sentinel"]),
+            on=[*keys, "disease"],
+            how="left",
+        )
+        # A prefecture-week with blank rates everywhere had no reporting sentinel
+        # (e.g. Fukushima after the March 2011 earthquake); its zeros are not data.
+        silent = (
+            counts.filter(pl.col("disease") != RSV)
+            .group_by(keys)
+            .agg(
+                pl.col("per_sentinel").is_null().all().alias("_no_rates"),
+                (pl.col("count").fill_null(0) == 0).all().alias("_all_zero"),
+            )
+            .filter(pl.col("_no_rates") & pl.col("_all_zero"))
+            .select([*keys, pl.lit(True).alias("_not_reported")])
+        )
+        counts = counts.join(silent, on=keys, how="left")
+        not_reported = pl.col("_not_reported").fill_null(False)
+
+        # The annual rate tables omit RSV before 2018; the weekly reports published
+        # it with the pediatric denominator, which the other pediatric rates give.
+        sites = (
+            counts.filter(
+                pl.col("disease").is_in(list(PEDIATRIC_SENTINEL_DISEASES - {RSV}))
+                & (pl.col("count") > 0)
+                & (pl.col("per_sentinel") > 0)
+            )
+            .group_by(keys)
+            .agg((pl.col("count") / pl.col("per_sentinel")).median().alias("_pediatric_sites"))
+        )
+        counts = counts.join(sites, on=keys, how="left").with_columns(
+            pl.when((pl.col("disease") == RSV) & pl.col("per_sentinel").is_null())
+            .then(
+                pl.when(pl.col("count") == 0)
+                .then(0.0)
+                .otherwise(pl.col("count") / pl.col("_pediatric_sites"))
+            )
+            .otherwise(pl.col("per_sentinel"))
+            .alias("per_sentinel")
+        )
+
+    # "…" cells and silent prefecture-weeks are unknown; they keep an explanation.
+    unknown = pl.col("count").is_null() | not_reported
+    out = counts.with_columns(
+        pl.lit("Sentinel surveillance").alias("source"),
+        pl.when(unknown).then(pl.lit("missing")).otherwise(pl.lit("annual")).alias("count_status"),
+        pl.when(unknown).then(None).otherwise(pl.col("count")).alias("count"),
+        pl.when(unknown).then(None).otherwise(pl.col("per_sentinel")).alias("per_sentinel"),
+    )
+    return out.select([c for c in out.columns if not c.startswith("_")])
 
 
 def build_sentinel(*, full_rebuild: bool = False, source_dir: Path | None = None) -> None:
-    logger.info(f"\nBuilding sentinel dataset (2012-{CURRENT_YEAR})...")
-    # Release assets currently cover sentinel data from the English teitenrui archive
-    # starting in 2012. Earlier years are not part of the published dataset.
-    start_year = 2012
-    out_path = DATA_DIR / "sentinel.parquet"
-    all_years = list(range(start_year, CURRENT_YEAR + 1))
-    dfs: list[pl.DataFrame] = []
-    preserved_years: set[int] = set()
+    """Build the sentinel dataset.
 
-    if out_path.exists() and not full_rebuild:
-        preserved_df, preserved_years = _split_preserved_years(
-            pl.read_parquet(out_path), "sentinel"
+    Years with a published annual table use its final weekly counts
+    (``count_status = annual``). Later years are derived from the preliminary
+    cumulative teitenrui files. A preliminary year is replaced as soon as its
+    annual table appears.
+    """
+    logger.info(f"\nBuilding sentinel dataset ({SENTINEL_FIRST_YEAR}-{CURRENT_YEAR})...")
+    out_path = DATA_DIR / "sentinel.parquet"
+    existing = pl.read_parquet(out_path) if out_path.exists() and not full_rebuild else None
+    existing_annual = (
+        set(existing.filter(pl.col("count_status") == "annual")["year"].unique().to_list())
+        if existing is not None
+        else set()
+    )
+    annual_years = _annual_years("sentinel", SENTINEL_FIRST_YEAR, existing_annual)
+    dfs: list[pl.DataFrame] = []
+    if existing is not None and existing_annual:
+        dfs.append(existing.filter(pl.col("year").is_in(list(existing_annual))))
+    accepted: list[int] = []
+    for year in annual_years:
+        if year in existing_annual:
+            accepted.append(year)
+            continue
+        try:
+            annual_df = _read_annual_sentinel_year(year)
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code != 404:
+                raise RuntimeError(f"Failed to build sentinel data for {year}") from e
+            # Counts published but the rate table not yet: switch on a later run.
+            logger.warning(f"  Annual sentinel rate table for {year} not published yet")
+            break
+        except IncompleteAnnualTableError:
+            break
+        except Exception as e:
+            raise RuntimeError(f"Failed to build sentinel data for {year}") from e
+        preliminary_diseases = (
+            set(existing.filter(pl.col("year") == year)["disease"].unique().to_list())
+            if existing is not None
+            else set()
         )
-        if preserved_df is not None:
-            dfs.append(preserved_df)
+        if not _annual_year_complete(annual_df, year, "sentinel", preliminary_diseases):
+            break
+        dfs.append(annual_df)
+        accepted.append(year)
+        logger.info(f"  ✓ Loaded annual sentinel table for {year}")
+
+    if SENTINEL_FIRST_YEAR < RAPID_SENTINEL_FIRST_YEAR and (
+        max(accepted, default=0) < RAPID_SENTINEL_FIRST_YEAR - 1
+    ):
+        # Preliminary files only start in 2012: a shorter annual run leaves a hole.
+        raise RuntimeError(
+            f"Annual sentinel tables stop at {max(accepted, default=None)}; "
+            f"expected at least {RAPID_SENTINEL_FIRST_YEAR - 1} (network error?)"
+        )
+    rapid_start = max(RAPID_SENTINEL_FIRST_YEAR, max(accepted, default=0) + 1)
+    all_years = list(range(rapid_start, CURRENT_YEAR + 1))
+    preserved_years: set[int] = set()
+    if existing is not None:
+        rapid_existing = existing.filter(pl.col("year") >= rapid_start)
+        if rapid_existing.height:
+            preserved_df, preserved_years = _split_preserved_years(rapid_existing, "sentinel")
+            if preserved_df is not None:
+                dfs.append(preserved_df)
 
     years = [year for year in all_years if year not in preserved_years]
     total_weeks = 0
@@ -452,9 +665,7 @@ def build_sentinel(*, full_rebuild: bool = False, source_dir: Path | None = None
                     logger.info(f"    Loaded weeks 1-{i} for {year}")
 
             year_df = pl.concat(year_dfs, how="diagonal_relaxed")
-            year_df = io._sentinel_cumulative_to_weekly(
-                year_df, weekly_reports=_load_sentinel_weekly_reports(year)
-            )
+            year_df = io._sentinel_cumulative_to_weekly(year_df)
             dfs.append(year_df)
             total_weeks += len(path_list)
             logger.info(f"  ✓ Completed year {year}: {len(path_list)} weeks loaded")
@@ -477,12 +688,12 @@ def build_unified() -> None:
     """Build unified parquet dataset combining all sources with smart merge.
 
     This creates a single unified.parquet file that combines:
-    - Historical sex data (excluding years with modern zensu data)
-    - Modern bullet/sentinel data
+    - Final annual confirmed totals (sex tables) for every year they cover
+    - Preliminary bullet reports only for later years
+    - Sentinel data (annual where published, preliminary after)
 
     Uses smart_merge() to prefer confirmed data and only include sentinel rows
-    for disease-years without confirmed coverage. Modern bullet years replace
-    overlapping historical years.
+    for disease-years without confirmed coverage.
     """
     logger.info("\n" + "=" * 60)
     logger.info("Building unified dataset...")
@@ -495,7 +706,6 @@ def build_unified() -> None:
         bullet_df = pl.read_parquet(bullet_path)
         logger.info(f"  ✓ Loaded {bullet_df.height:,} rows")
         zensu_df = bullet_df
-        modern_years = set(zensu_df["year"].unique())
     else:
         raise FileNotFoundError(f"Bullet data file not found: {bullet_path}")
 
@@ -509,21 +719,19 @@ def build_unified() -> None:
     else:
         raise FileNotFoundError(f"Sentinel data file not found: {sentinel_path}")
 
-    # 3. Load historical sex data.
-    # Exclude only years covered by modern zensu/bullet data.
-    # Do NOT exclude years only present in sentinel, otherwise historical confirmed
-    # coverage for those years would be dropped.
+    # 3. Load final annual confirmed data (sex tables, totals only). Years with an
+    # annual table replace the preliminary bullet reports for the same year.
     sex_path = DATA_DIR / "sex_prefecture.parquet"
     if sex_path.exists():
-        logger.info(f"\nLoading historical sex data from {sex_path.name}...")
+        logger.info(f"\nLoading annual confirmed data from {sex_path.name}...")
         sex_df = pl.read_parquet(sex_path)
-        if modern_years:
-            sex_df = sex_df.filter(~pl.col("year").is_in(list(modern_years)))
         if "category" in sex_df.columns:
             sex_df = sex_df.filter(pl.col("category") == "total")
+        annual_years = set(sex_df["year"].unique().to_list())
+        zensu_df = zensu_df.filter(~pl.col("year").is_in(list(annual_years)))
         logger.info(
-            f"  ✓ Loaded {sex_df.height:,} rows "
-            f"(total-only; excluded modern years: {sorted(list(modern_years)) if modern_years else 'none'})"
+            f"  ✓ Loaded {sex_df.height:,} rows; bullet used for years "
+            f"{sorted(set(zensu_df['year'].unique().to_list()))}"
         )
     else:
         raise FileNotFoundError(f"Sex data file not found: {sex_path}")

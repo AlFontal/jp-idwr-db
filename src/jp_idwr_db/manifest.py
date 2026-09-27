@@ -343,7 +343,8 @@ def build_manifest(
                 "accessed_at": published_at[:10],
                 "transformation_notice": (
                     "Created by editing JIHS IDWR surveillance data: source files are parsed, "
-                    "normalized, and cumulative sentinel counts are converted to weekly incidence."
+                    "normalized, and preliminary cumulative sentinel counts are converted to "
+                    "weekly incidence."
                 ),
             }
         ],

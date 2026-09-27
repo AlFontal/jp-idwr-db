@@ -17,7 +17,13 @@ PYPROJECT = ROOT / "pyproject.toml"
 
 README_BEGIN = "<!-- BEGIN GENERATED UNIFIED SNAPSHOT -->"
 README_END = "<!-- END GENERATED UNIFIED SNAPSHOT -->"
-DYNAMIC_DATASETS = ("bullet.parquet", "sentinel.parquet", "unified.parquet")
+DYNAMIC_DATASETS = (
+    "sex_prefecture.parquet",
+    "place_prefecture.parquet",
+    "bullet.parquet",
+    "sentinel.parquet",
+    "unified.parquet",
+)
 
 
 def _replace_line(section: str, label: str, value: str) -> str:
