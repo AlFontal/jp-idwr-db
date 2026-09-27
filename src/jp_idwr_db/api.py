@@ -11,7 +11,7 @@ from typing import Literal
 
 import polars as pl
 
-from .datasets import load_dataset
+from .datasets import scan_dataset
 
 logger = logging.getLogger(__name__)
 
@@ -88,25 +88,9 @@ def get_data(
         ...     source="all"
         ... )
     """
-    # Loading and checksum failures must remain visible to callers. Silently
-    # substituting a partial dataset would make analytical failures look valid.
-    df = load_dataset("unified", version=version, force_download=force_download)
-
-    if df.height == 0:
-        return df
-
-    # Apply filters
-    if source != "all" and "source" in df.columns:
-        source_map = {
-            "confirmed": ["Confirmed cases", "All-case reporting"],
-            "sentinel": "Sentinel surveillance",
-        }
-        if source in source_map:
-            target = source_map[source]
-            if isinstance(target, list):
-                df = df.filter(pl.col("source").is_in(target))
-            else:
-                df = df.filter(pl.col("source") == target)
+    # Loading and checksum failures must remain visible to callers. Filters are
+    # applied lazily so only matching rows are read from the parquet file.
+    lf = _scan_unified(source, version=version, force_download=force_download)
 
     if disease is not None:
         diseases = [disease] if isinstance(disease, str) else disease
@@ -116,27 +100,44 @@ def get_data(
             disease_filter = disease_filter | pl.col("disease").str.to_lowercase().str.contains(
                 d.lower(), literal=True
             )
-        df = df.filter(disease_filter)
+        lf = lf.filter(disease_filter)
 
     if prefecture is not None:
         prefectures = [prefecture] if isinstance(prefecture, str) else prefecture
-        df = df.filter(pl.col("prefecture").is_in(prefectures))
+        lf = lf.filter(pl.col("prefecture").is_in(prefectures))
 
     if year is not None:
         if isinstance(year, tuple):
             start_year, end_year = year
-            df = df.filter((pl.col("year") >= start_year) & (pl.col("year") <= end_year))
+            lf = lf.filter((pl.col("year") >= start_year) & (pl.col("year") <= end_year))
         else:
-            df = df.filter(pl.col("year") == year)
+            lf = lf.filter(pl.col("year") == year)
 
     if week is not None:
         if isinstance(week, tuple):
             start_week, end_week = week
-            df = df.filter((pl.col("week") >= start_week) & (pl.col("week") <= end_week))
+            lf = lf.filter((pl.col("week") >= start_week) & (pl.col("week") <= end_week))
         else:
-            df = df.filter(pl.col("week") == week)
+            lf = lf.filter(pl.col("week") == week)
 
-    return df
+    return lf.collect()
+
+
+def _scan_unified(
+    source: Literal["confirmed", "sentinel", "all"],
+    *,
+    version: str | None,
+    force_download: bool,
+) -> pl.LazyFrame:
+    """Scan the unified dataset, filtered by surveillance source."""
+    lf = scan_dataset("unified", version=version, force_download=force_download)
+    source_map = {
+        "confirmed": ["Confirmed cases", "All-case reporting"],
+        "sentinel": ["Sentinel surveillance"],
+    }
+    if source in source_map and "source" in lf.collect_schema().names():
+        lf = lf.filter(pl.col("source").is_in(source_map[source]))
+    return lf
 
 
 def list_diseases(
@@ -160,10 +161,8 @@ def list_diseases(
         >>> all_diseases = jp.list_diseases(version="latest")
         >>> sentinel_only = jp.list_diseases(source="sentinel", version="latest")
     """
-    df = get_data(source=source, version=version, force_download=force_download)
-    if df.height == 0:
-        return []
-    return sorted(df["disease"].unique().to_list())
+    lf = _scan_unified(source, version=version, force_download=force_download)
+    return sorted(lf.select(pl.col("disease").unique()).collect()["disease"].to_list())
 
 
 def list_prefectures(*, version: str | None = None, force_download: bool = False) -> list[str]:
@@ -182,10 +181,8 @@ def list_prefectures(*, version: str | None = None, force_download: bool = False
         >>> print(prefectures[:3])
         ['Aichi', 'Akita', 'Aomori']
     """
-    df = get_data(version=version, force_download=force_download)
-    if df.height == 0:
-        return []
-    return sorted(df["prefecture"].unique().to_list())
+    lf = _scan_unified("all", version=version, force_download=force_download)
+    return sorted(lf.select(pl.col("prefecture").unique()).collect()["prefecture"].to_list())
 
 
 def get_latest_week(
@@ -207,15 +204,13 @@ def get_latest_week(
         ...     year, week = latest
         ...     print(f"Latest data: {year} week {week}")
     """
-    df = get_data(version=version, force_download=force_download)
-    if df.height == 0:
-        return None
-
+    lf = _scan_unified("all", version=version, force_download=force_download)
     # Check if year column exists, otherwise we can't determine the latest week
-    if "year" not in df.columns or "week" not in df.columns:
+    if not {"year", "week"}.issubset(lf.collect_schema().names()):
         logger.warning("Cannot determine latest week: missing year or week column")
         return None
 
-    # Get row with maximum year, then maximum week within that year
-    latest = df.sort(["year", "week"], descending=True).head(1)
+    latest = lf.select(["year", "week"]).sort(["year", "week"], descending=True).head(1).collect()
+    if latest.height == 0:
+        return None
     return (int(latest["year"][0]), int(latest["week"][0]))
