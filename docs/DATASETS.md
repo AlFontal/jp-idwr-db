@@ -48,6 +48,8 @@ picking up such a correction needs a deliberate rebuild of that year.
 
 - Coverage: `1999` onwards, every year with a final annual table (see Snapshot Metrics)
 - Categories: `total`, `male`, `female`
+- `total` can exceed `male + female`: from 2022 a few cases are recorded with
+  neither sex (9 prefecture-weeks in 2022-2024)
 - Grain: prefecture x year x week x disease x category
 - Source label: `Confirmed cases`
 
