@@ -163,11 +163,13 @@ def cached_get(url: str, config: Config) -> Path:
     entry = cache.entry(url)
     meta = cache.read_meta(url) or {}
 
-    # Build conditional request headers
+    # Build conditional request headers. Only send validators that have a value:
+    # an empty If-None-Match never matches, and servers evaluate it instead of
+    # If-Modified-Since, so every request would download the full file again.
     headers = {}
-    if "etag" in meta:
+    if meta.get("etag"):
         headers["If-None-Match"] = meta["etag"]
-    if "last_modified" in meta:
+    if meta.get("last_modified"):
         headers["If-Modified-Since"] = meta["last_modified"]
 
     with _build_client(config) as client:
@@ -180,11 +182,11 @@ def cached_get(url: str, config: Config) -> Path:
             response = client.get(url)
         response.raise_for_status()
         entry.path.write_bytes(response.content)
-        new_meta = {
-            "etag": response.headers.get("etag", ""),
-            "last_modified": response.headers.get("last-modified", ""),
-            "url": url,
-        }
+        new_meta = {"url": url}
+        if response.headers.get("etag"):
+            new_meta["etag"] = response.headers["etag"]
+        if response.headers.get("last-modified"):
+            new_meta["last_modified"] = response.headers["last-modified"]
         cache.write_meta(url, new_meta)
         return entry.path
 

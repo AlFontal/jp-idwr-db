@@ -159,3 +159,46 @@ def test_download_urls_copies_cached_files(tmp_path: Path, monkeypatch: pytest.M
     assert [path.name for path in downloaded] == ["a.csv", "b.csv"]
     assert (dest_dir / "a.csv").read_bytes() == b"a"
     assert (dest_dir / "b.csv").read_bytes() == b"b"
+
+
+def test_cached_get_revalidates_with_last_modified_only_when_no_etag(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """IDWR sends Last-Modified but no ETag; an empty If-None-Match defeats the 304."""
+    url = "https://example.invalid/zensu35.csv"
+    config = Config(cache_dir=tmp_path)
+    last_modified = "Tue, 08 Sep 2026 01:32:16 GMT"
+    client = _FakeClient(
+        [
+            _response(200, url, content=b"week-35", headers={"last-modified": last_modified}),
+            _response(304, url),
+        ]
+    )
+    monkeypatch.setattr(http, "_build_client", lambda config: client)
+
+    first = http.cached_get(url, config)
+    second = http.cached_get(url, config)
+
+    assert second == first
+    assert second.read_bytes() == b"week-35"
+    assert http.DiskCache(tmp_path / "http").read_meta(url) == {
+        "url": url,
+        "last_modified": last_modified,
+    }
+    assert client.calls[1] == ("GET", url, {"If-Modified-Since": last_modified})
+
+
+def test_cached_get_ignores_empty_validators_from_older_caches(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    url = "https://example.invalid/zensu35.csv"
+    config = Config(cache_dir=tmp_path)
+    cache = http.DiskCache(tmp_path / "http")
+    cache.entry(url).path.write_bytes(b"cached")
+    cache.write_meta(url, {"etag": "", "last_modified": "yesterday", "url": url})
+    client = _FakeClient([_response(304, url)])
+    monkeypatch.setattr(http, "_build_client", lambda config: client)
+
+    http.cached_get(url, config)
+
+    assert client.calls == [("GET", url, {"If-Modified-Since": "yesterday"})]
