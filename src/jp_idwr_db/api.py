@@ -55,10 +55,13 @@ def get_data(
         - week: ISO week
         - date: Week start date
         - disease: Disease name (normalized)
-        - count: Weekly case count
+        - count: Weekly case count (null when unknown, see ``count_status``)
         - per_sentinel: Per-sentinel rate (sentinel only, null for confirmed)
-        - source: "Confirmed cases" or "Sentinel surveillance"
+        - source: "Confirmed cases", "All-case reporting" or "Sentinel surveillance"
         - category: "total"
+        - count_status: Sentinel only: "derived", "weekly_report", or why the
+          count is null ("inconsistent", "correction", "gap", "series_start",
+          "missing"); null for confirmed rows
 
     Examples:
         >>> import jp_idwr_db as jp

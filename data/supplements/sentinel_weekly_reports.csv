@@ -1,0 +1,894 @@
+year,week,prefecture,disease,count,per_sentinel,source_url
+2016,37,Hokkaido,Influenza(excld. avian influenza and pandemic influenza),1.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aomori,Influenza(excld. avian influenza and pandemic influenza),1.0,0.02,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Iwate,Influenza(excld. avian influenza and pandemic influenza),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyagi,Influenza(excld. avian influenza and pandemic influenza),3.0,0.03,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Akita,Influenza(excld. avian influenza and pandemic influenza),3.0,0.06,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamagata,Influenza(excld. avian influenza and pandemic influenza),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukushima,Influenza(excld. avian influenza and pandemic influenza),1.0,0.01,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ibaraki,Influenza(excld. avian influenza and pandemic influenza),21.0,0.18,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tochigi,Influenza(excld. avian influenza and pandemic influenza),12.0,0.16,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gunma,Influenza(excld. avian influenza and pandemic influenza),2.0,0.02,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saitama,Influenza(excld. avian influenza and pandemic influenza),5.0,0.02,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Chiba,Influenza(excld. avian influenza and pandemic influenza),21.0,0.1,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokyo,Influenza(excld. avian influenza and pandemic influenza),54.0,0.13,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kanagawa,Influenza(excld. avian influenza and pandemic influenza),36.0,0.12,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Niigata,Influenza(excld. avian influenza and pandemic influenza),1.0,0.01,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Toyama,Influenza(excld. avian influenza and pandemic influenza),1.0,0.02,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ishikawa,Influenza(excld. avian influenza and pandemic influenza),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukui,Influenza(excld. avian influenza and pandemic influenza),1.0,0.03,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamanashi,Influenza(excld. avian influenza and pandemic influenza),1.0,0.02,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagano,Influenza(excld. avian influenza and pandemic influenza),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gifu,Influenza(excld. avian influenza and pandemic influenza),5.0,0.06,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shizuoka,Influenza(excld. avian influenza and pandemic influenza),12.0,0.09,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aichi,Influenza(excld. avian influenza and pandemic influenza),9.0,0.05,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Mie,Influenza(excld. avian influenza and pandemic influenza),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shiga,Influenza(excld. avian influenza and pandemic influenza),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kyoto,Influenza(excld. avian influenza and pandemic influenza),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Osaka,Influenza(excld. avian influenza and pandemic influenza),4.0,0.01,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hyogo,Influenza(excld. avian influenza and pandemic influenza),3.0,0.02,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nara,Influenza(excld. avian influenza and pandemic influenza),5.0,0.09,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Wakayama,Influenza(excld. avian influenza and pandemic influenza),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tottori,Influenza(excld. avian influenza and pandemic influenza),1.0,0.03,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shimane,Influenza(excld. avian influenza and pandemic influenza),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okayama,Influenza(excld. avian influenza and pandemic influenza),4.0,0.05,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hiroshima,Influenza(excld. avian influenza and pandemic influenza),1.0,0.01,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamaguchi,Influenza(excld. avian influenza and pandemic influenza),4.0,0.06,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokushima,Influenza(excld. avian influenza and pandemic influenza),1.0,0.03,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagawa,Influenza(excld. avian influenza and pandemic influenza),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ehime,Influenza(excld. avian influenza and pandemic influenza),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kochi,Influenza(excld. avian influenza and pandemic influenza),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukuoka,Influenza(excld. avian influenza and pandemic influenza),31.0,0.16,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saga,Influenza(excld. avian influenza and pandemic influenza),25.0,0.64,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagasaki,Influenza(excld. avian influenza and pandemic influenza),1.0,0.01,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kumamoto,Influenza(excld. avian influenza and pandemic influenza),1.0,0.01,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Oita,Influenza(excld. avian influenza and pandemic influenza),1.0,0.02,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyazaki,Influenza(excld. avian influenza and pandemic influenza),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagoshima,Influenza(excld. avian influenza and pandemic influenza),3.0,0.03,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okinawa,Influenza(excld. avian influenza and pandemic influenza),183.0,3.16,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hokkaido,Respiratory syncytial virus infection,171.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aomori,Respiratory syncytial virus infection,80.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Iwate,Respiratory syncytial virus infection,105.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyagi,Respiratory syncytial virus infection,130.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Akita,Respiratory syncytial virus infection,16.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamagata,Respiratory syncytial virus infection,104.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukushima,Respiratory syncytial virus infection,108.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ibaraki,Respiratory syncytial virus infection,93.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tochigi,Respiratory syncytial virus infection,77.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gunma,Respiratory syncytial virus infection,136.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saitama,Respiratory syncytial virus infection,254.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Chiba,Respiratory syncytial virus infection,224.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokyo,Respiratory syncytial virus infection,576.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kanagawa,Respiratory syncytial virus infection,382.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Niigata,Respiratory syncytial virus infection,290.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Toyama,Respiratory syncytial virus infection,35.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ishikawa,Respiratory syncytial virus infection,82.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukui,Respiratory syncytial virus infection,38.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamanashi,Respiratory syncytial virus infection,33.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagano,Respiratory syncytial virus infection,16.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gifu,Respiratory syncytial virus infection,24.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shizuoka,Respiratory syncytial virus infection,67.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aichi,Respiratory syncytial virus infection,107.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Mie,Respiratory syncytial virus infection,63.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shiga,Respiratory syncytial virus infection,14.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kyoto,Respiratory syncytial virus infection,44.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Osaka,Respiratory syncytial virus infection,248.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hyogo,Respiratory syncytial virus infection,101.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nara,Respiratory syncytial virus infection,66.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Wakayama,Respiratory syncytial virus infection,22.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tottori,Respiratory syncytial virus infection,21.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shimane,Respiratory syncytial virus infection,40.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okayama,Respiratory syncytial virus infection,38.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hiroshima,Respiratory syncytial virus infection,109.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamaguchi,Respiratory syncytial virus infection,62.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokushima,Respiratory syncytial virus infection,71.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagawa,Respiratory syncytial virus infection,38.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ehime,Respiratory syncytial virus infection,38.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kochi,Respiratory syncytial virus infection,15.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukuoka,Respiratory syncytial virus infection,134.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saga,Respiratory syncytial virus infection,14.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagasaki,Respiratory syncytial virus infection,28.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kumamoto,Respiratory syncytial virus infection,91.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Oita,Respiratory syncytial virus infection,15.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyazaki,Respiratory syncytial virus infection,102.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagoshima,Respiratory syncytial virus infection,33.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okinawa,Respiratory syncytial virus infection,3.0,,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hokkaido,Pharyngoconjunctival fever,11.0,0.08,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aomori,Pharyngoconjunctival fever,5.0,0.12,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Iwate,Pharyngoconjunctival fever,17.0,0.43,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyagi,Pharyngoconjunctival fever,2.0,0.03,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Akita,Pharyngoconjunctival fever,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamagata,Pharyngoconjunctival fever,2.0,0.07,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukushima,Pharyngoconjunctival fever,15.0,0.33,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ibaraki,Pharyngoconjunctival fever,5.0,0.07,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tochigi,Pharyngoconjunctival fever,3.0,0.06,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gunma,Pharyngoconjunctival fever,6.0,0.1,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saitama,Pharyngoconjunctival fever,60.0,0.38,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Chiba,Pharyngoconjunctival fever,20.0,0.15,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokyo,Pharyngoconjunctival fever,89.0,0.34,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kanagawa,Pharyngoconjunctival fever,39.0,0.19,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Niigata,Pharyngoconjunctival fever,20.0,0.34,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Toyama,Pharyngoconjunctival fever,10.0,0.34,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ishikawa,Pharyngoconjunctival fever,9.0,0.31,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukui,Pharyngoconjunctival fever,38.0,1.73,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamanashi,Pharyngoconjunctival fever,4.0,0.17,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagano,Pharyngoconjunctival fever,4.0,0.08,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gifu,Pharyngoconjunctival fever,6.0,0.11,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shizuoka,Pharyngoconjunctival fever,38.0,0.43,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aichi,Pharyngoconjunctival fever,59.0,0.33,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Mie,Pharyngoconjunctival fever,13.0,0.29,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shiga,Pharyngoconjunctival fever,2.0,0.06,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kyoto,Pharyngoconjunctival fever,46.0,0.61,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Osaka,Pharyngoconjunctival fever,106.0,0.53,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hyogo,Pharyngoconjunctival fever,63.0,0.5,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nara,Pharyngoconjunctival fever,13.0,0.38,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Wakayama,Pharyngoconjunctival fever,5.0,0.16,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tottori,Pharyngoconjunctival fever,7.0,0.37,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shimane,Pharyngoconjunctival fever,11.0,0.48,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okayama,Pharyngoconjunctival fever,15.0,0.28,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hiroshima,Pharyngoconjunctival fever,55.0,0.76,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamaguchi,Pharyngoconjunctival fever,22.0,0.46,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokushima,Pharyngoconjunctival fever,3.0,0.13,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagawa,Pharyngoconjunctival fever,8.0,0.29,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ehime,Pharyngoconjunctival fever,26.0,0.7,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kochi,Pharyngoconjunctival fever,58.0,1.93,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukuoka,Pharyngoconjunctival fever,99.0,0.83,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saga,Pharyngoconjunctival fever,14.0,0.61,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagasaki,Pharyngoconjunctival fever,17.0,0.39,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kumamoto,Pharyngoconjunctival fever,19.0,0.38,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Oita,Pharyngoconjunctival fever,21.0,0.58,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyazaki,Pharyngoconjunctival fever,18.0,0.5,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagoshima,Pharyngoconjunctival fever,38.0,0.69,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okinawa,Pharyngoconjunctival fever,34.0,1.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hokkaido,Group A streptococcal pharyngitis,346.0,2.44,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aomori,Group A streptococcal pharyngitis,45.0,1.07,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Iwate,Group A streptococcal pharyngitis,86.0,2.15,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyagi,Group A streptococcal pharyngitis,94.0,1.62,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Akita,Group A streptococcal pharyngitis,36.0,1.03,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamagata,Group A streptococcal pharyngitis,57.0,1.9,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukushima,Group A streptococcal pharyngitis,73.0,1.59,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ibaraki,Group A streptococcal pharyngitis,99.0,1.32,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tochigi,Group A streptococcal pharyngitis,25.0,0.52,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gunma,Group A streptococcal pharyngitis,111.0,1.91,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saitama,Group A streptococcal pharyngitis,302.0,1.92,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Chiba,Group A streptococcal pharyngitis,326.0,2.51,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokyo,Group A streptococcal pharyngitis,408.0,1.58,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kanagawa,Group A streptococcal pharyngitis,276.0,1.37,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Niigata,Group A streptococcal pharyngitis,84.0,1.45,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Toyama,Group A streptococcal pharyngitis,23.0,0.79,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ishikawa,Group A streptococcal pharyngitis,34.0,1.17,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukui,Group A streptococcal pharyngitis,27.0,1.23,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamanashi,Group A streptococcal pharyngitis,38.0,1.58,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagano,Group A streptococcal pharyngitis,67.0,1.26,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gifu,Group A streptococcal pharyngitis,41.0,0.77,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shizuoka,Group A streptococcal pharyngitis,198.0,2.22,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aichi,Group A streptococcal pharyngitis,285.0,1.57,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Mie,Group A streptococcal pharyngitis,31.0,0.69,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shiga,Group A streptococcal pharyngitis,18.0,0.56,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kyoto,Group A streptococcal pharyngitis,79.0,1.05,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Osaka,Group A streptococcal pharyngitis,384.0,1.91,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hyogo,Group A streptococcal pharyngitis,107.0,0.84,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nara,Group A streptococcal pharyngitis,16.0,0.47,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Wakayama,Group A streptococcal pharyngitis,5.0,0.16,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tottori,Group A streptococcal pharyngitis,69.0,3.63,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shimane,Group A streptococcal pharyngitis,38.0,1.65,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okayama,Group A streptococcal pharyngitis,56.0,1.04,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hiroshima,Group A streptococcal pharyngitis,139.0,1.93,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamaguchi,Group A streptococcal pharyngitis,65.0,1.35,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokushima,Group A streptococcal pharyngitis,22.0,0.96,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagawa,Group A streptococcal pharyngitis,60.0,2.14,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ehime,Group A streptococcal pharyngitis,81.0,2.19,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kochi,Group A streptococcal pharyngitis,23.0,0.77,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukuoka,Group A streptococcal pharyngitis,370.0,3.08,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saga,Group A streptococcal pharyngitis,31.0,1.35,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagasaki,Group A streptococcal pharyngitis,40.0,0.91,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kumamoto,Group A streptococcal pharyngitis,63.0,1.26,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Oita,Group A streptococcal pharyngitis,97.0,2.69,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyazaki,Group A streptococcal pharyngitis,46.0,1.28,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagoshima,Group A streptococcal pharyngitis,74.0,1.35,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okinawa,Group A streptococcal pharyngitis,36.0,1.06,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hokkaido,Infectious gastroenteritis,175.0,1.23,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aomori,Infectious gastroenteritis,75.0,1.79,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Iwate,Infectious gastroenteritis,109.0,2.73,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyagi,Infectious gastroenteritis,131.0,2.26,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Akita,Infectious gastroenteritis,60.0,1.71,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamagata,Infectious gastroenteritis,64.0,2.13,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukushima,Infectious gastroenteritis,67.0,1.46,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ibaraki,Infectious gastroenteritis,302.0,4.03,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tochigi,Infectious gastroenteritis,42.0,0.88,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gunma,Infectious gastroenteritis,203.0,3.5,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saitama,Infectious gastroenteritis,632.0,4.03,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Chiba,Infectious gastroenteritis,404.0,3.11,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokyo,Infectious gastroenteritis,1114.0,4.3,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kanagawa,Infectious gastroenteritis,808.0,4.02,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Niigata,Infectious gastroenteritis,152.0,2.62,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Toyama,Infectious gastroenteritis,85.0,2.93,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ishikawa,Infectious gastroenteritis,97.0,3.34,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukui,Infectious gastroenteritis,104.0,4.73,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamanashi,Infectious gastroenteritis,77.0,3.21,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagano,Infectious gastroenteritis,149.0,2.81,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gifu,Infectious gastroenteritis,124.0,2.34,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shizuoka,Infectious gastroenteritis,321.0,3.61,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aichi,Infectious gastroenteritis,549.0,3.03,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Mie,Infectious gastroenteritis,184.0,4.09,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shiga,Infectious gastroenteritis,81.0,2.53,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kyoto,Infectious gastroenteritis,263.0,3.51,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Osaka,Infectious gastroenteritis,678.0,3.37,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hyogo,Infectious gastroenteritis,608.0,4.79,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nara,Infectious gastroenteritis,95.0,2.79,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Wakayama,Infectious gastroenteritis,68.0,2.19,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tottori,Infectious gastroenteritis,83.0,4.37,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shimane,Infectious gastroenteritis,135.0,5.87,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okayama,Infectious gastroenteritis,264.0,4.89,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hiroshima,Infectious gastroenteritis,379.0,5.26,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamaguchi,Infectious gastroenteritis,202.0,4.21,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokushima,Infectious gastroenteritis,153.0,6.65,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagawa,Infectious gastroenteritis,158.0,5.64,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ehime,Infectious gastroenteritis,195.0,5.27,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kochi,Infectious gastroenteritis,83.0,2.77,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukuoka,Infectious gastroenteritis,668.0,5.57,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saga,Infectious gastroenteritis,51.0,2.22,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagasaki,Infectious gastroenteritis,161.0,3.66,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kumamoto,Infectious gastroenteritis,371.0,7.42,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Oita,Infectious gastroenteritis,293.0,8.14,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyazaki,Infectious gastroenteritis,204.0,5.67,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagoshima,Infectious gastroenteritis,282.0,5.13,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okinawa,Infectious gastroenteritis,138.0,4.06,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hokkaido,Chickenpox,23.0,0.16,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aomori,Chickenpox,6.0,0.14,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Iwate,Chickenpox,4.0,0.1,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyagi,Chickenpox,21.0,0.36,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Akita,Chickenpox,8.0,0.23,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamagata,Chickenpox,3.0,0.1,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukushima,Chickenpox,12.0,0.26,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ibaraki,Chickenpox,20.0,0.27,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tochigi,Chickenpox,11.0,0.23,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gunma,Chickenpox,10.0,0.17,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saitama,Chickenpox,59.0,0.38,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Chiba,Chickenpox,24.0,0.18,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokyo,Chickenpox,56.0,0.22,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kanagawa,Chickenpox,77.0,0.38,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Niigata,Chickenpox,13.0,0.22,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Toyama,Chickenpox,4.0,0.14,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ishikawa,Chickenpox,9.0,0.31,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukui,Chickenpox,10.0,0.45,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamanashi,Chickenpox,8.0,0.33,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagano,Chickenpox,8.0,0.15,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gifu,Chickenpox,22.0,0.42,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shizuoka,Chickenpox,14.0,0.16,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aichi,Chickenpox,44.0,0.24,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Mie,Chickenpox,13.0,0.29,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shiga,Chickenpox,7.0,0.22,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kyoto,Chickenpox,26.0,0.35,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Osaka,Chickenpox,37.0,0.18,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hyogo,Chickenpox,44.0,0.35,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nara,Chickenpox,6.0,0.18,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Wakayama,Chickenpox,11.0,0.35,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tottori,Chickenpox,4.0,0.21,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shimane,Chickenpox,6.0,0.26,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okayama,Chickenpox,9.0,0.17,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hiroshima,Chickenpox,21.0,0.29,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamaguchi,Chickenpox,8.0,0.17,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokushima,Chickenpox,1.0,0.04,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagawa,Chickenpox,5.0,0.18,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ehime,Chickenpox,6.0,0.16,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kochi,Chickenpox,11.0,0.37,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukuoka,Chickenpox,62.0,0.52,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saga,Chickenpox,3.0,0.13,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagasaki,Chickenpox,12.0,0.27,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kumamoto,Chickenpox,16.0,0.32,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Oita,Chickenpox,16.0,0.44,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyazaki,Chickenpox,19.0,0.53,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagoshima,Chickenpox,11.0,0.2,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okinawa,Chickenpox,17.0,0.5,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hokkaido,"Hand, foot and mouth disease",82.0,0.58,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aomori,"Hand, foot and mouth disease",37.0,0.88,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Iwate,"Hand, foot and mouth disease",18.0,0.45,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyagi,"Hand, foot and mouth disease",182.0,3.14,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Akita,"Hand, foot and mouth disease",14.0,0.4,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamagata,"Hand, foot and mouth disease",22.0,0.73,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukushima,"Hand, foot and mouth disease",55.0,1.2,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ibaraki,"Hand, foot and mouth disease",129.0,1.72,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tochigi,"Hand, foot and mouth disease",38.0,0.79,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gunma,"Hand, foot and mouth disease",31.0,0.53,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saitama,"Hand, foot and mouth disease",158.0,1.01,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Chiba,"Hand, foot and mouth disease",208.0,1.6,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokyo,"Hand, foot and mouth disease",333.0,1.29,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kanagawa,"Hand, foot and mouth disease",186.0,0.93,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Niigata,"Hand, foot and mouth disease",17.0,0.29,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Toyama,"Hand, foot and mouth disease",6.0,0.21,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ishikawa,"Hand, foot and mouth disease",39.0,1.34,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukui,"Hand, foot and mouth disease",3.0,0.14,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamanashi,"Hand, foot and mouth disease",7.0,0.29,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagano,"Hand, foot and mouth disease",40.0,0.75,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gifu,"Hand, foot and mouth disease",42.0,0.79,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shizuoka,"Hand, foot and mouth disease",54.0,0.61,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aichi,"Hand, foot and mouth disease",57.0,0.31,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Mie,"Hand, foot and mouth disease",12.0,0.27,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shiga,"Hand, foot and mouth disease",10.0,0.31,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kyoto,"Hand, foot and mouth disease",73.0,0.97,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Osaka,"Hand, foot and mouth disease",64.0,0.32,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hyogo,"Hand, foot and mouth disease",39.0,0.31,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nara,"Hand, foot and mouth disease",14.0,0.41,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Wakayama,"Hand, foot and mouth disease",1.0,0.03,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tottori,"Hand, foot and mouth disease",1.0,0.05,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shimane,"Hand, foot and mouth disease",25.0,1.09,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okayama,"Hand, foot and mouth disease",17.0,0.31,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hiroshima,"Hand, foot and mouth disease",28.0,0.39,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamaguchi,"Hand, foot and mouth disease",19.0,0.4,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokushima,"Hand, foot and mouth disease",12.0,0.52,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagawa,"Hand, foot and mouth disease",1.0,0.04,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ehime,"Hand, foot and mouth disease",29.0,0.78,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kochi,"Hand, foot and mouth disease",4.0,0.13,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukuoka,"Hand, foot and mouth disease",88.0,0.73,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saga,"Hand, foot and mouth disease",14.0,0.61,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagasaki,"Hand, foot and mouth disease",16.0,0.36,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kumamoto,"Hand, foot and mouth disease",56.0,1.12,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Oita,"Hand, foot and mouth disease",19.0,0.53,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyazaki,"Hand, foot and mouth disease",72.0,2.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagoshima,"Hand, foot and mouth disease",66.0,1.2,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okinawa,"Hand, foot and mouth disease",60.0,1.76,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hokkaido,Erythema infection,15.0,0.11,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aomori,Erythema infection,6.0,0.14,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Iwate,Erythema infection,4.0,0.1,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyagi,Erythema infection,1.0,0.02,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Akita,Erythema infection,2.0,0.06,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamagata,Erythema infection,3.0,0.1,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukushima,Erythema infection,6.0,0.13,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ibaraki,Erythema infection,5.0,0.07,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tochigi,Erythema infection,18.0,0.38,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gunma,Erythema infection,8.0,0.14,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saitama,Erythema infection,16.0,0.1,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Chiba,Erythema infection,11.0,0.08,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokyo,Erythema infection,29.0,0.11,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kanagawa,Erythema infection,12.0,0.06,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Niigata,Erythema infection,14.0,0.24,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Toyama,Erythema infection,3.0,0.1,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ishikawa,Erythema infection,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukui,Erythema infection,1.0,0.05,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamanashi,Erythema infection,2.0,0.08,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagano,Erythema infection,2.0,0.04,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gifu,Erythema infection,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shizuoka,Erythema infection,3.0,0.03,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aichi,Erythema infection,28.0,0.15,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Mie,Erythema infection,19.0,0.42,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shiga,Erythema infection,3.0,0.09,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kyoto,Erythema infection,9.0,0.12,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Osaka,Erythema infection,11.0,0.05,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hyogo,Erythema infection,15.0,0.12,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nara,Erythema infection,8.0,0.24,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Wakayama,Erythema infection,12.0,0.39,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tottori,Erythema infection,2.0,0.11,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shimane,Erythema infection,10.0,0.43,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okayama,Erythema infection,9.0,0.17,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hiroshima,Erythema infection,17.0,0.24,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamaguchi,Erythema infection,26.0,0.54,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokushima,Erythema infection,2.0,0.09,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagawa,Erythema infection,3.0,0.11,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ehime,Erythema infection,14.0,0.38,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kochi,Erythema infection,6.0,0.2,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukuoka,Erythema infection,5.0,0.04,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saga,Erythema infection,12.0,0.52,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagasaki,Erythema infection,1.0,0.02,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kumamoto,Erythema infection,6.0,0.12,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Oita,Erythema infection,2.0,0.06,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyazaki,Erythema infection,26.0,0.72,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagoshima,Erythema infection,8.0,0.15,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okinawa,Erythema infection,1.0,0.03,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hokkaido,Exanthem subitum,36.0,0.25,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aomori,Exanthem subitum,17.0,0.4,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Iwate,Exanthem subitum,24.0,0.6,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyagi,Exanthem subitum,44.0,0.76,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Akita,Exanthem subitum,13.0,0.37,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamagata,Exanthem subitum,15.0,0.5,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukushima,Exanthem subitum,30.0,0.65,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ibaraki,Exanthem subitum,23.0,0.31,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tochigi,Exanthem subitum,24.0,0.5,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gunma,Exanthem subitum,24.0,0.41,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saitama,Exanthem subitum,87.0,0.55,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Chiba,Exanthem subitum,62.0,0.48,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokyo,Exanthem subitum,177.0,0.68,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kanagawa,Exanthem subitum,142.0,0.71,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Niigata,Exanthem subitum,29.0,0.5,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Toyama,Exanthem subitum,13.0,0.45,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ishikawa,Exanthem subitum,16.0,0.55,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukui,Exanthem subitum,7.0,0.32,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamanashi,Exanthem subitum,13.0,0.54,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagano,Exanthem subitum,16.0,0.3,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gifu,Exanthem subitum,24.0,0.45,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shizuoka,Exanthem subitum,31.0,0.35,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aichi,Exanthem subitum,87.0,0.48,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Mie,Exanthem subitum,28.0,0.62,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shiga,Exanthem subitum,12.0,0.38,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kyoto,Exanthem subitum,43.0,0.57,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Osaka,Exanthem subitum,104.0,0.52,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hyogo,Exanthem subitum,65.0,0.51,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nara,Exanthem subitum,20.0,0.59,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Wakayama,Exanthem subitum,14.0,0.45,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tottori,Exanthem subitum,13.0,0.68,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shimane,Exanthem subitum,16.0,0.7,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okayama,Exanthem subitum,19.0,0.35,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hiroshima,Exanthem subitum,31.0,0.43,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamaguchi,Exanthem subitum,26.0,0.54,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokushima,Exanthem subitum,18.0,0.78,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagawa,Exanthem subitum,21.0,0.75,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ehime,Exanthem subitum,16.0,0.43,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kochi,Exanthem subitum,14.0,0.47,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukuoka,Exanthem subitum,90.0,0.75,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saga,Exanthem subitum,7.0,0.3,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagasaki,Exanthem subitum,22.0,0.5,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kumamoto,Exanthem subitum,54.0,1.08,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Oita,Exanthem subitum,33.0,0.92,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyazaki,Exanthem subitum,36.0,1.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagoshima,Exanthem subitum,37.0,0.67,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okinawa,Exanthem subitum,22.0,0.65,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hokkaido,Pertussis,2.0,0.01,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aomori,Pertussis,5.0,0.12,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Iwate,Pertussis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyagi,Pertussis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Akita,Pertussis,1.0,0.03,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamagata,Pertussis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukushima,Pertussis,2.0,0.04,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ibaraki,Pertussis,2.0,0.03,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tochigi,Pertussis,1.0,0.02,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gunma,Pertussis,1.0,0.02,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saitama,Pertussis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Chiba,Pertussis,2.0,0.02,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokyo,Pertussis,5.0,0.02,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kanagawa,Pertussis,4.0,0.02,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Niigata,Pertussis,5.0,0.09,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Toyama,Pertussis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ishikawa,Pertussis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukui,Pertussis,2.0,0.09,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamanashi,Pertussis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagano,Pertussis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gifu,Pertussis,1.0,0.02,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shizuoka,Pertussis,1.0,0.01,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aichi,Pertussis,3.0,0.02,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Mie,Pertussis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shiga,Pertussis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kyoto,Pertussis,1.0,0.01,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Osaka,Pertussis,4.0,0.02,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hyogo,Pertussis,2.0,0.02,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nara,Pertussis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Wakayama,Pertussis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tottori,Pertussis,1.0,0.05,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shimane,Pertussis,3.0,0.13,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okayama,Pertussis,1.0,0.02,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hiroshima,Pertussis,4.0,0.06,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamaguchi,Pertussis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokushima,Pertussis,3.0,0.13,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagawa,Pertussis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ehime,Pertussis,1.0,0.03,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kochi,Pertussis,4.0,0.13,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukuoka,Pertussis,2.0,0.02,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saga,Pertussis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagasaki,Pertussis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kumamoto,Pertussis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Oita,Pertussis,1.0,0.03,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyazaki,Pertussis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagoshima,Pertussis,2.0,0.04,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okinawa,Pertussis,3.0,0.09,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hokkaido,Herpangina,814.0,5.73,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aomori,Herpangina,108.0,2.57,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Iwate,Herpangina,126.0,3.15,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyagi,Herpangina,320.0,5.52,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Akita,Herpangina,100.0,2.86,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamagata,Herpangina,251.0,8.37,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukushima,Herpangina,208.0,4.52,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ibaraki,Herpangina,61.0,0.81,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tochigi,Herpangina,87.0,1.81,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gunma,Herpangina,82.0,1.41,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saitama,Herpangina,231.0,1.47,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Chiba,Herpangina,169.0,1.3,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokyo,Herpangina,335.0,1.29,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kanagawa,Herpangina,238.0,1.18,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Niigata,Herpangina,142.0,2.45,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Toyama,Herpangina,69.0,2.38,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ishikawa,Herpangina,45.0,1.55,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukui,Herpangina,16.0,0.73,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamanashi,Herpangina,34.0,1.42,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagano,Herpangina,160.0,3.02,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gifu,Herpangina,45.0,0.85,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shizuoka,Herpangina,76.0,0.85,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aichi,Herpangina,125.0,0.69,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Mie,Herpangina,26.0,0.58,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shiga,Herpangina,22.0,0.69,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kyoto,Herpangina,20.0,0.27,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Osaka,Herpangina,92.0,0.46,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hyogo,Herpangina,64.0,0.5,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nara,Herpangina,16.0,0.47,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Wakayama,Herpangina,11.0,0.35,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tottori,Herpangina,4.0,0.21,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shimane,Herpangina,6.0,0.26,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okayama,Herpangina,15.0,0.28,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hiroshima,Herpangina,14.0,0.19,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamaguchi,Herpangina,30.0,0.63,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokushima,Herpangina,3.0,0.13,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagawa,Herpangina,18.0,0.64,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ehime,Herpangina,23.0,0.62,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kochi,Herpangina,5.0,0.17,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukuoka,Herpangina,51.0,0.43,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saga,Herpangina,14.0,0.61,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagasaki,Herpangina,12.0,0.27,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kumamoto,Herpangina,26.0,0.52,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Oita,Herpangina,52.0,1.44,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyazaki,Herpangina,53.0,1.47,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagoshima,Herpangina,52.0,0.95,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okinawa,Herpangina,11.0,0.32,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hokkaido,Mumps,100.0,0.7,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aomori,Mumps,22.0,0.52,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Iwate,Mumps,17.0,0.43,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyagi,Mumps,9.0,0.16,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Akita,Mumps,4.0,0.11,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamagata,Mumps,65.0,2.17,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukushima,Mumps,12.0,0.26,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ibaraki,Mumps,33.0,0.44,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tochigi,Mumps,35.0,0.73,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gunma,Mumps,55.0,0.95,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saitama,Mumps,153.0,0.97,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Chiba,Mumps,83.0,0.64,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokyo,Mumps,186.0,0.72,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kanagawa,Mumps,185.0,0.92,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Niigata,Mumps,206.0,3.55,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Toyama,Mumps,108.0,3.72,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ishikawa,Mumps,36.0,1.24,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukui,Mumps,27.0,1.23,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamanashi,Mumps,10.0,0.42,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagano,Mumps,80.0,1.51,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gifu,Mumps,54.0,1.02,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shizuoka,Mumps,72.0,0.81,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aichi,Mumps,126.0,0.7,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Mie,Mumps,12.0,0.27,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shiga,Mumps,37.0,1.16,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kyoto,Mumps,86.0,1.15,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Osaka,Mumps,303.0,1.51,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hyogo,Mumps,182.0,1.43,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nara,Mumps,65.0,1.91,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Wakayama,Mumps,52.0,1.68,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tottori,Mumps,19.0,1.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shimane,Mumps,25.0,1.09,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okayama,Mumps,50.0,0.93,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hiroshima,Mumps,81.0,1.13,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamaguchi,Mumps,41.0,0.85,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokushima,Mumps,56.0,2.43,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagawa,Mumps,39.0,1.39,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ehime,Mumps,29.0,0.78,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kochi,Mumps,22.0,0.73,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukuoka,Mumps,105.0,0.88,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saga,Mumps,32.0,1.39,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagasaki,Mumps,83.0,1.89,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kumamoto,Mumps,132.0,2.64,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Oita,Mumps,32.0,0.89,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyazaki,Mumps,61.0,1.69,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagoshima,Mumps,121.0,2.2,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okinawa,Mumps,23.0,0.68,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hokkaido,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aomori,Acute hemorrhagic conjunctivitis,1.0,0.09,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Iwate,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyagi,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Akita,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamagata,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukushima,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ibaraki,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tochigi,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gunma,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saitama,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Chiba,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokyo,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kanagawa,Acute hemorrhagic conjunctivitis,6.0,0.13,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Niigata,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Toyama,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ishikawa,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukui,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamanashi,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagano,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gifu,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shizuoka,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aichi,Acute hemorrhagic conjunctivitis,2.0,0.06,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Mie,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shiga,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kyoto,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Osaka,Acute hemorrhagic conjunctivitis,1.0,0.02,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hyogo,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nara,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Wakayama,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tottori,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shimane,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okayama,Acute hemorrhagic conjunctivitis,1.0,0.08,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hiroshima,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamaguchi,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokushima,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagawa,Acute hemorrhagic conjunctivitis,1.0,0.2,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ehime,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kochi,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukuoka,Acute hemorrhagic conjunctivitis,2.0,0.08,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saga,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagasaki,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kumamoto,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Oita,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyazaki,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagoshima,Acute hemorrhagic conjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okinawa,Acute hemorrhagic conjunctivitis,1.0,0.11,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hokkaido,Epidemic keratoconjunctivitis,7.0,0.25,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aomori,Epidemic keratoconjunctivitis,5.0,0.45,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Iwate,Epidemic keratoconjunctivitis,4.0,0.29,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyagi,Epidemic keratoconjunctivitis,1.0,0.08,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Akita,Epidemic keratoconjunctivitis,1.0,0.14,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamagata,Epidemic keratoconjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukushima,Epidemic keratoconjunctivitis,4.0,0.33,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ibaraki,Epidemic keratoconjunctivitis,14.0,0.82,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tochigi,Epidemic keratoconjunctivitis,13.0,1.08,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gunma,Epidemic keratoconjunctivitis,23.0,1.64,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saitama,Epidemic keratoconjunctivitis,40.0,1.03,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Chiba,Epidemic keratoconjunctivitis,27.0,0.84,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokyo,Epidemic keratoconjunctivitis,28.0,0.74,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kanagawa,Epidemic keratoconjunctivitis,73.0,1.55,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Niigata,Epidemic keratoconjunctivitis,5.0,0.5,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Toyama,Epidemic keratoconjunctivitis,1.0,0.14,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ishikawa,Epidemic keratoconjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukui,Epidemic keratoconjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamanashi,Epidemic keratoconjunctivitis,6.0,0.67,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagano,Epidemic keratoconjunctivitis,36.0,3.27,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gifu,Epidemic keratoconjunctivitis,12.0,1.09,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shizuoka,Epidemic keratoconjunctivitis,19.0,0.9,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aichi,Epidemic keratoconjunctivitis,33.0,0.97,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Mie,Epidemic keratoconjunctivitis,3.0,0.25,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shiga,Epidemic keratoconjunctivitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kyoto,Epidemic keratoconjunctivitis,4.0,0.22,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Osaka,Epidemic keratoconjunctivitis,63.0,1.21,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hyogo,Epidemic keratoconjunctivitis,12.0,0.34,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nara,Epidemic keratoconjunctivitis,20.0,2.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Wakayama,Epidemic keratoconjunctivitis,1.0,0.25,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tottori,Epidemic keratoconjunctivitis,11.0,2.2,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shimane,Epidemic keratoconjunctivitis,6.0,2.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okayama,Epidemic keratoconjunctivitis,6.0,0.5,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hiroshima,Epidemic keratoconjunctivitis,30.0,1.58,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamaguchi,Epidemic keratoconjunctivitis,2.0,0.22,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokushima,Epidemic keratoconjunctivitis,2.0,0.5,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagawa,Epidemic keratoconjunctivitis,1.0,0.2,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ehime,Epidemic keratoconjunctivitis,22.0,2.75,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kochi,Epidemic keratoconjunctivitis,1.0,0.33,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukuoka,Epidemic keratoconjunctivitis,17.0,0.65,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saga,Epidemic keratoconjunctivitis,2.0,0.5,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagasaki,Epidemic keratoconjunctivitis,44.0,5.5,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kumamoto,Epidemic keratoconjunctivitis,16.0,1.78,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Oita,Epidemic keratoconjunctivitis,4.0,0.8,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyazaki,Epidemic keratoconjunctivitis,23.0,3.83,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagoshima,Epidemic keratoconjunctivitis,6.0,0.86,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okinawa,Epidemic keratoconjunctivitis,9.0,1.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hokkaido,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aomori,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Iwate,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyagi,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Akita,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamagata,Bacterial meningitis,1.0,0.1,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukushima,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ibaraki,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tochigi,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gunma,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saitama,Bacterial meningitis,1.0,0.1,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Chiba,Bacterial meningitis,1.0,0.11,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokyo,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kanagawa,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Niigata,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Toyama,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ishikawa,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukui,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamanashi,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagano,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gifu,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shizuoka,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aichi,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Mie,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shiga,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kyoto,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Osaka,Bacterial meningitis,1.0,0.06,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hyogo,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nara,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Wakayama,Bacterial meningitis,1.0,0.09,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tottori,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shimane,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okayama,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hiroshima,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamaguchi,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokushima,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagawa,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ehime,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kochi,Bacterial meningitis,1.0,0.13,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukuoka,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saga,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagasaki,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kumamoto,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Oita,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyazaki,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagoshima,Bacterial meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okinawa,Bacterial meningitis,1.0,0.14,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hokkaido,Aseptic meningitis,6.0,0.26,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aomori,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Iwate,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyagi,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Akita,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamagata,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukushima,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ibaraki,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tochigi,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gunma,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saitama,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Chiba,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokyo,Aseptic meningitis,2.0,0.08,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kanagawa,Aseptic meningitis,3.0,0.33,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Niigata,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Toyama,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ishikawa,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukui,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamanashi,Aseptic meningitis,1.0,0.1,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagano,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gifu,Aseptic meningitis,1.0,0.2,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shizuoka,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aichi,Aseptic meningitis,1.0,0.07,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Mie,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shiga,Aseptic meningitis,4.0,0.57,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kyoto,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Osaka,Aseptic meningitis,3.0,0.18,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hyogo,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nara,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Wakayama,Aseptic meningitis,2.0,0.18,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tottori,Aseptic meningitis,1.0,0.2,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shimane,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okayama,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hiroshima,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamaguchi,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokushima,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagawa,Aseptic meningitis,1.0,0.2,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ehime,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kochi,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukuoka,Aseptic meningitis,5.0,0.33,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saga,Aseptic meningitis,1.0,0.17,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagasaki,Aseptic meningitis,2.0,0.17,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kumamoto,Aseptic meningitis,4.0,0.27,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Oita,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyazaki,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagoshima,Aseptic meningitis,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okinawa,Aseptic meningitis,3.0,0.43,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hokkaido,Mycoplasma pneumonia,32.0,1.39,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aomori,Mycoplasma pneumonia,9.0,1.5,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Iwate,Mycoplasma pneumonia,10.0,0.53,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyagi,Mycoplasma pneumonia,14.0,1.17,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Akita,Mycoplasma pneumonia,5.0,0.63,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamagata,Mycoplasma pneumonia,6.0,0.6,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukushima,Mycoplasma pneumonia,2.0,0.29,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ibaraki,Mycoplasma pneumonia,12.0,0.92,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tochigi,Mycoplasma pneumonia,5.0,0.71,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gunma,Mycoplasma pneumonia,17.0,2.13,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saitama,Mycoplasma pneumonia,9.0,0.9,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Chiba,Mycoplasma pneumonia,11.0,1.22,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokyo,Mycoplasma pneumonia,23.0,0.92,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kanagawa,Mycoplasma pneumonia,3.0,0.33,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Niigata,Mycoplasma pneumonia,11.0,0.85,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Toyama,Mycoplasma pneumonia,2.0,0.4,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ishikawa,Mycoplasma pneumonia,6.0,1.2,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukui,Mycoplasma pneumonia,1.0,0.17,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamanashi,Mycoplasma pneumonia,7.0,0.7,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagano,Mycoplasma pneumonia,15.0,1.36,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gifu,Mycoplasma pneumonia,17.0,3.4,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shizuoka,Mycoplasma pneumonia,11.0,1.1,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aichi,Mycoplasma pneumonia,21.0,1.5,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Mie,Mycoplasma pneumonia,6.0,0.67,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shiga,Mycoplasma pneumonia,3.0,0.43,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kyoto,Mycoplasma pneumonia,3.0,0.43,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Osaka,Mycoplasma pneumonia,22.0,1.29,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hyogo,Mycoplasma pneumonia,14.0,1.27,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nara,Mycoplasma pneumonia,4.0,0.67,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Wakayama,Mycoplasma pneumonia,3.0,0.27,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tottori,Mycoplasma pneumonia,4.0,0.8,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shimane,Mycoplasma pneumonia,2.0,0.25,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okayama,Mycoplasma pneumonia,0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hiroshima,Mycoplasma pneumonia,10.0,0.48,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamaguchi,Mycoplasma pneumonia,7.0,0.78,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokushima,Mycoplasma pneumonia,2.0,0.29,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagawa,Mycoplasma pneumonia,9.0,1.8,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ehime,Mycoplasma pneumonia,6.0,1.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kochi,Mycoplasma pneumonia,9.0,1.13,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukuoka,Mycoplasma pneumonia,27.0,1.8,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saga,Mycoplasma pneumonia,5.0,0.83,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagasaki,Mycoplasma pneumonia,17.0,1.42,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kumamoto,Mycoplasma pneumonia,15.0,1.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Oita,Mycoplasma pneumonia,5.0,0.45,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyazaki,Mycoplasma pneumonia,6.0,0.86,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagoshima,Mycoplasma pneumonia,9.0,0.75,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okinawa,Mycoplasma pneumonia,12.0,1.71,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hokkaido,Chlamydial pneumonia(excluding psittacosis),1.0,0.04,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aomori,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Iwate,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyagi,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Akita,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamagata,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukushima,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ibaraki,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tochigi,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gunma,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saitama,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Chiba,Chlamydial pneumonia(excluding psittacosis),1.0,0.11,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokyo,Chlamydial pneumonia(excluding psittacosis),2.0,0.08,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kanagawa,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Niigata,Chlamydial pneumonia(excluding psittacosis),2.0,0.15,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Toyama,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ishikawa,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukui,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamanashi,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagano,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gifu,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shizuoka,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aichi,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Mie,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shiga,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kyoto,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Osaka,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hyogo,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nara,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Wakayama,Chlamydial pneumonia(excluding psittacosis),1.0,0.09,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tottori,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shimane,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okayama,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hiroshima,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamaguchi,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokushima,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagawa,Chlamydial pneumonia(excluding psittacosis),1.0,0.2,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ehime,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kochi,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukuoka,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saga,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagasaki,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kumamoto,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Oita,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyazaki,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagoshima,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okinawa,Chlamydial pneumonia(excluding psittacosis),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hokkaido,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aomori,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Iwate,Infectious gastroenteritis (only by Rotavirus),1.0,0.05,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyagi,Infectious gastroenteritis (only by Rotavirus),1.0,0.08,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Akita,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamagata,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukushima,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ibaraki,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tochigi,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gunma,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saitama,Infectious gastroenteritis (only by Rotavirus),1.0,0.1,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Chiba,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokyo,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kanagawa,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Niigata,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Toyama,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ishikawa,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukui,Infectious gastroenteritis (only by Rotavirus),1.0,0.17,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamanashi,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagano,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Gifu,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shizuoka,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Aichi,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Mie,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shiga,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kyoto,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Osaka,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hyogo,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nara,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Wakayama,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tottori,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Shimane,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okayama,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Hiroshima,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Yamaguchi,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Tokushima,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagawa,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Ehime,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kochi,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Fukuoka,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Saga,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Nagasaki,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kumamoto,Infectious gastroenteritis (only by Rotavirus),1.0,0.07,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Oita,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Miyazaki,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Kagoshima,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf
+2016,37,Okinawa,Infectious gastroenteritis (only by Rotavirus),0.0,0.0,https://id-info.jihs.go.jp/surveillance/idwr/idwr/2016/idwr2016-37.pdf

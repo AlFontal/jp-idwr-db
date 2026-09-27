@@ -32,6 +32,9 @@ LAST_HISTORICAL_YEAR = 2023
 NEW_YEAR_GRACE_WEEKS = 4
 DATA_DIR = Path(__file__).parent.parent / "data" / "parquet"
 DISEASES_MD = Path(__file__).parent.parent / "docs" / "DISEASES.md"
+SENTINEL_WEEKLY_REPORTS = (
+    Path(__file__).parent.parent / "data" / "supplements" / "sentinel_weekly_reports.csv"
+)
 
 
 def _year_week_upper_bound(year: int) -> int:
@@ -134,10 +137,9 @@ def _validate_dataset_output(name: str, df: pl.DataFrame) -> None:
     validation.validate_date_ranges(df)
     validation.validate_iso_week_start_dates(df)
     validation.validate_non_negative_counts(df)
-    allowed_prefecture_counts = (
-        {(2016, 37, "Sentinel surveillance"): 26} if name in {"sentinel", "unified"} else None
-    )
-    validation.validate_prefecture_coverage(df, allowed_counts=allowed_prefecture_counts)
+    validation.validate_prefecture_coverage(df)
+    if name in {"sentinel", "unified"}:
+        validation.validate_sentinel_count_status(df)
     if name == "sentinel":
         validation.validate_max_null_rate(df, "count", max_rate=0.25, group_by=["year"])
     elif name == "unified":
@@ -360,6 +362,19 @@ def build_bullet() -> None:
         raise RuntimeError("No bullet data was loaded")
 
 
+def _load_sentinel_weekly_reports(year: int) -> pl.DataFrame | None:
+    """Load weekly-report values that fill weeks missing from cumulative files."""
+    if not SENTINEL_WEEKLY_REPORTS.exists():
+        return None
+    reports = pl.read_csv(
+        SENTINEL_WEEKLY_REPORTS,
+        schema_overrides={"count": pl.Float64, "per_sentinel": pl.Float64},
+    ).filter(pl.col("year") == year)
+    if reports.is_empty():
+        return None
+    return reports.with_columns(pl.col("year").cast(pl.Int32), pl.col("week").cast(pl.Int32))
+
+
 def build_sentinel(*, full_rebuild: bool = False, source_dir: Path | None = None) -> None:
     logger.info(f"\nBuilding sentinel dataset (2012-{CURRENT_YEAR})...")
     # Release assets currently cover sentinel data from the English teitenrui archive
@@ -437,7 +452,9 @@ def build_sentinel(*, full_rebuild: bool = False, source_dir: Path | None = None
                     logger.info(f"    Loaded weeks 1-{i} for {year}")
 
             year_df = pl.concat(year_dfs, how="diagonal_relaxed")
-            year_df = io._sentinel_cumulative_to_weekly(year_df)
+            year_df = io._sentinel_cumulative_to_weekly(
+                year_df, weekly_reports=_load_sentinel_weekly_reports(year)
+            )
             dfs.append(year_df)
             total_weeks += len(path_list)
             logger.info(f"  ✓ Completed year {year}: {len(path_list)} weeks loaded")

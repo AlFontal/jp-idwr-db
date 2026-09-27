@@ -92,7 +92,7 @@ def update_dataset_reference(snapshot_date: date | None = None) -> None:
             section = _replace_line(
                 section,
                 "Null `count` rows",
-                f"`{null_count:,}` (`{null_rate:.2%}`), primarily missing baselines and source corrections",
+                f"`{null_count:,}` (`{null_rate:.2%}`), reasons in `count_status`",
             )
 
         documentation = (
