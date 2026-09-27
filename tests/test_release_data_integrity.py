@@ -105,10 +105,7 @@ def test_release_tables_have_complete_prefecture_grain() -> None:
                 "HAVING prefectures <> 47 ORDER BY year, week, prefectures",
                 [str(DATA_DIR / filename)],
             ).fetchall()
-            if name in {"sentinel", "unified"}:
-                assert deviations == [(2016, 37, "Sentinel surveillance", 26)]
-            else:
-                assert deviations == []
+            assert deviations == [], name
     finally:
         con.close()
 

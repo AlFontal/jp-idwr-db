@@ -7,7 +7,12 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-from jp_idwr_db.io import _read_sentinel_auto, _read_sentinel_pl, _sentinel_cumulative_to_weekly
+from jp_idwr_db.io import (
+    _read_sentinel_auto,
+    _read_sentinel_pl,
+    _sentinel_cumulative_to_weekly,
+    _to_float_cell,
+)
 
 
 @pytest.fixture
@@ -221,23 +226,99 @@ def test_sentinel_cumulative_to_weekly_missing_previous_week_is_unknown() -> Non
     )
     out = _sentinel_cumulative_to_weekly(df).sort(["year", "week"])
     assert out["count"].to_list() == [None, 9.0]
+    assert out["count_status"].to_list() == ["series_start", "derived"]
 
 
-def test_sentinel_cumulative_to_weekly_negative_correction_is_unknown() -> None:
-    """Source corrections must not produce negative weekly incidence."""
-    df = pl.DataFrame(
+def _cumulative_series(counts: list[float | None], weeks: list[int] | None = None) -> pl.DataFrame:
+    weeks = weeks or list(range(1, len(counts) + 1))
+    return pl.DataFrame(
         {
-            "year": [2024, 2024, 2024],
-            "week": [1, 2, 3],
-            "prefecture": ["Tokyo", "Tokyo", "Tokyo"],
-            "disease": ["RSV", "RSV", "RSV"],
-            "count": [20.0, 15.0, 30.0],
-            "per_sentinel": [2.0, 1.5, 3.0],
-        }
+            "year": [2024] * len(counts),
+            "week": weeks,
+            "prefecture": ["Tokyo"] * len(counts),
+            "disease": ["RSV"] * len(counts),
+            "count": counts,
+        },
+        schema_overrides={"count": pl.Float64},
+    )
+
+
+def test_sentinel_cumulative_to_weekly_total_too_low_blanks_dip_and_recovery() -> None:
+    """A total that drops and recovers is an error; the next week must not spike."""
+    df = _cumulative_series([20.0, 15.0, 30.0, 35.0]).with_columns(
+        pl.Series("per_sentinel", [2.0, 1.5, 3.0, 3.5])
     )
     out = _sentinel_cumulative_to_weekly(df).sort(["year", "week"])
-    assert out["count"].to_list() == [20.0, None, 15.0]
-    assert out["per_sentinel"].to_list() == [2.0, None, 1.5]
+    assert out["count"].to_list() == [20.0, None, None, 5.0]
+    assert out["count_status"].to_list() == ["derived", "inconsistent", "inconsistent", "derived"]
+    assert out["per_sentinel"].to_list() == [2.0, None, None, 0.5]
+
+
+def test_sentinel_cumulative_to_weekly_total_too_high_blanks_spike() -> None:
+    """A total above trend must not be published as a weekly spike."""
+    out = _sentinel_cumulative_to_weekly(_cumulative_series([10.0, 20.0, 50.0, 25.0, 30.0]))
+    assert out.sort("week")["count"].to_list() == [10.0, 10.0, None, None, 5.0]
+
+
+def test_sentinel_cumulative_to_weekly_ambiguous_decrease_blanks_three_weeks() -> None:
+    """If either neighbour could be wrong, every week depending on them is unknown."""
+    out = _sentinel_cumulative_to_weekly(_cumulative_series([10.0, 20.0, 15.0, 22.0, 30.0]))
+    assert out.sort("week")["count"].to_list() == [10.0, None, None, None, 8.0]
+
+
+def test_sentinel_cumulative_to_weekly_multi_week_dip() -> None:
+    """A dip lasting several weeks is unknown until the series recovers."""
+    out = _sentinel_cumulative_to_weekly(_cumulative_series([10.0, 20.0, 5.0, 6.0, 25.0, 30.0]))
+    assert out.sort("week")["count"].to_list() == [10.0, 10.0, None, None, None, 5.0]
+
+
+def test_sentinel_cumulative_to_weekly_lasting_decrease_is_a_correction() -> None:
+    """A lasting decrease is unknown for that week; counting resumes from the new level."""
+    out = _sentinel_cumulative_to_weekly(_cumulative_series([20.0, 15.0, 17.0])).sort("week")
+    assert out["count"].to_list() == [20.0, None, 2.0]
+    assert out["count_status"].to_list() == ["derived", "correction", "derived"]
+
+
+def test_sentinel_cumulative_to_weekly_blank_total_leaves_a_gap() -> None:
+    """A blank total is unknown, and so is the following week (a multi-week interval)."""
+    out = _sentinel_cumulative_to_weekly(_cumulative_series([10.0, None, 30.0, 33.0])).sort("week")
+    assert out["count"].to_list() == [10.0, None, None, 3.0]
+    assert out["count_status"].to_list() == ["derived", "missing", "gap", "derived"]
+
+
+def test_sentinel_cumulative_to_weekly_does_not_difference_across_missing_week() -> None:
+    """A missing week must not turn the next week into a multi-week total."""
+    out = _sentinel_cumulative_to_weekly(_cumulative_series([10.0, 20.0, 35.0], [1, 2, 4]))
+    assert out.sort("week")["count"].to_list() == [10.0, 10.0, None]
+    assert out.sort("week")["count_status"].to_list() == ["derived", "derived", "gap"]
+
+
+def test_sentinel_cumulative_to_weekly_fills_missing_week_from_weekly_report() -> None:
+    """Weekly-report values fill a missing week; the next week stays source-derived."""
+    df = _cumulative_series([10.0, 20.0, 35.0, 40.0], [1, 2, 4, 5]).with_columns(
+        pl.Series("per_sentinel", [1.0, 2.0, 3.5, 4.0])
+    )
+    reports = pl.DataFrame(
+        {
+            "year": [2024, 2024],
+            "week": [3, 2],
+            "prefecture": ["Tokyo", "Tokyo"],
+            "disease": ["RSV", "RSV"],
+            "count": [7.0, 99.0],
+            "per_sentinel": [0.7, 9.9],
+        }
+    )
+    out = _sentinel_cumulative_to_weekly(df, weekly_reports=reports).sort("week")
+    # Week 2 exists in the cumulative files, so its report value is ignored.
+    assert out["count"].to_list() == [10.0, 10.0, 7.0, 8.0, 5.0]
+    assert out["count_status"].to_list() == [
+        "derived",
+        "derived",
+        "weekly_report",
+        "derived",
+        "derived",
+    ]
+    assert out["per_sentinel"].to_list() == [1.0, 1.0, 0.7, 0.8, 0.5]
 
 
 def test_sentinel_cumulative_to_weekly_derives_per_sentinel_from_current_denominator() -> None:
@@ -255,3 +336,11 @@ def test_sentinel_cumulative_to_weekly_derives_per_sentinel_from_current_denomin
     out = _sentinel_cumulative_to_weekly(df).sort(["year", "week"])
     assert out["count"].to_list() == [10.0, 15.0]
     assert out["per_sentinel"].to_list() == [1.0, 3.0]
+
+
+def test_to_float_cell_reads_dash_as_zero() -> None:
+    """IDWR tables write zero as '-'; blank cells stay unknown."""
+    assert _to_float_cell("-") == 0.0
+    assert _to_float_cell(" 1,234 ") == 1234.0
+    assert _to_float_cell("") is None
+    assert _to_float_cell(None) is None

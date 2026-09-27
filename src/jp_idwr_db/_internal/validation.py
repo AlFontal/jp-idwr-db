@@ -161,6 +161,38 @@ def validate_non_negative_counts(df: pl.DataFrame) -> None:
             )
 
 
+SENTINEL_SOURCE = "Sentinel surveillance"
+KNOWN_COUNT_STATUSES = {"derived", "weekly_report"}
+
+
+def validate_sentinel_count_status(df: pl.DataFrame) -> None:
+    """Require ``count_status`` to explain every sentinel count.
+
+    Sentinel rows need a documented status; a count is null exactly when its
+    status marks it unknown. Other sources must not carry a status.
+    """
+    from ..io import SENTINEL_COUNT_STATUSES  # noqa: PLC0415 - avoid import cycle at load
+
+    if "count_status" not in df.columns:
+        raise ValueError("Missing count_status column")
+    is_sentinel = pl.col("source") == SENTINEL_SOURCE
+    sentinel = df.filter(is_sentinel)
+    validate_allowed_values(sentinel, "count_status", set(SENTINEL_COUNT_STATUSES))
+
+    unexplained = sentinel.filter(
+        pl.col("count_status").is_null()
+        | (pl.col("count").is_null() == pl.col("count_status").is_in(KNOWN_COUNT_STATUSES))
+    )
+    if unexplained.height > 0:
+        raise ValueError(
+            f"Found {unexplained.height} sentinel rows whose count does not match count_status. "
+            f"First rows:\n{unexplained.head(5)}"
+        )
+    other = df.filter(~is_sentinel & pl.col("count_status").is_not_null())
+    if other.height > 0:
+        raise ValueError(f"Found {other.height} non-sentinel rows with a count_status")
+
+
 def validate_max_null_rate(
     df: pl.DataFrame,
     column: str,

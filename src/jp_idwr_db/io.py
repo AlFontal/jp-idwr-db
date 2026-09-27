@@ -883,15 +883,159 @@ _SENTINEL_EN_SCHEMA = {
 }
 
 
-def _sentinel_cumulative_to_weekly(df: pl.DataFrame) -> pl.DataFrame:
+SENTINEL_COUNT_STATUSES = {
+    "derived": "Difference of consecutive year-to-date totals (week 1: its own total).",
+    "weekly_report": "Taken from the IDWR weekly report because the cumulative file lacks it.",
+    "gap": "Unknown: the previous week's total is missing.",
+    "inconsistent": "Unknown: depends on a year-to-date total that is out of line with its neighbours.",
+    "correction": "Unknown: the year-to-date total decreased for good (source correction or reset).",
+    "series_start": "Unknown: first observed week of the year is not week 1.",
+    "missing": "Unknown: the year-to-date total is blank in the source.",
+}
+
+
+def _add_weekly_report_rows(df: pl.DataFrame, weekly_reports: pl.DataFrame) -> pl.DataFrame:
+    """Insert synthetic cumulative rows for weeks recovered from weekly reports.
+
+    A recovered week ``t`` gets the cumulative total ``C(t-1) + weekly``, so the
+    following week is still derived from the source's own cumulative total.
+    """
+    keys = ["year", "prefecture", "disease", "week"]
+    reports = weekly_reports.select(
+        [*keys, pl.col("count").alias("_report_count"), pl.col("per_sentinel").alias("_report_ps")]
+    ).join(df.select(keys), on=keys, how="anti")
+    previous = df.select(
+        [
+            "year",
+            "prefecture",
+            "disease",
+            (pl.col("week") + 1).alias("week"),
+            pl.col("count").alias("_prev_cum"),
+        ]
+    )
+    reports = reports.join(previous, on=keys, how="inner").filter(pl.col("_prev_cum").is_not_null())
+    if reports.is_empty():
+        return df.with_columns(pl.lit(None, dtype=pl.Float64).alias("_report_ps"))
+
+    template = df.select(
+        ["year", "prefecture", "disease", *(c for c in ("source",) if c in df.columns)]
+    ).unique(subset=["year", "prefecture", "disease"])
+    added = reports.join(template, on=["year", "prefecture", "disease"], how="left").with_columns(
+        (pl.col("_prev_cum") + pl.col("_report_count")).alias("count"),
+        pl.lit(True).alias("_from_report"),
+    )
+    if "date" in df.columns:
+        added = added.with_columns(
+            pl.struct(["year", "week"])
+            .map_elements(
+                lambda v: dt.date.fromisocalendar(int(v["year"]), int(v["week"]), 1),
+                return_dtype=pl.Date,
+            )
+            .alias("date")
+        )
+    added = added.drop(["_prev_cum", "_report_count"])
+    return pl.concat(
+        [df.with_columns(pl.lit(None, dtype=pl.Float64).alias("_report_ps")), added],
+        how="diagonal_relaxed",
+    )
+
+
+# A decrease that recovers within this many weeks marks the low totals as errors.
+_MAX_DIP_WEEKS = 4
+_KNOWN_STATUSES = ("derived", "weekly_report")
+
+
+def _series_statuses(
+    weeks: list[int], totals: list[float | None], from_report: list[bool]
+) -> list[str]:
+    """Classify one year/prefecture/disease series of year-to-date totals."""
+    n = len(weeks)
+    status: list[str] = []
+    last_observed: int | None = None
+    for i in range(n):
+        if totals[i] is None:
+            status.append("missing")
+            continue
+        if from_report[i]:
+            status.append("weekly_report")
+        elif weeks[i] == 1:
+            status.append("derived")
+        elif last_observed is None:
+            status.append("series_start")
+        elif weeks[last_observed] != weeks[i] - 1:
+            status.append("gap")
+        else:
+            status.append("derived")
+        last_observed = i
+
+    def consecutive(start: int, stop: int) -> bool:
+        """Rows start..stop are observed consecutive weeks."""
+        if start < 0 or stop >= n:
+            return False
+        return all(
+            totals[k] is not None and weeks[k] == weeks[start] + (k - start)
+            for k in range(start, stop + 1)
+        )
+
+    blank: set[int] = set()
+    for i in range(1, n):
+        prev = i - 1
+        current, previous = totals[i], totals[prev]
+        if current is None or previous is None or not consecutive(prev, i):
+            continue
+        if current >= previous:
+            continue
+        # C(t) < C(t-1): at least one total around week t is wrong.
+        recovery = next(
+            (
+                k
+                for k in range(1, _MAX_DIP_WEEKS + 1)
+                if consecutive(i, i + k) and (totals[i + k] or 0.0) >= previous
+            ),
+            None,
+        )
+        earlier = totals[prev - 1] if prev >= 1 else None
+        previous_too_high = earlier is not None and consecutive(prev - 1, i) and current >= earlier
+        if recovery == 1 and previous_too_high:
+            blank.update({prev, i, i + 1})  # either C(t-1) too high or C(t) too low
+        elif recovery == 1:
+            blank.update({i, i + 1})  # C(t) too low
+        elif previous_too_high:
+            blank.update({prev, i})  # C(t-1) too high
+        elif recovery is not None:
+            blank.update(range(i, i + recovery + 1))  # C(t)..C(t+k-1) too low
+        elif status[i] == "derived":
+            status[i] = "correction"  # lasting decrease: continue from the new level
+
+    for i in blank:
+        if status[i] in {"derived", "correction", "series_start"}:
+            status[i] = "inconsistent"
+    return status
+
+
+def _sentinel_cumulative_to_weekly(
+    df: pl.DataFrame, weekly_reports: pl.DataFrame | None = None
+) -> pl.DataFrame:
     """Convert cumulative sentinel counts to weekly incidence.
 
-    Sentinel `teitenrui` files report year-to-date cumulative counts per
-    prefecture and disease. This helper converts those cumulative counts into
-    weekly counts by differencing against the previous week within each
-    year/prefecture/disease series. If the first observed record for a yearly
-    series is not week 1, or if a cumulative source correction would produce a
-    negative weekly value, the weekly value is set to null.
+    Sentinel ``teitenrui`` files report year-to-date cumulative counts per
+    prefecture and disease. Weekly counts are only published where the
+    cumulative data determine them; ``count_status`` records why each value is
+    what it is (see ``SENTINEL_COUNT_STATUSES``):
+
+    - ``derived``: consecutive totals ``C(t) - C(t-1)``, or ``C(1)`` for week 1.
+    - ``weekly_report``: a week missing from the cumulative files, taken from
+      ``weekly_reports`` (IDWR weekly report tables).
+    - ``inconsistent``: a decrease ``C(t) < C(t-1)`` means a nearby total is
+      wrong. The weeks that depend on a possibly wrong total are unknown:
+      ``t`` and ``t+1`` if ``C(t)`` is too low (recovers next week), ``t-1`` and
+      ``t`` if ``C(t-1)`` is too high (``C(t)`` back on trend), ``t-1`` to
+      ``t+1`` if both fit, or ``t`` to the recovery week for dips of up to four
+      weeks.
+    - ``correction``: a lasting decrease; counting continues from the new level.
+    - ``gap``, ``series_start``, ``missing``: the previous total is unavailable.
+
+    Unknown weeks are null; nothing is imputed.
     """
     if df.height == 0:
         return df
@@ -901,44 +1045,61 @@ def _sentinel_cumulative_to_weekly(df: pl.DataFrame) -> pl.DataFrame:
         return df
 
     group_cols = ["year", "prefecture", "disease"]
-    sort_cols = [
-        col for col in ["year", "prefecture", "disease", "week", "date"] if col in df.columns
-    ]
-    out = df.sort(sort_cols, nulls_last=True).with_columns(pl.col("count").alias("_count_cum"))
-    if "per_sentinel" in out.columns:
-        out = out.with_columns(
-            pl.when((pl.col("_count_cum") > 0) & (pl.col("per_sentinel") > 0))
-            .then(pl.col("_count_cum") / pl.col("per_sentinel"))
-            .otherwise(None)
-            .alias("_sentinel_sites")
-        )
+    out = df.with_columns(pl.lit(False).alias("_from_report"))
+    if weekly_reports is not None and weekly_reports.height > 0:
+        out = _add_weekly_report_rows(out, weekly_reports)
+    else:
+        out = out.with_columns(pl.lit(None, dtype=pl.Float64).alias("_report_ps"))
 
-    weekly_diff = pl.col("_count_cum") - pl.col("_count_cum").shift(1).over(group_cols)
-    weekly_count = (
-        pl.when(pl.col("_count_cum").is_null())
+    out = out.sort([*group_cols, "week"], nulls_last=True).with_columns(
+        pl.col("count").alias("_cum")
+    )
+
+    statuses: list[str] = []
+    for _, series in out.select([*group_cols, "week", "_cum", "_from_report"]).group_by(
+        group_cols, maintain_order=True
+    ):
+        statuses.extend(
+            _series_statuses(
+                series["week"].to_list(), series["_cum"].to_list(), series["_from_report"].to_list()
+            )
+        )
+    out = out.with_columns(pl.Series("count_status", statuses, dtype=pl.String))
+
+    previous_total = pl.col("_cum").shift(1).over(group_cols)
+    out = out.with_columns(
+        pl.when(~pl.col("count_status").is_in(_KNOWN_STATUSES))
         .then(None)
         .when(pl.col("week") == 1)
-        .then(pl.col("_count_cum"))
-        .when(weekly_diff < 0)
-        .then(None)
-        .otherwise(weekly_diff)
+        .then(pl.col("_cum"))
+        .otherwise(pl.col("_cum") - previous_total)
+        .alias("count")
     )
-    out = out.with_columns(weekly_count.alias("count"))
 
     if "per_sentinel" in out.columns:
+        sites = (
+            pl.when((pl.col("_cum") > 0) & (pl.col("per_sentinel") > 0))
+            .then(pl.col("_cum") / pl.col("per_sentinel"))
+            .otherwise(None)
+        )
+        out = out.with_columns(sites.alias("_sentinel_sites"))
+        previous_sites = pl.col("_sentinel_sites").shift(1).over(group_cols)
         weekly_per_sentinel = (
             pl.when(pl.col("count").is_null())
             .then(None)
             .when(pl.col("count") == 0)
             .then(0.0)
+            .when(pl.col("count_status") == "weekly_report")
+            # Reports round rates to 2 decimals; prefer the full-precision site count.
+            .then(pl.coalesce(pl.col("count") / previous_sites, pl.col("_report_ps")))
             .when(pl.col("_sentinel_sites").is_null() | (pl.col("_sentinel_sites") <= 0))
             .then(None)
             .otherwise(pl.col("count") / pl.col("_sentinel_sites"))
         )
         out = out.with_columns(weekly_per_sentinel.alias("per_sentinel"))
 
-    drop_cols = [col for col in ["_count_cum", "_sentinel_sites"] if col in out.columns]
-    return out.drop(drop_cols)
+    helper_cols = [col for col in out.columns if col.startswith("_")]
+    return out.drop(helper_cols)
 
 
 def _extract_year_week_sentinel_en(
@@ -965,11 +1126,17 @@ def _extract_year_week_sentinel_en(
 
 
 def _to_float_cell(value: str | None) -> float | None:
-    """Convert CSV numeric cell to float and handle blanks/dashes."""
+    """Convert a sentinel CSV numeric cell to float.
+
+    IDWR tables write zero as ``-`` (the files contain almost no literal zeros),
+    so a dash is read as 0. Blank cells are unknown.
+    """
     if value is None:
         return None
     text = value.strip().replace(",", "")
-    if text in {"", "-"}:
+    if text == "-":
+        return 0.0
+    if text == "":
         return None
     try:
         return float(text)

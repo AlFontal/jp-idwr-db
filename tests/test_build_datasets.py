@@ -136,6 +136,7 @@ def test_build_sentinel_does_not_redifference_preserved_history(
             "count": [7.0, 8.0],
             "per_sentinel": [0.7, 0.8],
             "source": ["Sentinel surveillance", "Sentinel surveillance"],
+            "count_status": ["derived", "derived"],
         }
     ).write_parquet(tmp_path / "sentinel.parquet")
 
@@ -346,6 +347,7 @@ def test_build_sentinel_redifferences_incomplete_previous_year_at_rollover(
             "count": count,
             "per_sentinel": count / 10,
             "source": "Sentinel surveillance",
+            "count_status": "derived",
         }
 
     # Older years are final; 2025 is complete; 2026 was last refreshed at week 50.

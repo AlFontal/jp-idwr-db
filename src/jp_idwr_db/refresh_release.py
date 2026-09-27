@@ -358,12 +358,9 @@ def _validate_release_outputs(repo_root: Path) -> None:
         if "date" in df.columns:
             validation.validate_iso_week_start_dates(df)
         validation.validate_non_negative_counts(df)
-        allowed_prefecture_counts: dict[validation.CoverageKey, int | set[int]] | None = (
-            {(2016, 37, "Sentinel surveillance"): 26}
-            if rel_path.name in {"sentinel.parquet", "unified.parquet"}
-            else None
-        )
-        validation.validate_prefecture_coverage(df, allowed_counts=allowed_prefecture_counts)
+        validation.validate_prefecture_coverage(df)
+        if rel_path.name in {"sentinel.parquet", "unified.parquet"}:
+            validation.validate_sentinel_count_status(df)
         if rel_path.name == "sentinel.parquet":
             validation.validate_max_null_rate(df, "count", max_rate=0.25, group_by=["year"])
         elif rel_path.name == "unified.parquet":

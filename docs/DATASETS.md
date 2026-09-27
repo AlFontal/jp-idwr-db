@@ -55,11 +55,32 @@ Load with:
 
 - Coverage: `2012+` (2012 is partial year)
 - Grain: prefecture x year x week x disease
-- Metrics: `count`, `per_sentinel`
-- `count` is converted to weekly incidence from teitenrui cumulative reports:
-  `weekly_count_t = cumulative_t - cumulative_{t-1}` within each year/prefecture/disease
-  (first observed week is kept as-is).
+- Metrics: `count`, `per_sentinel`, plus `count_status`
 - Source label: `Sentinel surveillance`
+
+#### How weekly sentinel counts are derived
+
+The teitenrui files report year-to-date totals `C(t)` per prefecture and
+disease. IDWR tables write zero as `-`, which is read as `0`. A weekly count is
+only published where the totals determine it, and nothing is imputed.
+`count_status` says why each value is what it is:
+
+| `count_status` | `count` | Meaning |
+| --- | --- | --- |
+| `derived` | value | `C(t) - C(t-1)` for consecutive weeks that do not decrease; week 1 is `C(1)` |
+| `weekly_report` | value | Week missing from the cumulative files, taken from the IDWR weekly report PDF (see below); the next week is still derived from the source totals |
+| `inconsistent` | null | Depends on a total that is out of line: after a decrease `C(t) < C(t-1)`, weeks `t` and `t+1` if `C(t)` is too low (recovers next week), `t-1` and `t` if `C(t-1)` is too high (`C(t) >= C(t-2)`), `t-1` to `t+1` if both fit, or `t` to the recovery week for dips of up to 4 weeks. The combined total over the blank weeks is still known from the totals on either side |
+| `correction` | null | Lasting decrease (source correction or reset) that fits none of the above; later weeks continue from the new level |
+| `gap` | null | The previous week's total is missing |
+| `series_start` | null | First observed week of the year is not week 1 (2012-W38 series start, rotavirus from 2013-W42, COVID-19 from 2023-W19) |
+| `missing` | null | The total is blank in the source |
+
+`per_sentinel` follows the same rule. For analyses that need a complete
+series, impute from these statuses rather than treating nulls as zero.
+
+Weekly-report values live in `data/supplements/sentinel_weekly_reports.csv`
+(extracted with `scripts/extract_weekly_report_sentinel.py`) and are only used
+for weeks absent from the cumulative files.
 
 ### `unified` (recommended analysis table)
 
@@ -106,17 +127,17 @@ Load with:
 
 ### `sentinel.parquet`
 
-- Rows: `634,801`
-- Columns: `prefecture, disease, year, week, date, count, per_sentinel, source`
+- Rows: `635,252`
+- Columns: `prefecture, disease, year, week, date, count, per_sentinel, source, count_status`
 - Years: `2012-2026`
 - Prefectures: `47`
 - Diseases: `20`
-- Null `count` rows: `65,978` (`10.39%`), primarily missing baselines and source corrections
+- Null `count` rows: `2,654` (`0.42%`), reasons in `count_status`
 
 ### `unified.parquet`
 
-- Rows: `5,530,274`
-- Columns: `prefecture, year, week, date, count, category, disease, source, per_sentinel`
+- Rows: `5,530,725`
+- Columns: `prefecture, year, week, date, count, category, disease, source, per_sentinel, count_status`
 - Years: `1999-2026`
 - Prefectures: `47`
 - Diseases: `115`
@@ -130,9 +151,11 @@ Load with:
 
 ## Known Source Anomalies
 
-- Sentinel `2016-W37` contains 26 of 47 prefectures because the upstream CSV is
-  truncated after Kyoto. Consumers aggregating that period should treat it as
-  incomplete.
+- The upstream sentinel CSV for `2016-W37` is truncated after Kyoto (26 of 47
+  prefectures, 17 of 19 diseases). The missing values are taken from the IDWR
+  weekly report for that week (`count_status = weekly_report`); they match the
+  report's national totals, and the recovered 2016-W38 values agree with the
+  W38 report as closely as normally derived weeks do.
 
 ## Disease Names Across Periods
 

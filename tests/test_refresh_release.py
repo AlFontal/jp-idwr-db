@@ -57,10 +57,17 @@ def _write_refresh_repo(repo_root: Path) -> None:
             "week": [4],
             "per_sentinel": [0.1],
             "source": ["Sentinel surveillance"],
+            "count_status": ["derived"],
         }
     ).write_parquet(repo_root / "data/parquet/sentinel.parquet")
     pl.DataFrame(
-        {**base_frame, "category": ["total"], "source": ["All-case reporting"]}
+        {
+            **base_frame,
+            "category": ["total"],
+            "source": ["All-case reporting"],
+            "count_status": [None],
+        },
+        schema_overrides={"count_status": pl.String},
     ).write_parquet(repo_root / "data/parquet/unified.parquet")
 
 
@@ -85,6 +92,7 @@ def _write_extended_refresh_outputs(repo_root: Path) -> None:
             "count": [1.0, 1.0],
             "source": ["Sentinel surveillance", "Sentinel surveillance"],
             "per_sentinel": [0.1, 0.1],
+            "count_status": ["derived", "derived"],
         }
     ).write_parquet(data_dir / "sentinel.parquet")
     pl.DataFrame(
@@ -96,7 +104,9 @@ def _write_extended_refresh_outputs(repo_root: Path) -> None:
             "count": [1, 1],
             "source": ["All-case reporting", "All-case reporting"],
             "category": ["total", "total"],
-        }
+            "count_status": [None, None],
+        },
+        schema_overrides={"count_status": pl.String},
     ).write_parquet(data_dir / "unified.parquet")
     (repo_root / "docs" / "DISEASES.md").write_text("# Updated\n", encoding="utf-8")
 
@@ -244,11 +254,24 @@ def test_validate_release_outputs_rejects_sentinel_null_rate_spike(tmp_path: Pat
             "count": [None, None],
             "per_sentinel": [None, None],
             "source": ["Sentinel surveillance", "Sentinel surveillance"],
+            "count_status": ["missing", "missing"],
         },
         schema_overrides={"count": pl.Float64, "per_sentinel": pl.Float64},
     ).write_parquet(repo_root / "data/parquet/sentinel.parquet")
 
     with pytest.raises(ValueError, match=r"Null rate for count exceeds 25\.0%"):
+        refresh_release._validate_release_outputs(repo_root)
+
+
+def test_validate_release_outputs_rejects_unexplained_sentinel_null(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    _write_refresh_repo(repo_root)
+    path = repo_root / "data/parquet/sentinel.parquet"
+    pl.read_parquet(path).with_columns(pl.lit(None, dtype=pl.Float64).alias("count")).write_parquet(
+        path
+    )
+
+    with pytest.raises(ValueError, match="count does not match count_status"):
         refresh_release._validate_release_outputs(repo_root)
 
 
