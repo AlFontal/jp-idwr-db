@@ -11,6 +11,12 @@ from jp_idwr_db import http
 from jp_idwr_db.config import Config
 
 
+@pytest.fixture(autouse=True)
+def _fresh_head_limiters() -> None:
+    """HEAD checks share rate limiters across calls; start each test clean."""
+    http._HEAD_LIMITERS.clear()
+
+
 class _FakeClient:
     def __init__(self: _FakeClient, responses: list[httpx.Response]) -> None:
         self._responses = responses
@@ -202,3 +208,32 @@ def test_cached_get_ignores_empty_validators_from_older_caches(
     http.cached_get(url, config)
 
     assert client.calls == [("GET", url, {"If-Modified-Since": "yesterday"})]
+
+
+def test_cached_head_retries_transient_failures(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    url = "https://example.invalid/zensu10.csv"
+    config = Config(cache_dir=tmp_path, retries=2)
+    client = _FakeClient(
+        [
+            httpx.Response(503, request=httpx.Request("HEAD", url)),
+            httpx.Response(200, request=httpx.Request("HEAD", url)),
+        ]
+    )
+    monkeypatch.setattr(http, "_build_client", lambda config: client)
+    monkeypatch.setattr(http.time, "sleep", lambda seconds: None)
+
+    assert http.cached_head(url, config).status_code == 200
+    assert len(client.calls) == 2
+
+
+def test_cached_head_returns_404_without_retrying(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    url = "https://example.invalid/zensu53.csv"
+    client = _FakeClient([httpx.Response(404, request=httpx.Request("HEAD", url))])
+    monkeypatch.setattr(http, "_build_client", lambda config: client)
+
+    assert http.cached_head(url, Config(cache_dir=tmp_path)).status_code == 404
+    assert len(client.calls) == 1

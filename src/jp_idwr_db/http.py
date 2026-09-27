@@ -191,8 +191,16 @@ def cached_get(url: str, config: Config) -> Path:
         return entry.path
 
 
+_HEAD_LIMITERS: dict[int, RateLimiter] = {}
+_RETRYABLE_STATUS = {429, 500, 502, 503, 504}
+
+
 def cached_head(url: str, config: Config) -> httpx.Response:
-    """Perform a HEAD request to check if a URL exists.
+    """Perform a polite HEAD request to check if a URL exists.
+
+    Requests share one rate limiter per configured rate, and transient failures
+    (network errors, 429 and 5xx responses) are retried with backoff. The final
+    response is returned; after the last retry a network error is re-raised.
 
     Args:
         url: URL to check.
@@ -201,8 +209,23 @@ def cached_head(url: str, config: Config) -> httpx.Response:
     Returns:
         HTTP Response object from the HEAD request.
     """
+    limiter = _HEAD_LIMITERS.setdefault(
+        config.rate_limit_per_minute, RateLimiter(config.rate_limit_per_minute)
+    )
+    attempts = max(config.retries, 0) + 1
     with _build_client(config) as client:
-        return client.head(url)
+        for attempt in range(attempts):
+            limiter.wait()
+            try:
+                response = client.head(url)
+            except httpx.TransportError:
+                if attempt == attempts - 1:
+                    raise
+            else:
+                if response.status_code not in _RETRYABLE_STATUS or attempt == attempts - 1:
+                    return response
+            time.sleep(2**attempt)
+    raise AssertionError("unreachable")  # pragma: no cover
 
 
 def download_urls(urls: Iterable[str], dest_dir: Path, config: Config) -> list[Path]:
