@@ -57,6 +57,47 @@ RULES_PLACE = [
     ConfirmedRule(2021, 9999, BASE_ANNUAL, "{year}/syulist/Syu_02_1.xlsx"),
 ]
 
+# Annual sentinel tables: weekly reported cases by sex, prefecture, and week
+# (table 1-2 in 1999-2000, table 8-1 from 2001).
+RULES_SENTINEL = [
+    ConfirmedRule(1999, 2000, BASE_KAKO, "H{h_year:02d}/Syuukei/Syu_12.xls"),
+    ConfirmedRule(2001, 2010, BASE_KAKO, "H{h_year:02d}/Syuukei/Syu_08_1.xls"),
+    ConfirmedRule(2011, 2013, BASE_YDATA, "{year}/Syuukei/Syu_08_1.xls"),
+    ConfirmedRule(2014, 2020, BASE_YDATA, "{year}/Syuukei/Syu_08_1.xlsx"),
+    ConfirmedRule(2021, 9999, BASE_ANNUAL, "{year}/syulist/Syu_08_1.xlsx"),
+]
+
+# Annual sentinel tables: weekly cases per sentinel (table 8-2). The 1999-2000
+# equivalent (table 4-3) is organised by week and is not parsed.
+RULES_SENTINEL_RATE = [
+    ConfirmedRule(2001, 2010, BASE_KAKO, "H{h_year:02d}/Syuukei/Syu_08_2.xls"),
+    ConfirmedRule(2011, 2013, BASE_YDATA, "{year}/Syuukei/Syu_08_2.xls"),
+    ConfirmedRule(2014, 2020, BASE_YDATA, "{year}/Syuukei/Syu_08_2.xlsx"),
+    ConfirmedRule(2021, 9999, BASE_ANNUAL, "{year}/syulist/Syu_08_2.xlsx"),
+]
+
+AnnualTable = Literal["sex", "place", "sentinel", "sentinel_rate"]
+_ANNUAL_RULES: dict[str, list[ConfirmedRule]] = {
+    "sex": RULES_SEX,
+    "place": RULES_PLACE,
+    "sentinel": RULES_SENTINEL,
+    "sentinel_rate": RULES_SENTINEL_RATE,
+}
+
+
+def url_annual(year: int, table: AnnualTable) -> str | None:
+    """Get the URL of an annual IDWR table, or None if it does not exist for the year.
+
+    Args:
+        year: Surveillance year.
+        table: "sex" and "place" (notifiable diseases), "sentinel" (weekly
+            sentinel counts), or "sentinel_rate" (weekly cases per sentinel).
+    """
+    for rule in _ANNUAL_RULES[table]:
+        if rule.start <= year <= rule.end:
+            return f"{rule.base}{rule.pattern.format(year=year, h_year=year - 1988)}"
+    return None
+
 
 def url_confirmed(year: int, type: Literal["sex", "place"] = "sex") -> str:
     """Get the URL for confirmed cases Excel file.

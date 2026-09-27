@@ -61,6 +61,14 @@ def validate_allowed_values(df: pl.DataFrame, column: str, allowed: set[str]) ->
         raise ValueError(f"Unexpected values in {column}: {sorted(unexpected)}")
 
 
+def validate_clean_disease_names(df: pl.DataFrame) -> None:
+    """Reject disease names with decoding artefacts (U+FFFD or NUL characters)."""
+    names = df.get_column("disease").drop_nulls().unique()
+    bad = names.filter(names.str.contains("\ufffd") | names.str.contains("\x00"))
+    if bad.len() > 0:
+        raise ValueError(f"Disease names contain decoding artefacts: {bad.to_list()[:5]}")
+
+
 def validate_no_duplicates(
     df: pl.DataFrame,
     keys: list[str] | None = None,
@@ -162,7 +170,7 @@ def validate_non_negative_counts(df: pl.DataFrame) -> None:
 
 
 SENTINEL_SOURCE = "Sentinel surveillance"
-KNOWN_COUNT_STATUSES = {"derived", "weekly_report"}
+KNOWN_COUNT_STATUSES = {"annual", "derived"}
 
 
 def validate_sentinel_count_status(df: pl.DataFrame) -> None:

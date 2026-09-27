@@ -272,6 +272,12 @@ def test_sentinel_cumulative_to_weekly_multi_week_dip() -> None:
     assert out.sort("week")["count"].to_list() == [10.0, 10.0, None, None, None, 5.0]
 
 
+def test_sentinel_cumulative_to_weekly_blanks_union_of_competing_explanations() -> None:
+    """[10, 20, 15, 16, 25]: 20 too high, or 15-16 a two-week dip; week 4 is undetermined."""
+    out = _sentinel_cumulative_to_weekly(_cumulative_series([10.0, 20.0, 15.0, 16.0, 25.0]))
+    assert out.sort("week")["count"].to_list() == [10.0, None, None, None, None]
+
+
 def test_sentinel_cumulative_to_weekly_lasting_decrease_is_a_correction() -> None:
     """A lasting decrease is unknown for that week; counting resumes from the new level."""
     out = _sentinel_cumulative_to_weekly(_cumulative_series([20.0, 15.0, 17.0])).sort("week")
@@ -291,34 +297,6 @@ def test_sentinel_cumulative_to_weekly_does_not_difference_across_missing_week()
     out = _sentinel_cumulative_to_weekly(_cumulative_series([10.0, 20.0, 35.0], [1, 2, 4]))
     assert out.sort("week")["count"].to_list() == [10.0, 10.0, None]
     assert out.sort("week")["count_status"].to_list() == ["derived", "derived", "gap"]
-
-
-def test_sentinel_cumulative_to_weekly_fills_missing_week_from_weekly_report() -> None:
-    """Weekly-report values fill a missing week; the next week stays source-derived."""
-    df = _cumulative_series([10.0, 20.0, 35.0, 40.0], [1, 2, 4, 5]).with_columns(
-        pl.Series("per_sentinel", [1.0, 2.0, 3.5, 4.0])
-    )
-    reports = pl.DataFrame(
-        {
-            "year": [2024, 2024],
-            "week": [3, 2],
-            "prefecture": ["Tokyo", "Tokyo"],
-            "disease": ["RSV", "RSV"],
-            "count": [7.0, 99.0],
-            "per_sentinel": [0.7, 9.9],
-        }
-    )
-    out = _sentinel_cumulative_to_weekly(df, weekly_reports=reports).sort("week")
-    # Week 2 exists in the cumulative files, so its report value is ignored.
-    assert out["count"].to_list() == [10.0, 10.0, 7.0, 8.0, 5.0]
-    assert out["count_status"].to_list() == [
-        "derived",
-        "derived",
-        "weekly_report",
-        "derived",
-        "derived",
-    ]
-    assert out["per_sentinel"].to_list() == [1.0, 1.0, 0.7, 0.8, 0.5]
 
 
 def test_sentinel_cumulative_to_weekly_derives_per_sentinel_from_current_denominator() -> None:

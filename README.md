@@ -38,24 +38,24 @@ print(df)
 
 <!-- BEGIN GENERATED UNIFIED SNAPSHOT -->
 ```text
-shape: (5_530_725, 6)
-┌────────────┬────────────┬──────────┬────────────────────────────────┬───────┬────────────────────┐
-│ date       ┆ prefecture ┆ category ┆ disease                        ┆ count ┆ source             │
-│ ---        ┆ ---        ┆ ---      ┆ ---                            ┆ ---   ┆ ---                │
-│ date       ┆ str        ┆ str      ┆ str                            ┆ f64   ┆ str                │
-╞════════════╪════════════╪══════════╪════════════════════════════════╪═══════╪════════════════════╡
-│ 1999-04-05 ┆ Aichi      ┆ total    ┆ AIDS                           ┆ 0.0   ┆ Confirmed cases    │
-│ 1999-04-05 ┆ Aichi      ┆ total    ┆ Acute poliomyelitis            ┆ 0.0   ┆ Confirmed cases    │
-│ 1999-04-05 ┆ Aichi      ┆ total    ┆ Acute viral hepatitis          ┆ 4.0   ┆ Confirmed cases    │
-│ 1999-04-05 ┆ Aichi      ┆ total    ┆ Amebiasis                      ┆ 0.0   ┆ Confirmed cases    │
-│ 1999-04-05 ┆ Aichi      ┆ total    ┆ Anthrax                        ┆ 0.0   ┆ Confirmed cases    │
-│ …          ┆ …          ┆ …        ┆ …                              ┆ …     ┆ …                  │
-│ 2026-08-31 ┆ Yamanashi  ┆ total    ┆ Viral hepatitis(excluding hep… ┆ 0.0   ┆ All-case reporting │
-│ 2026-08-31 ┆ Yamanashi  ┆ total    ┆ West Nile fever                ┆ 0.0   ┆ All-case reporting │
-│ 2026-08-31 ┆ Yamanashi  ┆ total    ┆ Western equine encephalitis    ┆ 0.0   ┆ All-case reporting │
-│ 2026-08-31 ┆ Yamanashi  ┆ total    ┆ Yellow fever                   ┆ 0.0   ┆ All-case reporting │
-│ 2026-08-31 ┆ Yamanashi  ┆ total    ┆ Zika virus infection           ┆ 0.0   ┆ All-case reporting │
-└────────────┴────────────┴──────────┴────────────────────────────────┴───────┴────────────────────┘
+shape: (6_186_093, 6)
+┌────────────┬────────────┬──────────┬────────────────────────────────┬───────┬───────────────────────┐
+│ date       ┆ prefecture ┆ category ┆ disease                        ┆ count ┆ source                │
+│ ---        ┆ ---        ┆ ---      ┆ ---                            ┆ ---   ┆ ---                   │
+│ date       ┆ str        ┆ str      ┆ str                            ┆ f64   ┆ str                   │
+╞════════════╪════════════╪══════════╪════════════════════════════════╪═══════╪═══════════════════════╡
+│ 1999-04-05 ┆ Aichi      ┆ total    ┆ AIDS                           ┆ 0.0   ┆ Confirmed cases       │
+│ 1999-04-05 ┆ Aichi      ┆ total    ┆ Acute encephalitis (excluding… ┆ 0.0   ┆ Sentinel surveillance │
+│ 1999-04-05 ┆ Aichi      ┆ total    ┆ Acute hemorrhagic conjunctivi… ┆ 3.0   ┆ Sentinel surveillance │
+│ 1999-04-05 ┆ Aichi      ┆ total    ┆ Acute poliomyelitis            ┆ 0.0   ┆ Confirmed cases       │
+│ 1999-04-05 ┆ Aichi      ┆ total    ┆ Acute viral hepatitis          ┆ 4.0   ┆ Confirmed cases       │
+│ …          ┆ …          ┆ …        ┆ …                              ┆ …     ┆ …                     │
+│ 2026-08-31 ┆ Yamanashi  ┆ total    ┆ Viral hepatitis(excluding hep… ┆ 0.0   ┆ All-case reporting    │
+│ 2026-08-31 ┆ Yamanashi  ┆ total    ┆ West Nile fever                ┆ 0.0   ┆ All-case reporting    │
+│ 2026-08-31 ┆ Yamanashi  ┆ total    ┆ Western equine encephalitis    ┆ 0.0   ┆ All-case reporting    │
+│ 2026-08-31 ┆ Yamanashi  ┆ total    ┆ Yellow fever                   ┆ 0.0   ┆ All-case reporting    │
+│ 2026-08-31 ┆ Yamanashi  ┆ total    ┆ Zika virus infection           ┆ 0.0   ┆ All-case reporting    │
+└────────────┴────────────┴──────────┴────────────────────────────────┴───────┴───────────────────────┘
 ```
 <!-- END GENERATED UNIFIED SNAPSHOT -->
 
@@ -91,18 +91,20 @@ Cache and release resolution can be configured with `JP_IDWR_DB_CACHE_DIR`,
 | Dataset    | Contents                                                                        |
 | ---------- | ------------------------------------------------------------------------------- |
 | `unified`  | Combined, deduplicated weekly surveillance data. Recommended for most analyses. |
-| `bullet`   | Modern weekly all-case reporting (`zensu`)                                      |
-| `sentinel` | Modern weekly sentinel surveillance (`teitenrui`)                               |
-| `sex`      | Historical sex-disaggregated surveillance                                       |
-| `place`    | Historical place-category surveillance                                          |
+| `bullet`   | Preliminary weekly all-case reports (`zensu`), 2024 onwards                     |
+| `sentinel` | Weekly sentinel surveillance, 1999 onwards                                      |
+| `sex`      | Final annual confirmed cases by sex                                             |
+| `place`    | Final annual confirmed cases by place of infection                              |
 
-The unified dataset combines historical confirmed-case data with modern all-case and sentinel reporting while avoiding overlapping records.
+IDWR publishes each year twice: preliminary weekly reports during the year, and final annual tables about 15 months later that include late reports. The unified dataset uses the final tables for every year they cover and the preliminary reports only after that, without overlapping records. Preliminary counts can be substantially lower for diseases with reporting delays.
 
-One important transformation is applied to the sentinel data: the source `teitenrui` files report year-to-date cumulative counts, so `jp-idwr-db` converts them to weekly incidence within each year, prefecture, and disease.
+For preliminary sentinel years, the source `teitenrui` files report year-to-date cumulative counts, so `jp-idwr-db` converts them to weekly incidence within each year, prefecture, and disease:
 
 ```text
 weekly_count = cumulative_count[t] - cumulative_count[t - 1]
 ```
+
+Weeks the totals do not determine are left empty and explained in `count_status`; nothing is imputed.
 
 The `date` column represents the Monday at the start of the corresponding ISO surveillance week.
 
@@ -142,9 +144,9 @@ The package builds on official infectious disease surveillance data published by
 
 The source archive has changed over time:
 
-* historical annual surveillance tables are published as `.xls` / `.xlsx`
-* modern all-case reports (`zensu`) are published weekly as `.csv`
-* modern sentinel reports (`teitenrui`) are published weekly as `.csv`
+* final annual surveillance tables (confirmed and sentinel) are published as `.xls` / `.xlsx`
+* preliminary all-case reports (`zensu`) are published weekly as `.csv`
+* preliminary sentinel reports (`teitenrui`) are published weekly as `.csv`
 
 Source: [JIHS IDWR Surveillance Data Tables](https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/),
 accessed 2026-09-27 for release `v2026.9.16`.
@@ -152,8 +154,8 @@ accessed 2026-09-27 for release `v2026.9.16`.
 The underlying IDWR surveillance data are weekly. `jp-idwr-db` refreshes its published release approximately every two weeks, incorporating newly available reports into a new versioned snapshot.
 
 Created by editing the JIHS IDWR surveillance data: source files are parsed,
-cleaned, normalized, and combined by this project, and sentinel cumulative
-counts are converted to weekly incidence as described above.
+cleaned, normalized, and combined by this project, and preliminary sentinel
+cumulative counts are converted to weekly incidence as described above.
 
 `jp-idwr-db` is an independent project and is not an official NIID or JIHS publication. 
 

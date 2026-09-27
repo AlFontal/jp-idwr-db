@@ -20,13 +20,17 @@ from ._internal import validation
 from ._internal.release_utils import sha256 as file_sha256
 from .utils import PREFECTURE_ISO_MAP, iso_weeks_in_year
 
-TARGET_OUTPUTS = (
-    Path("data/parquet/bullet.parquet"),
-    Path("data/parquet/sentinel.parquet"),
+BULLET_PATH = Path("data/parquet/bullet.parquet")
+SENTINEL_PATH = Path("data/parquet/sentinel.parquet")
+VALIDATED_OUTPUTS = (
+    Path("data/parquet/sex_prefecture.parquet"),
+    Path("data/parquet/place_prefecture.parquet"),
+    BULLET_PATH,
+    SENTINEL_PATH,
     Path("data/parquet/unified.parquet"),
-    Path("docs/DISEASES.md"),
 )
-VALIDATED_OUTPUTS = TARGET_OUTPUTS[:3]
+TARGET_OUTPUTS = (*VALIDATED_OUTPUTS, Path("docs/DISEASES.md"))
+SENTINEL_SOURCE = "Sentinel surveillance"
 
 CHANGELOG_PATH = Path("CHANGELOG.md")
 PYPROJECT_PATH = Path("pyproject.toml")
@@ -114,7 +118,14 @@ def _run_build_step(repo_root: Path, flag: str) -> None:
 
 def rebuild_release_outputs(repo_root: Path) -> None:
     """Rebuild the release datasets that participate in automated refreshes."""
-    for flag in ("--bullet-only", "--sentinel-only", "--unified-only"):
+    # Annual confirmed tables first: they decide which bullet years unified uses.
+    for flag in (
+        "--sex-only",
+        "--place-only",
+        "--bullet-only",
+        "--sentinel-only",
+        "--unified-only",
+    ):
         _run_build_step(repo_root, flag)
 
 
@@ -278,6 +289,33 @@ def _historical_signature(
     )
 
 
+def _annual_year_families(path: Path) -> set[tuple[int, str]]:
+    """Return ``(year, family)`` pairs sourced from final annual tables.
+
+    Families are ``confirmed`` (annual tables are labelled ``Confirmed cases``,
+    preliminary reports ``All-case reporting``) and ``sentinel`` (annual rows
+    have ``count_status == "annual"``).
+    """
+    scan = pl.scan_parquet(path)
+    names = scan.collect_schema().names()
+    if "source" not in names:
+        return set()
+    is_sentinel = pl.col("source") == SENTINEL_SOURCE
+    annual = pl.col("source") == "Confirmed cases"
+    if "count_status" in names:
+        annual = annual | (pl.col("count_status") == "annual")
+    rows = (
+        scan.filter(annual)
+        .select(
+            pl.col("year"),
+            pl.when(is_sentinel).then(pl.lit("sentinel")).otherwise(pl.lit("confirmed")).alias("f"),
+        )
+        .unique()
+        .collect()
+    )
+    return {(int(row["year"]), str(row["f"])) for row in rows.iter_rows(named=True)}
+
+
 def _period_row_counts(path: Path) -> dict[tuple[int, int], int]:
     """Return row counts for every observed surveillance period."""
     counts = pl.scan_parquet(path).group_by(["year", "week"]).agg(pl.len().alias("rows")).collect()
@@ -302,12 +340,16 @@ def _validate_release_preservation(repo_root: Path, backup_root: Path) -> None:
                 f"Latest period regressed for {rel_path}: {previous_latest} -> {rebuilt_latest}"
             )
 
+        # A year whose data switches from preliminary reports to a final annual
+        # table may legitimately change; years already annual stay frozen.
+        switched = _annual_year_families(rebuilt) - _annual_year_families(previous)
+        switched_years = {year for year, _ in switched}
         previous_counts = _period_row_counts(previous)
         rebuilt_counts = _period_row_counts(rebuilt)
         regressed_periods = [
             (period, rows, rebuilt_counts.get(period, 0))
             for period, rows in previous_counts.items()
-            if rebuilt_counts.get(period, 0) < rows
+            if rebuilt_counts.get(period, 0) < rows and period[0] not in switched_years
         ]
         if regressed_periods:
             raise ValueError(
@@ -316,6 +358,21 @@ def _validate_release_preservation(repo_root: Path, backup_root: Path) -> None:
             )
 
         frozen = _frozen_year_sources(previous, previous_latest[0])
+        if switched:
+            family = (
+                pl.when(pl.col("_source") == SENTINEL_SOURCE)
+                .then(pl.lit("sentinel"))
+                .otherwise(pl.lit("confirmed"))
+            )
+            switched_df = pl.DataFrame(
+                {"year": [y for y, _ in switched], "_family": [f for _, f in switched]},
+                schema={"year": frozen.schema["year"], "_family": pl.String},
+            )
+            frozen = (
+                frozen.with_columns(family.alias("_family"))
+                .join(switched_df, on=["year", "_family"], how="anti")
+                .drop("_family")
+            )
         if _historical_signature(previous, frozen) != _historical_signature(rebuilt, frozen):
             raise ValueError(f"Stable historical rows changed in {rel_path}")
 
@@ -341,7 +398,10 @@ def _validate_release_outputs(repo_root: Path) -> None:
         )
         validation.validate_required_values(df, identifier_columns)
         validation.validate_allowed_values(df, "prefecture", set(PREFECTURE_ISO_MAP))
+        validation.validate_clean_disease_names(df)
         expected_sources = {
+            "sex_prefecture.parquet": {"Confirmed cases"},
+            "place_prefecture.parquet": {"Confirmed cases"},
             "bullet.parquet": {"All-case reporting"},
             "sentinel.parquet": {"Sentinel surveillance"},
             "unified.parquet": {
@@ -351,8 +411,13 @@ def _validate_release_outputs(repo_root: Path) -> None:
             },
         }
         validation.validate_allowed_values(df, "source", expected_sources[rel_path.name])
-        if rel_path.name == "unified.parquet":
-            validation.validate_allowed_values(df, "category", {"total"})
+        expected_categories = {
+            "sex_prefecture.parquet": {"total", "male", "female"},
+            "place_prefecture.parquet": {"total", "japan", "others", "unknown"},
+            "unified.parquet": {"total"},
+        }
+        if rel_path.name in expected_categories:
+            validation.validate_allowed_values(df, "category", expected_categories[rel_path.name])
         validation.validate_no_duplicates(df)
         validation.validate_date_ranges(df)
         if "date" in df.columns:
@@ -420,8 +485,8 @@ def prepare_refresh_release(
             _validate_release_preservation(resolved_root, backup_root)
             after = _snapshot_paths(resolved_root)
             changed = before != after or force_release
-            latest_bullet_week = _format_year_week(resolved_root / TARGET_OUTPUTS[0])
-            latest_sentinel_week = _format_year_week(resolved_root / TARGET_OUTPUTS[1])
+            latest_bullet_week = _format_year_week(resolved_root / BULLET_PATH)
+            latest_sentinel_week = _format_year_week(resolved_root / SENTINEL_PATH)
 
             if dry_run:
                 completed = True

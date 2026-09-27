@@ -113,23 +113,33 @@ def test_release_tables_have_complete_prefecture_grain() -> None:
 def test_unified_is_an_exact_composition_of_source_tables() -> None:
     con = duckdb.connect()
     try:
+        # Final annual tables cover every year up to the last one in sex_prefecture;
+        # preliminary bullet reports are used only after that.
+        (last_annual_year,) = con.execute(
+            "SELECT MAX(year) FROM read_parquet(?)", [_parquet("sex_prefecture.parquet")]
+        ).fetchone()
         bullet_missing = con.execute(
             """
             SELECT COUNT(*) FROM (
               SELECT prefecture, year, week, date, disease, count, source
-              FROM read_parquet(?)
+              FROM read_parquet(?) WHERE year > ?
               EXCEPT
               SELECT prefecture, year, week, date, disease, count, source
               FROM read_parquet(?) WHERE source = 'All-case reporting'
             )
             """,
-            [_parquet("bullet.parquet"), _parquet("unified.parquet")],
+            [_parquet("bullet.parquet"), last_annual_year, _parquet("unified.parquet")],
+        ).fetchone()
+        preliminary_in_annual_years = con.execute(
+            "SELECT COUNT(*) FROM read_parquet(?) "
+            "WHERE source = 'All-case reporting' AND year <= ?",
+            [_parquet("unified.parquet"), last_annual_year],
         ).fetchone()
         historical_missing = con.execute(
             """
             SELECT COUNT(*) FROM (
               SELECT prefecture, year, week, date, disease, count, source
-              FROM read_parquet(?) WHERE category = 'total' AND year < 2024
+              FROM read_parquet(?) WHERE category = 'total'
               EXCEPT
               SELECT prefecture, year, week, date, disease, count, source
               FROM read_parquet(?) WHERE source = 'Confirmed cases'
@@ -162,6 +172,7 @@ def test_unified_is_an_exact_composition_of_source_tables() -> None:
             {"unified": _parquet("unified.parquet"), "sentinel": _parquet("sentinel.parquet")},
         ).fetchone()
         assert bullet_missing == (0,)
+        assert preliminary_in_annual_years == (0,)
         assert historical_missing == (0,)
         assert sentinel_mismatch == (0, 0)
     finally:

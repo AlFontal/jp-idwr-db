@@ -21,14 +21,15 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Literal, cast
 
+import httpx
 import polars as pl
 from platformdirs import user_cache_dir
 
 from .config import get_config
-from .http import download_urls
+from .http import cached_head, download_urls
 from .types import DatasetName
-from .urls import url_bullet, url_confirmed, url_sentinel
-from .utils import iso_weeks_in_year
+from .urls import AnnualTable, url_annual, url_bullet, url_confirmed, url_sentinel
+from .utils import PREFECTURE_ISO_MAP, iso_weeks_in_year
 
 logger = logging.getLogger(__name__)
 
@@ -596,6 +597,197 @@ def _read_confirmed_pl(
     return df
 
 
+# English labels that the annual sentinel tables print differently across eras for
+# a disease whose Japanese label is identical (typing, encoding, or translation
+# changes only). Definitional changes (e.g. influenza exclusions) are not merged.
+SENTINEL_NAME_HARMONIZATION = {
+    "Erythema infectiosum": "Erythema infection",  # 伝染性紅斑
+    "GroupA streptococcal pharyngitis": "Group A streptococcal pharyngitis",
+    "Hand,foot and mouth disease": "Hand, foot and mouth disease",
+    "Mycoplasmal pneumonia": "Mycoplasma pneumonia",  # マイコプラズマ肺炎
+    "Chlamydial Pneumonia": "Chlamydial pneumonia(excluding psittacosis)",  # クラミジア肺炎(オウム病を除く)
+    "Measles": "Measles(excluding measles in adults)",  # 麻疹(成人麻疹を除く)
+    "Acute encephalitis": "Acute encephalitis (excluding Japanese encephalitis)",  # 急性脳炎(日本脳炎を除く)
+}
+
+# Weeks during which a disease was under sentinel surveillance. The annual tables
+# print zeros outside these windows (before a disease was added, or after it moved
+# to all-case reporting); those placeholder rows are dropped.
+SENTINEL_SURVEILLANCE_WINDOWS: dict[str, tuple[tuple[int, int] | None, tuple[int, int] | None]] = {
+    "Acute encephalitis (excluding Japanese encephalitis)": (None, (2003, 45)),
+    "Infectious gastroenteritis (only by Rotavirus)": ((2013, 42), None),
+    "COVID-19": ((2023, 19), None),
+}
+
+_WEEK_LABEL = re.compile(r"\(\s*(?:week\s*)?(\d{1,2})\s*(?:week|週)?\s*\)", re.IGNORECASE)
+
+
+def _annual_sheet_week(df_raw: pl.DataFrame) -> int | None:
+    """Read the week number from an annual table sheet's title rows."""
+    for row in df_raw.head(4).iter_rows():
+        for value in row:
+            if value is None:
+                continue
+            text = _normalize_fullwidth(str(value).replace("\x00", ""))
+            match = _WEEK_LABEL.search(text)
+            if match:
+                return int(match.group(1))
+    return None
+
+
+def _annual_cell_value(value: object) -> float | None:
+    """Parse an annual table cell; IDWR tables write zero as ``-``."""
+    if value is None:
+        return None
+    text = str(value).replace("\x00", "").strip().replace(",", "")
+    if text in {"-", "\uff0d"}:
+        return 0.0
+    try:
+        return float(text)
+    except ValueError:
+        return None
+
+
+def _harmonize_sentinel_disease(name: str) -> str:
+    """Normalise annual sentinel disease labels across table eras."""
+    # Old .xls files decode a full-width space as U+FFFD followed by "@".
+    clean = " ".join(name.replace("\ufffd@", " ").replace("\ufffd", " ").split())
+    clean = _normalize_disease_name(clean)
+    return SENTINEL_NAME_HARMONIZATION.get(clean, clean)
+
+
+def _in_surveillance_window() -> pl.Expr:
+    """Expression that is False for rows outside a disease's surveillance window."""
+    keep = pl.lit(True)
+    year_week = pl.col("year") * 100 + pl.col("week")
+    for disease, (start, end) in SENTINEL_SURVEILLANCE_WINDOWS.items():
+        outside = pl.lit(False)
+        if start is not None:
+            outside = outside | (year_week < start[0] * 100 + start[1])
+        if end is not None:
+            outside = outside | (year_week > end[0] * 100 + end[1])
+        keep = keep & ~((pl.col("disease") == disease) & outside)
+    return keep
+
+
+def read_annual_sentinel(path: Path | str, year: int, *, value_name: str = "count") -> pl.DataFrame:
+    """Read an annual sentinel table (weekly counts or rates) into long format.
+
+    Each sheet after the first holds one week, labelled in its title rows. Only the
+    ``total`` (both sexes) columns are kept. Week sheets beyond the ISO weeks of the
+    year are blank templates and are dropped; they must contain only zeros.
+
+    Returns:
+        Columns ``prefecture, year, week, date, disease`` and ``value_name``.
+    """
+    path = Path(path)
+    import fastexcel  # noqa: PLC0415 - optional "excel" extra
+
+    sheet_count = len(fastexcel.read_excel(str(path)).sheet_names)
+    frames: list[pl.DataFrame] = []
+    for sheet in range(2, sheet_count + 1):
+        df_raw = pl.read_excel(str(path), sheet_id=sheet, has_header=False)
+        week = _annual_sheet_week(df_raw)
+        if week is None:
+            raise ValueError(f"{path.name} sheet {sheet}: no week label found")
+        for block in _parse_excel_sheet_blocks(df_raw):
+            totals = [c for c in block.columns if c.endswith("||total")]
+            if not totals:
+                continue
+            long_df = block.select(["prefecture", *totals]).unpivot(
+                index="prefecture", on=totals, variable_name="disease", value_name=value_name
+            )
+            frames.append(
+                long_df.with_columns(
+                    pl.col("disease").str.replace(r"\|\|total$", ""),
+                    pl.col(value_name).map_elements(_annual_cell_value, return_dtype=pl.Float64),
+                    pl.lit(week, dtype=pl.Int32).alias("week"),
+                )
+            )
+    if not frames:
+        raise ValueError(f"No sentinel data parsed from {path.name}")
+
+    df = pl.concat(frames, how="vertical_relaxed").with_columns(
+        pl.lit(year, dtype=pl.Int32).alias("year"),
+        pl.col("disease").map_elements(_harmonize_sentinel_disease, return_dtype=pl.String),
+    )
+    df = df.filter(pl.col("prefecture").is_in(list(PREFECTURE_ISO_MAP)))
+
+    beyond_iso = df.filter(pl.col("week") > iso_weeks_in_year(year))
+    if beyond_iso.height and beyond_iso[value_name].fill_null(0).abs().sum() > 0:
+        raise ValueError(f"{path.name}: non-zero values in week sheets beyond ISO week count")
+    df = df.filter(pl.col("week") <= iso_weeks_in_year(year)).filter(_in_surveillance_window())
+    return df.with_columns(
+        pl.struct(["year", "week"])
+        .map_elements(
+            lambda v: dt.date.fromisocalendar(int(v["year"]), int(v["week"]), 1),
+            return_dtype=pl.Date,
+        )
+        .alias("date")
+    ).select(["prefecture", "year", "week", "date", "disease", value_name])
+
+
+def annual_cache_path(table: AnnualTable, year: int, *, out_dir: Path | str | None = None) -> Path:
+    """Return where an annual table is cached (``{year}_{file}``, as ``download`` names it)."""
+    url = url_annual(year, table)
+    if url is None:
+        raise ValueError(f"No annual {table} table exists for {year}")
+    subdir = "confirmed" if table in {"sex", "place"} else "annual"
+    directory = (
+        Path(out_dir)
+        if out_dir is not None
+        else Path(user_cache_dir("jp_idwr_db")) / "raw" / subdir
+    )
+    return directory / f"{year}_{Path(url).name}"
+
+
+def download_annual(
+    table: AnnualTable,
+    year: int,
+    *,
+    out_dir: Path | str | None = None,
+    overwrite: bool = False,
+) -> Path:
+    """Download an annual IDWR table into the raw cache and return its path."""
+    url = url_annual(year, table)
+    if url is None:
+        raise ValueError(f"No annual {table} table exists for {year}")
+    dest = annual_cache_path(table, year, out_dir=out_dir)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    if dest.exists() and not overwrite:
+        return dest
+    downloaded = download_urls([url], dest.parent, get_config())[0]
+    if downloaded != dest:
+        downloaded.replace(dest)
+    return dest
+
+
+def annual_table_available(table: AnnualTable, year: int) -> bool:
+    """Return whether an annual table is published, failing safe on errors.
+
+    Only an explicit HTTP 200 counts as available; 404 means not published yet,
+    and any other status or network error is logged and treated as unavailable.
+    """
+    url = url_annual(year, table)
+    if url is None:
+        return False
+    try:
+        response = cached_head(url, get_config())
+    except httpx.HTTPError as exc:
+        logger.warning("Could not check annual %s table for %s: %s", table, year, exc)
+        return False
+    if response.status_code == 200:
+        return True
+    if response.status_code != 404:
+        logger.warning(
+            "Unexpected status %s checking annual %s table for %s",
+            response.status_code,
+            table,
+            year,
+        )
+    return False
+
+
 def _read_bullet_pl(
     path: Path,
     *,
@@ -885,7 +1077,7 @@ _SENTINEL_EN_SCHEMA = {
 
 SENTINEL_COUNT_STATUSES = {
     "derived": "Difference of consecutive year-to-date totals (week 1: its own total).",
-    "weekly_report": "Taken from the IDWR weekly report because the cumulative file lacks it.",
+    "annual": "Final weekly count from the annual IDWR table.",
     "gap": "Unknown: the previous week's total is missing.",
     "inconsistent": "Unknown: depends on a year-to-date total that is out of line with its neighbours.",
     "correction": "Unknown: the year-to-date total decreased for good (source correction or reset).",
@@ -894,60 +1086,12 @@ SENTINEL_COUNT_STATUSES = {
 }
 
 
-def _add_weekly_report_rows(df: pl.DataFrame, weekly_reports: pl.DataFrame) -> pl.DataFrame:
-    """Insert synthetic cumulative rows for weeks recovered from weekly reports.
-
-    A recovered week ``t`` gets the cumulative total ``C(t-1) + weekly``, so the
-    following week is still derived from the source's own cumulative total.
-    """
-    keys = ["year", "prefecture", "disease", "week"]
-    reports = weekly_reports.select(
-        [*keys, pl.col("count").alias("_report_count"), pl.col("per_sentinel").alias("_report_ps")]
-    ).join(df.select(keys), on=keys, how="anti")
-    previous = df.select(
-        [
-            "year",
-            "prefecture",
-            "disease",
-            (pl.col("week") + 1).alias("week"),
-            pl.col("count").alias("_prev_cum"),
-        ]
-    )
-    reports = reports.join(previous, on=keys, how="inner").filter(pl.col("_prev_cum").is_not_null())
-    if reports.is_empty():
-        return df.with_columns(pl.lit(None, dtype=pl.Float64).alias("_report_ps"))
-
-    template = df.select(
-        ["year", "prefecture", "disease", *(c for c in ("source",) if c in df.columns)]
-    ).unique(subset=["year", "prefecture", "disease"])
-    added = reports.join(template, on=["year", "prefecture", "disease"], how="left").with_columns(
-        (pl.col("_prev_cum") + pl.col("_report_count")).alias("count"),
-        pl.lit(True).alias("_from_report"),
-    )
-    if "date" in df.columns:
-        added = added.with_columns(
-            pl.struct(["year", "week"])
-            .map_elements(
-                lambda v: dt.date.fromisocalendar(int(v["year"]), int(v["week"]), 1),
-                return_dtype=pl.Date,
-            )
-            .alias("date")
-        )
-    added = added.drop(["_prev_cum", "_report_count"])
-    return pl.concat(
-        [df.with_columns(pl.lit(None, dtype=pl.Float64).alias("_report_ps")), added],
-        how="diagonal_relaxed",
-    )
-
-
 # A decrease that recovers within this many weeks marks the low totals as errors.
 _MAX_DIP_WEEKS = 4
-_KNOWN_STATUSES = ("derived", "weekly_report")
+_KNOWN_STATUSES = ("derived",)
 
 
-def _series_statuses(
-    weeks: list[int], totals: list[float | None], from_report: list[bool]
-) -> list[str]:
+def _series_statuses(weeks: list[int], totals: list[float | None]) -> list[str]:
     """Classify one year/prefecture/disease series of year-to-date totals."""
     n = len(weeks)
     status: list[str] = []
@@ -956,9 +1100,7 @@ def _series_statuses(
         if totals[i] is None:
             status.append("missing")
             continue
-        if from_report[i]:
-            status.append("weekly_report")
-        elif weeks[i] == 1:
+        if weeks[i] == 1:
             status.append("derived")
         elif last_observed is None:
             status.append("series_start")
@@ -996,13 +1138,10 @@ def _series_statuses(
         )
         earlier = totals[prev - 1] if prev >= 1 else None
         previous_too_high = earlier is not None and consecutive(prev - 1, i) and current >= earlier
-        if recovery == 1 and previous_too_high:
-            blank.update({prev, i, i + 1})  # either C(t-1) too high or C(t) too low
-        elif recovery == 1:
-            blank.update({i, i + 1})  # C(t) too low
-        elif previous_too_high:
+        # When several explanations fit, blank every week any of them affects.
+        if previous_too_high:
             blank.update({prev, i})  # C(t-1) too high
-        elif recovery is not None:
+        if recovery is not None:
             blank.update(range(i, i + recovery + 1))  # C(t)..C(t+k-1) too low
         elif status[i] == "derived":
             status[i] = "correction"  # lasting decrease: continue from the new level
@@ -1013,9 +1152,7 @@ def _series_statuses(
     return status
 
 
-def _sentinel_cumulative_to_weekly(
-    df: pl.DataFrame, weekly_reports: pl.DataFrame | None = None
-) -> pl.DataFrame:
+def _sentinel_cumulative_to_weekly(df: pl.DataFrame) -> pl.DataFrame:
     """Convert cumulative sentinel counts to weekly incidence.
 
     Sentinel ``teitenrui`` files report year-to-date cumulative counts per
@@ -1024,8 +1161,6 @@ def _sentinel_cumulative_to_weekly(
     what it is (see ``SENTINEL_COUNT_STATUSES``):
 
     - ``derived``: consecutive totals ``C(t) - C(t-1)``, or ``C(1)`` for week 1.
-    - ``weekly_report``: a week missing from the cumulative files, taken from
-      ``weekly_reports`` (IDWR weekly report tables).
     - ``inconsistent``: a decrease ``C(t) < C(t-1)`` means a nearby total is
       wrong. The weeks that depend on a possibly wrong total are unknown:
       ``t`` and ``t+1`` if ``C(t)`` is too low (recovers next week), ``t-1`` and
@@ -1045,25 +1180,15 @@ def _sentinel_cumulative_to_weekly(
         return df
 
     group_cols = ["year", "prefecture", "disease"]
-    out = df.with_columns(pl.lit(False).alias("_from_report"))
-    if weekly_reports is not None and weekly_reports.height > 0:
-        out = _add_weekly_report_rows(out, weekly_reports)
-    else:
-        out = out.with_columns(pl.lit(None, dtype=pl.Float64).alias("_report_ps"))
-
-    out = out.sort([*group_cols, "week"], nulls_last=True).with_columns(
+    out = df.sort([*group_cols, "week"], nulls_last=True).with_columns(
         pl.col("count").alias("_cum")
     )
 
     statuses: list[str] = []
-    for _, series in out.select([*group_cols, "week", "_cum", "_from_report"]).group_by(
+    for _, series in out.select([*group_cols, "week", "_cum"]).group_by(
         group_cols, maintain_order=True
     ):
-        statuses.extend(
-            _series_statuses(
-                series["week"].to_list(), series["_cum"].to_list(), series["_from_report"].to_list()
-            )
-        )
+        statuses.extend(_series_statuses(series["week"].to_list(), series["_cum"].to_list()))
     out = out.with_columns(pl.Series("count_status", statuses, dtype=pl.String))
 
     previous_total = pl.col("_cum").shift(1).over(group_cols)
@@ -1083,15 +1208,11 @@ def _sentinel_cumulative_to_weekly(
             .otherwise(None)
         )
         out = out.with_columns(sites.alias("_sentinel_sites"))
-        previous_sites = pl.col("_sentinel_sites").shift(1).over(group_cols)
         weekly_per_sentinel = (
             pl.when(pl.col("count").is_null())
             .then(None)
             .when(pl.col("count") == 0)
             .then(0.0)
-            .when(pl.col("count_status") == "weekly_report")
-            # Reports round rates to 2 decimals; prefer the full-precision site count.
-            .then(pl.coalesce(pl.col("count") / previous_sites, pl.col("_report_ps")))
             .when(pl.col("_sentinel_sites").is_null() | (pl.col("_sentinel_sites") <= 0))
             .then(None)
             .otherwise(pl.col("count") / pl.col("_sentinel_sites"))
