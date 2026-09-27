@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -166,5 +167,39 @@ def test_unified_is_an_exact_composition_of_source_tables() -> None:
         assert bullet_missing == (0,)
         assert historical_missing == (0,)
         assert sentinel_mismatch == (0, 0)
+    finally:
+        con.close()
+
+
+def _iso_weeks_between(start: tuple[int, int], end: tuple[int, int]) -> set[tuple[int, int]]:
+    weeks = set()
+    for year in range(start[0], end[0] + 1):
+        for week in range(1, date(year, 12, 28).isocalendar().week + 1):
+            if start <= (year, week) <= end:
+                weeks.add((year, week))
+    return weeks
+
+
+def test_release_series_have_no_missing_weeks() -> None:
+    con = duckdb.connect()
+    try:
+        series = {
+            "sex_prefecture.parquet": "TRUE",
+            "place_prefecture.parquet": "TRUE",
+            "bullet.parquet": "TRUE",
+            "sentinel.parquet": "TRUE",
+            "unified.parquet (confirmed)": "source <> 'Sentinel surveillance'",
+            "unified.parquet (sentinel)": "source = 'Sentinel surveillance'",
+        }
+        for label, condition in series.items():
+            filename = label.split(" ", maxsplit=1)[0]
+            observed = set(
+                con.execute(
+                    f"SELECT DISTINCT year, week FROM read_parquet(?) WHERE {condition}",
+                    [_parquet(filename)],
+                ).fetchall()
+            )
+            expected = _iso_weeks_between(min(observed), max(observed))
+            assert sorted(expected - observed) == [], label
     finally:
         con.close()

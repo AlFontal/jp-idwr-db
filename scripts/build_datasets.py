@@ -241,6 +241,10 @@ def build_sex() -> None:
             logger.info(f"  ✓ Derived female rows: {female_df.height:,}")
 
         out_path = DATA_DIR / "sex_prefecture.parquet"
+        # Keep the published column order (matches place_prefecture).
+        full_df = full_df.select(
+            ["prefecture", "year", "week", "date", "count", "category", "disease", "source"]
+        )
         full_df = _sort_for_output(full_df)
         _validate_dataset_output("sex_prefecture", full_df)
         full_df.write_parquet(out_path)

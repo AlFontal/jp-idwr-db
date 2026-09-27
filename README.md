@@ -38,7 +38,7 @@ print(df)
 
 <!-- BEGIN GENERATED UNIFIED SNAPSHOT -->
 ```text
-shape: (5_526_138, 6)
+shape: (5_530_274, 6)
 ┌────────────┬────────────┬──────────┬────────────────────────────────┬───────┬────────────────────┐
 │ date       ┆ prefecture ┆ category ┆ disease                        ┆ count ┆ source             │
 │ ---        ┆ ---        ┆ ---      ┆ ---                            ┆ ---   ┆ ---                │
