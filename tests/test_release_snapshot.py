@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 
 import pyarrow.parquet as pq
+import pytest
 
 import jp_idwr_db as jp
 
@@ -16,9 +17,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_dataset_documentation_row_counts_match_parquet_metadata() -> None:
+    data_dir = ROOT / "data" / "parquet"
+    if not (data_dir / "unified.parquet").exists():
+        pytest.skip("No release datasets seeded (scripts/fetch_release_data.py)")
     documentation = (ROOT / "docs" / "DATASETS.md").read_text(encoding="utf-8")
 
-    for parquet_path in sorted((ROOT / "data" / "parquet").glob("*.parquet")):
+    for parquet_path in sorted(data_dir.glob("*.parquet")):
         section_match = re.search(
             rf"^### `{re.escape(parquet_path.name)}`$(.*?)(?=^### |^## |\Z)",
             documentation,

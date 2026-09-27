@@ -20,3 +20,6 @@ dist-data/
 
 # Local dashboard build dependencies
 dashboard/node_modules/
+
+# Release datasets (seed with scripts/fetch_release_data.py; not committed)
+data/parquet/

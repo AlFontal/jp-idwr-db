@@ -15,6 +15,7 @@ from datetime import date
 from pathlib import Path
 
 import polars as pl
+import pyarrow.parquet as pq  # type: ignore[import-untyped]
 
 from ._internal import validation
 from ._internal.release_utils import sha256 as file_sha256
@@ -30,6 +31,8 @@ VALIDATED_OUTPUTS = (
     Path("data/parquet/unified.parquet"),
 )
 TARGET_OUTPUTS = (*VALIDATED_OUTPUTS, Path("docs/DISEASES.md"))
+# Static lookup table: no builder, carried from release to release.
+PREFECTURE_EN_PATH = Path("data/parquet/prefecture_en.parquet")
 SENTINEL_SOURCE = "Sentinel surveillance"
 
 CHANGELOG_PATH = Path("CHANGELOG.md")
@@ -83,8 +86,74 @@ def _sha256(path: Path) -> str | None:
 
 
 def _snapshot_paths(repo_root: Path) -> dict[str, str | None]:
-    """Capture the digest state for generated release outputs."""
-    return {str(rel_path): _sha256(repo_root / rel_path) for rel_path in TARGET_OUTPUTS}
+    """Capture the digest state of the release datasets.
+
+    Only data files count: generated docs carry the build date, so they would
+    make every run on a new day look like a change.
+    """
+    return {str(rel_path): _sha256(repo_root / rel_path) for rel_path in VALIDATED_OUTPUTS}
+
+
+# prefecture_en.parquet has no builder; a full rebuild keeps the seeded copy.
+FULL_REBUILD_OUTPUTS = VALIDATED_OUTPUTS
+
+
+def _remove_for_full_rebuild(repo_root: Path) -> None:
+    """Delete seeded datasets so every builder rebuilds from the source files."""
+    for rel_path in FULL_REBUILD_OUTPUTS:
+        (repo_root / rel_path).unlink(missing_ok=True)
+
+
+def summarize_changes(previous_dir: Path, rebuilt_dir: Path) -> str:
+    """Return a markdown summary of rebuilt datasets against the previous release."""
+    lines = [
+        "| Dataset | Previous rows | Rebuilt rows | Years with changed rows |",
+        "| --- | ---: | ---: | --- |",
+    ]
+    for rel_path in VALIDATED_OUTPUTS:
+        previous_path, rebuilt_path = previous_dir / rel_path.name, rebuilt_dir / rel_path.name
+        if not rebuilt_path.exists():
+            continue
+        if previous_path.exists() and _sha256(previous_path) == _sha256(rebuilt_path):
+            rows = pq.ParquetFile(rebuilt_path).metadata.num_rows
+            lines.append(f"| `{rel_path.name}` | {rows:,} | {rows:,} | none (identical) |")
+            continue
+        rebuilt = pl.scan_parquet(rebuilt_path)
+        previous = pl.scan_parquet(previous_path) if previous_path.exists() else None
+        years = _changed_years(previous, rebuilt)
+        previous_rows = previous.select(pl.len()).collect().item() if previous is not None else 0
+        rebuilt_rows = rebuilt.select(pl.len()).collect().item()
+        shown = ", ".join(str(y) for y in years[:12]) + (" …" if len(years) > 12 else "")
+        lines.append(
+            f"| `{rel_path.name}` | {previous_rows:,} | {rebuilt_rows:,} | {shown or 'none'} |"
+        )
+    return "\n".join(lines) + "\n"
+
+
+def _changed_years(previous: pl.LazyFrame | None, rebuilt: pl.LazyFrame) -> list[int]:
+    """Return years whose rows differ, via per-year row counts and row hashes."""
+
+    def per_year(frame: pl.LazyFrame, columns: list[str]) -> dict[int, tuple[int, int]]:
+        rows = (
+            frame.group_by("year")
+            .agg(pl.len().alias("n"), pl.struct(columns).hash(seed=0).sum().alias("h"))
+            .collect()
+        )
+        return {int(r["year"]): (int(r["n"]), int(r["h"] or 0)) for r in rows.iter_rows(named=True)}
+
+    rebuilt_schema = rebuilt.collect_schema()
+    columns = sorted(rebuilt_schema.names())
+    if previous is None:
+        return sorted(per_year(rebuilt, columns))
+    previous_schema = previous.collect_schema()
+    if sorted(previous_schema.names()) != columns or any(
+        previous_schema[c] != rebuilt_schema[c] for c in columns
+    ):
+        # Column or dtype change: every year is affected.
+        years = pl.concat([previous.select("year"), rebuilt.select("year")], how="vertical_relaxed")
+        return sorted(int(y) for y in years.unique().collect()["year"].to_list())
+    old, new = per_year(previous, columns), per_year(rebuilt, columns)
+    return sorted(y for y in set(old) | set(new) if old.get(y) != new.get(y))
 
 
 def _backup_targets(repo_root: Path, backup_root: Path) -> None:
@@ -325,8 +394,14 @@ def _period_row_counts(path: Path) -> dict[tuple[int, int], int]:
     }
 
 
-def _validate_release_preservation(repo_root: Path, backup_root: Path) -> None:
-    """Reject refreshes that regress recency or alter stable historical data."""
+def _validate_release_preservation(
+    repo_root: Path, backup_root: Path, *, allow_historical_changes: bool = False
+) -> None:
+    """Reject refreshes that regress recency or alter stable historical data.
+
+    ``allow_historical_changes`` skips the lost-rows and frozen-rows checks for a
+    deliberate, reviewed correction; the recency check still applies.
+    """
     for rel_path in VALIDATED_OUTPUTS:
         previous = backup_root / rel_path
         rebuilt = repo_root / rel_path
@@ -351,7 +426,7 @@ def _validate_release_preservation(repo_root: Path, backup_root: Path) -> None:
             for period, rows in previous_counts.items()
             if rebuilt_counts.get(period, 0) < rows and period[0] not in switched_years
         ]
-        if regressed_periods:
+        if regressed_periods and not allow_historical_changes:
             raise ValueError(
                 f"Previously published periods lost rows in {rel_path}. "
                 f"First regressions: {sorted(regressed_periods)[:10]}"
@@ -373,7 +448,10 @@ def _validate_release_preservation(repo_root: Path, backup_root: Path) -> None:
                 .join(switched_df, on=["year", "_family"], how="anti")
                 .drop("_family")
             )
-        if _historical_signature(previous, frozen) != _historical_signature(rebuilt, frozen):
+        if (
+            _historical_signature(previous, frozen) != _historical_signature(rebuilt, frozen)
+            and not allow_historical_changes
+        ):
             raise ValueError(f"Stable historical rows changed in {rel_path}")
 
 
@@ -441,6 +519,7 @@ def prepend_changelog_entry(
     latest_bullet_week: str,
     latest_sentinel_week: str,
     release_date: date,
+    historical_changes: bool = False,
 ) -> None:
     """Prepend a refresh-release entry to ``CHANGELOG.md``."""
     changelog_path = repo_root / CHANGELOG_PATH
@@ -452,7 +531,12 @@ def prepend_changelog_entry(
         f"## {version} - {release_date.isoformat()}\n\n"
         f"- Refreshed bullet release assets through {latest_bullet_week} and sentinel assets through "
         f"{latest_sentinel_week}.\n"
-        "- Automated bi-weekly data refresh release.\n\n"
+        + (
+            "- Rebuilt previously published historical rows (explicit override).\n"
+            if historical_changes
+            else ""
+        )
+        + "- Automated weekly data refresh release.\n\n"
     )
     changelog_path.write_text(
         original.replace("# Changelog\n\n", f"# Changelog\n\n{entry}", 1),
@@ -465,9 +549,28 @@ def prepare_refresh_release(
     *,
     dry_run: bool = False,
     force_release: bool = False,
+    full_rebuild: bool = False,
+    allow_historical_changes: bool = False,
+    keep_outputs: Path | None = None,
     release_date: date | None = None,
 ) -> RefreshOutputs:
-    """Rebuild release outputs and prepare a calendar release when data changed."""
+    """Rebuild release outputs and prepare a calendar release when data changed.
+
+    The data in ``data/parquet`` must be seeded from the previous release; it is
+    the baseline for change detection and the history guard.
+
+    Args:
+        repo_root: Repository root (defaults to the source checkout).
+        dry_run: Rebuild and validate, then restore the tree.
+        force_release: Prepare a release even when the data is unchanged.
+        full_rebuild: Rebuild every dataset from the source files instead of
+            incrementally from the seeded release.
+        allow_historical_changes: Accept changes to rows the guard treats as
+            frozen (for deliberate corrections; review a dry run first).
+        keep_outputs: Copy the rebuilt datasets here before a dry run restores
+            the tree, together with ``summary.md``.
+        release_date: Date used for the calendar version (defaults to today).
+    """
     resolved_root = (repo_root or _repo_root()).resolve()
     current = current_version(resolved_root)
     resolved_release_date = release_date or date.today()
@@ -480,9 +583,22 @@ def prepare_refresh_release(
         completed = False
 
         try:
+            if full_rebuild:
+                _remove_for_full_rebuild(resolved_root)
             rebuild_release_outputs(resolved_root)
             _validate_release_outputs(resolved_root)
-            _validate_release_preservation(resolved_root, backup_root)
+            _validate_release_preservation(
+                resolved_root, backup_root, allow_historical_changes=allow_historical_changes
+            )
+            if keep_outputs is not None:
+                keep_outputs.mkdir(parents=True, exist_ok=True)
+                for rel_path in (*VALIDATED_OUTPUTS, PREFECTURE_EN_PATH):
+                    if (resolved_root / rel_path).exists():
+                        shutil.copy2(resolved_root / rel_path, keep_outputs / rel_path.name)
+                (keep_outputs / "summary.md").write_text(
+                    summarize_changes(backup_root / "data" / "parquet", keep_outputs),
+                    encoding="utf-8",
+                )
             after = _snapshot_paths(resolved_root)
             changed = before != after or force_release
             latest_bullet_week = _format_year_week(resolved_root / BULLET_PATH)
@@ -506,6 +622,7 @@ def prepare_refresh_release(
                     latest_bullet_week=latest_bullet_week,
                     latest_sentinel_week=latest_sentinel_week,
                     release_date=resolved_release_date,
+                    historical_changes=allow_historical_changes,
                 )
 
             completed = True
@@ -542,6 +659,22 @@ def build_parser() -> argparse.ArgumentParser:
         help="Prepare a release even when generated outputs are unchanged.",
     )
     parser.add_argument(
+        "--full-rebuild",
+        action="store_true",
+        help="Rebuild every dataset from the source files instead of incrementally.",
+    )
+    parser.add_argument(
+        "--allow-historical-changes",
+        action="store_true",
+        help="Accept changes to frozen historical rows (review a dry run first).",
+    )
+    parser.add_argument(
+        "--keep-outputs",
+        type=Path,
+        default=None,
+        help="Copy rebuilt datasets and summary.md here (use with --dry-run for review).",
+    )
+    parser.add_argument(
         "--github-output",
         type=Path,
         default=None,
@@ -558,6 +691,9 @@ def main(argv: list[str] | None = None) -> int:
         repo_root=args.repo_root,
         dry_run=args.dry_run,
         force_release=args.force_release,
+        full_rebuild=args.full_rebuild,
+        allow_historical_changes=args.allow_historical_changes,
+        keep_outputs=args.keep_outputs,
     )
 
     output_path = args.github_output
