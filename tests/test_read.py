@@ -11,6 +11,7 @@ from jp_idwr_db.io import (
     _confirmed_wide_to_long,
     _normalize_disease_name,
     _parse_excel_sheet_blocks,
+    _resolve_headers,
     _sheet_range_for_year,
     read,
 )
@@ -204,3 +205,13 @@ def test_sheet_range_for_year_includes_week_53_sheets() -> None:
     assert len(_sheet_range_for_year(2015)) == 53
     assert len(_sheet_range_for_year(2019)) == 52
     assert len(_sheet_range_for_year(1999)) == 39
+
+
+def test_resolve_headers_distinguishes_female_from_male() -> None:
+    """'female' contains 'male'; female columns must not be labelled male."""
+    headers = _resolve_headers(
+        ["c0", "c1", "c2", "c3"],
+        [None, "麻疹\n(Measles)", None, None],
+        [None, "総数(total No.)", "男(male)", "女(female)"],
+    )
+    assert headers == ["prefecture", "Measles||total", "Measles||male", "Measles||female"]

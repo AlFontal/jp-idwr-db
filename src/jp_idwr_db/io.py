@@ -268,12 +268,13 @@ def _resolve_headers(
         # Normalize category name
         cat = r3 if r3 else "total"
         cat_lower = cat.lower()
+        # "female" contains "male", so it must be checked first.
         if "total" in cat_lower:
             cat = "total"
-        elif "male" in cat_lower:
-            cat = "male"
         elif "female" in cat_lower:
             cat = "female"
+        elif "male" in cat_lower:
+            cat = "male"
         elif "japan" in cat_lower:
             cat = "japan"
         elif "others" in cat_lower:
