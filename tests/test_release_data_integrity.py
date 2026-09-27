@@ -139,16 +139,32 @@ def test_unified_is_an_exact_composition_of_source_tables() -> None:
             """,
             [_parquet("sex_prefecture.parquet"), _parquet("unified.parquet")],
         ).fetchone()
-        unexpected_sentinel = con.execute(
+        # Sentinel rows are kept exactly for disease-years without confirmed coverage.
+        sentinel_mismatch = con.execute(
             """
-            SELECT COUNT(*) FROM read_parquet(?)
-            WHERE source = 'Sentinel surveillance'
-              AND disease IN (SELECT disease FROM read_parquet(?))
+            WITH confirmed AS (
+              SELECT DISTINCT disease, year FROM read_parquet($unified)
+              WHERE source <> 'Sentinel surveillance'
+            ),
+            expected AS (
+              SELECT prefecture, year, week, date, disease, count, per_sentinel, source
+              FROM read_parquet($sentinel) s
+              WHERE NOT EXISTS (
+                SELECT 1 FROM confirmed c WHERE c.disease = s.disease AND c.year = s.year
+              )
+            ),
+            actual AS (
+              SELECT prefecture, year, week, date, disease, count, per_sentinel, source
+              FROM read_parquet($unified) WHERE source = 'Sentinel surveillance'
+            )
+            SELECT
+              (SELECT COUNT(*) FROM (SELECT * FROM expected EXCEPT ALL SELECT * FROM actual)),
+              (SELECT COUNT(*) FROM (SELECT * FROM actual EXCEPT ALL SELECT * FROM expected))
             """,
-            [_parquet("unified.parquet"), _parquet("bullet.parquet")],
+            {"unified": _parquet("unified.parquet"), "sentinel": _parquet("sentinel.parquet")},
         ).fetchone()
         assert bullet_missing == (0,)
         assert historical_missing == (0,)
-        assert unexpected_sentinel == (0,)
+        assert sentinel_mismatch == (0, 0)
     finally:
         con.close()

@@ -266,15 +266,19 @@ def smart_merge(
 
     This function implements the "prefer confirmed" strategy:
     - Keep ALL zensu (confirmed case) data
-    - Add ONLY sentinel diseases that are absent from zensu
-    - This avoids duplication while preserving diseases only in sentinel surveillance
+    - Add sentinel rows only for diseases and years not covered by zensu
+    - This avoids duplication while preserving sentinel-only coverage, including
+      years before a disease moved from sentinel to all-case reporting (e.g.
+      pertussis became notifiable in 2018)
+
+    When either frame lacks a ``year`` column, coverage is decided per disease.
 
     Args:
-        zensu_df: Confirmed case data (from zensu/bullet files).
+        zensu_df: Confirmed case data (historical confirmed and bullet files).
         teiten_df: Sentinel surveillance data (from teiten files).
 
     Returns:
-        Merged DataFrame with no duplicate diseases.
+        Merged DataFrame with no duplicate disease periods.
 
     Example:
         >>> zensu = pl.DataFrame({"disease": ["Influenza", "Tuberculosis"], "count": [100, 10]})
@@ -282,14 +286,16 @@ def smart_merge(
         >>> merged = smart_merge(zensu, teiten)
         >>> # Result: Influenza from zensu + RSV from teiten
     """
-    confirmed_diseases = (
-        zensu_df.select("disease").drop_nulls().unique().get_column("disease").to_list()
-    )
+    coverage_keys = ["disease"]
+    if "year" in zensu_df.columns and "year" in teiten_df.columns:
+        coverage_keys.append("year")
 
-    # Filter teiten to only include diseases not present in confirmed data.
-    teiten_filtered = teiten_df.filter(~pl.col("disease").is_in(confirmed_diseases))
+    confirmed_coverage = zensu_df.select(coverage_keys).drop_nulls().unique()
 
-    # Combine zensu (all diseases) + teiten (sentinel-only diseases)
+    # Keep only sentinel rows for disease periods absent from confirmed data.
+    teiten_filtered = teiten_df.join(confirmed_coverage, on=coverage_keys, how="anti")
+
+    # Combine zensu (all diseases) + teiten (sentinel-only disease periods)
     merged = pl.concat([zensu_df, teiten_filtered], how="diagonal_relaxed")
 
     return merged

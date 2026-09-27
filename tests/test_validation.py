@@ -222,3 +222,28 @@ def test_smart_merge_keeps_confirmed_and_adds_sentinel_only_diseases() -> None:
 
     assert merged.get_column("disease").to_list() == ["Influenza", "Tuberculosis", "RSV"]
     assert merged.filter(pl.col("disease") == "Influenza").height == 1
+
+
+def test_smart_merge_keeps_sentinel_years_before_confirmed_coverage() -> None:
+    confirmed = pl.DataFrame(
+        {
+            "disease": ["Pertussis", "Influenza"],
+            "year": [2018, 2017],
+            "count": [30, 100],
+            "source": ["Confirmed cases", "Confirmed cases"],
+        }
+    )
+    sentinel = pl.DataFrame(
+        {
+            "disease": ["Pertussis", "Pertussis", "Influenza"],
+            "year": [2017, 2018, 2017],
+            "count": [5, 6, 120],
+            "source": ["Sentinel surveillance"] * 3,
+        }
+    )
+
+    merged = validation.smart_merge(confirmed, sentinel)
+
+    kept_sentinel = merged.filter(pl.col("source") == "Sentinel surveillance")
+    assert kept_sentinel.select(["disease", "year"]).rows() == [("Pertussis", 2017)]
+    assert merged.height == 3

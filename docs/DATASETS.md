@@ -3,7 +3,7 @@
 This document describes the parquet datasets published as GitHub Release assets.
 At runtime they are cached under `~/.cache/jp_idwr_db/data/<version>/` (OS-specific via `platformdirs`).
 
-All figures below reflect the repository snapshot on **2026-09-16**.
+All figures below reflect the repository snapshot on **2026-09-27**.
 
 The `date` column is the Monday at the start of the ISO surveillance week in
 every published dataset. Use `year` and `week` as the canonical surveillance
@@ -66,7 +66,9 @@ Load with:
 - Composition:
   - historical **sex dataset only** (category normalized to `total`)
   - modern `bullet`
-  - diseases from `sentinel` that are absent in `bullet` after smart merge
+  - `sentinel` rows for disease-years without confirmed or all-case coverage
+    (currently all sentinel rows, including pertussis 2012-2017 before it
+    became all-case notifiable in 2018)
 - The `place` dataset is **not fused** into unified.
 - Category policy: unified keeps only `category = total`.
 
@@ -113,7 +115,7 @@ Load with:
 
 ### `unified.parquet`
 
-- Rows: `5,513,187`
+- Rows: `5,526,138`
 - Columns: `prefecture, year, week, date, count, category, disease, source, per_sentinel`
 - Years: `1999-2026`
 - Prefectures: `47`

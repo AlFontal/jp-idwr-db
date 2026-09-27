@@ -1,6 +1,6 @@
 # Disease Coverage in Unified Dataset
 
-Coverage summary generated from `data/parquet/unified.parquet` (snapshot: 2026-09-16).
+Coverage summary generated from `data/parquet/unified.parquet` (snapshot: 2026-09-27).
 
 - Total diseases: **115**
 - Year span: **1999-2026**
@@ -88,7 +88,7 @@ Coverage summary generated from `data/parquet/unified.parquet` (snapshot: 2026-0
 | Nipah virus infection | 2006-W01 | 2026-W36 | All-case reporting, Confirmed cases | 0 | 50,666 |
 | Omsk hemorrhagic fever | 2007-W01 | 2026-W36 | All-case reporting, Confirmed cases | 0 | 48,222 |
 | Paratyphoid fever | 1999-W14 | 2026-W36 | All-case reporting, Confirmed cases | 655 | 67,210 |
-| Pertussis | 2018-W01 | 2026-W36 | All-case reporting, Confirmed cases | 116,088 | 21,244 |
+| Pertussis | 2012-W38 | 2026-W36 | All-case reporting, Confirmed cases, Sentinel surveillance | 128,002 | 34,195 |
 | Pharyngoconjunctival fever | 2012-W38 | 2026-W36 | Sentinel surveillance | 993,203 | 34,242 |
 | Plague | 1999-W14 | 2026-W36 | All-case reporting, Confirmed cases | 0 | 67,210 |
 | Poliomyelitis | 2001-W01 | 2005-W52 | Confirmed cases | 0 | 12,267 |

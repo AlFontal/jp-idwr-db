@@ -459,8 +459,8 @@ def build_unified() -> None:
     - Historical sex data (excluding years with modern zensu data)
     - Modern bullet/sentinel data
 
-    Uses smart_merge() to prefer confirmed (zensu) data and only include
-    sentinel-exclusive diseases from teiten. Modern bullet years replace
+    Uses smart_merge() to prefer confirmed data and only include sentinel rows
+    for disease-years without confirmed coverage. Modern bullet years replace
     overlapping historical years.
     """
     logger.info("\n" + "=" * 60)
@@ -507,18 +507,18 @@ def build_unified() -> None:
     else:
         raise FileNotFoundError(f"Sex data file not found: {sex_path}")
 
-    # 4. Smart merge modern data (prefer zensu, only sentinel-exclusive from teiten)
-    logger.info("\nApplying smart merge (prefer confirmed, sentinel-only from teiten)...")
-    merged_modern = validation.smart_merge(zensu_df, teiten_df)
-    logger.info(f"  ✓ Merged to {merged_modern.height:,} rows")
+    # 4. Combine historical and modern confirmed totals, then add sentinel rows only
+    # for disease-years that confirmed data does not cover. Merging against all
+    # confirmed years (not just bullet) keeps sentinel history for diseases that
+    # later became notifiable without duplicating historical confirmed rows.
+    logger.info("\nApplying smart merge (prefer confirmed, sentinel-only disease-years)...")
+    confirmed_df = pl.concat([sex_df, zensu_df], how="diagonal_relaxed")
+    unified_df = validation.smart_merge(confirmed_df, teiten_df)
     logger.info(
-        f"    (zensu: {zensu_df.height:,}, teiten filtered: {merged_modern.height - zensu_df.height:,})"
+        f"  ✓ Merged to {unified_df.height:,} rows "
+        f"(confirmed: {confirmed_df.height:,}, "
+        f"sentinel kept: {unified_df.height - confirmed_df.height:,})"
     )
-
-    # 5. Combine historical totals with modern data.
-    logger.info("\nCombining historical and modern datasets...")
-    unified_df = pl.concat([sex_df, merged_modern], how="diagonal_relaxed")
-    logger.info(f"  ✓ Combined to {unified_df.height:,} total rows")
 
     # Fill modern rows with category=total for a consistent schema.
     if "category" in unified_df.columns:
