@@ -137,6 +137,17 @@ def url_confirmed(year: int, type: Literal["sex", "place"] = "sex") -> str:
     raise ValueError(f"No URL rule found for year {year} and type {type}")
 
 
+def _require_ok(response: object, url: str) -> None:
+    """Fail loudly on anything but 200: only a 404 means "not published".
+
+    Treating a transient 5xx or 403 as "not published" would silently drop a
+    week from the build.
+    """
+    status = getattr(response, "status_code", None)
+    if status != 200:
+        raise RuntimeError(f"Unexpected HTTP status {status} checking {url}")
+
+
 def url_bullet(
     year: int,
     week: int | Iterable[int] | None = None,
@@ -188,8 +199,9 @@ def url_bullet(
         base = "https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/"
         url = f"{base}{year}/{w:02d}/zensu{w:02d}.csv"
         resp = cached_head(url, config)
-        if resp.status_code != 200:
-            continue
+        if resp.status_code == 404:
+            continue  # not published (yet)
+        _require_ok(resp, url)
         content_length = resp.headers.get("content-length")
         if content_length is None or content_length == "" or int(content_length) > 0:
             urls.append(url)
@@ -264,8 +276,9 @@ def url_sentinel(
         for url in candidates:
             # Check if URL exists
             resp = cached_head(url, get_config())
-            if resp.status_code != 200:
-                continue
+            if resp.status_code == 404:
+                continue  # not published (yet), or not on this host
+            _require_ok(resp, url)
             content_length = resp.headers.get("content-length")
             if content_length is None or content_length == "" or int(content_length) > 0:
                 urls.append(url)

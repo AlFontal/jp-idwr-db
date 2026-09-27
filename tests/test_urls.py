@@ -156,3 +156,18 @@ def test_url_sentinel_validation() -> None:
     # Year too old (before 1999)
     with pytest.raises(ValueError, match="Year must be >= 1999 for sentinel data"):
         urls.url_sentinel(1998, 1)
+
+
+def test_url_bullet_fails_on_unexpected_status(monkeypatch: Any) -> None:
+    """Only 404 means "not published"; a server error must not drop the week."""
+
+    def fake_head(url: str, config: Any) -> Any:
+        class Resp:
+            status_code = 503
+            headers: typing.ClassVar = {}
+
+        return Resp()
+
+    monkeypatch.setattr(urls, "cached_head", fake_head)
+    with pytest.raises(RuntimeError, match="Unexpected HTTP status 503"):
+        urls.url_bullet(2026, [10])
