@@ -1,17 +1,50 @@
 # Changelog
 
+## Unreleased
+
+- Datasets are published only as release assets; `data/parquet` is no longer
+  committed. `scripts/fetch_release_data.py` seeds it from the release that
+  matches the package version.
+- Data refreshes run weekly instead of every two weeks.
+- Source availability checks are throttled and retried; only HTTP 404 means a
+  week is not yet published.
+
 ## 2026.9.30 - 2026-09-30
 
 - Refreshed bullet release assets through 2026-W37 and sentinel assets through 2026-W37.
 - Automated bi-weekly data refresh release.
 
+Data changes (historical rows revised; review before comparing with earlier
+releases):
+
+- `sentinel` now uses the final annual IDWR tables for every year they cover
+  (1999 onwards) and the preliminary weekly reports only after that. Weekly
+  counts from preliminary reports are derived only from consistent year-to-date
+  totals; `-` is read as 0. New `count_status` column (`annual`, `derived`,
+  `inconsistent`, `missing`, `correction`, ...) in `sentinel` and `unified`.
+- `unified` uses the annual confirmed tables for every year they cover (2024
+  switched from the preliminary reports; totals include late reports).
+- Sentinel Pertussis 2012-2017 restored in `unified` (sentinel rows are now
+  dropped only for disease-years covered by confirmed data).
+- 2020-W53 added to `sex_prefecture`, `place_prefecture` and `unified`.
+- `sex_prefecture` female counts are read from the tables instead of derived
+  as total minus male (9 values change in 2022-2024).
+
+Code changes:
+
+- Year rollover: the previous year is re-fetched until it reaches its final
+  ISO week, and week 53 is fetched.
+- PyPI publishing waits for the GitHub release.
+- Unreadable source files fail the build instead of dropping a week.
+- `merge()` keeps keys for wide frames and joins every frame.
+- Release tags are validated before being used as cache paths.
+- `version="latest"` falls back to the newest complete cache when offline;
+  `get_data()` and the list helpers filter lazily.
+
 ## 2026.9.16 - 2026-09-16
 
 - Refreshed bullet release assets through 2026-W36 and sentinel assets through 2026-W36.
 - Automated bi-weekly data refresh release.
-
-## Unreleased
-
 - Made refresh builds fail closed on missing or unreadable source years.
 - Added grain-level release validation, immutable-history signatures, period
   preservation checks, and full shipped-Parquet integrity tests.
