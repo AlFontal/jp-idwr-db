@@ -188,6 +188,25 @@ def test_prepare_refresh_release_updates_versions_and_changelog(
     assert "2026-W11" in changelog
 
 
+def test_prepend_changelog_entry_folds_unreleased_notes(tmp_path: Path) -> None:
+    (tmp_path / "CHANGELOG.md").write_text(
+        "# Changelog\n\n## Unreleased\n\n- Pending note.\n\n## 2026.3.12 - 2026-03-12\n\n- Old.\n",
+        encoding="utf-8",
+    )
+
+    refresh_release.prepend_changelog_entry(
+        tmp_path, "2026.3.26", "2026-W11", "2026-W11", date(2026, 3, 26)
+    )
+
+    assert (tmp_path / "CHANGELOG.md").read_text(encoding="utf-8") == (
+        "# Changelog\n\n## 2026.3.26 - 2026-03-26\n\n"
+        "- Refreshed bullet release assets through 2026-W11 and sentinel assets through 2026-W11.\n"
+        "- Automated weekly data refresh release.\n\n"
+        "- Pending note.\n\n"
+        "## 2026.3.12 - 2026-03-12\n\n- Old.\n"
+    )
+
+
 def test_prepare_refresh_release_validates_outputs(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
