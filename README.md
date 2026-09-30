@@ -38,7 +38,7 @@ print(df)
 
 <!-- BEGIN GENERATED UNIFIED SNAPSHOT -->
 ```text
-shape: (6_186_093, 6)
+shape: (6_191_122, 6)
 ┌────────────┬────────────┬──────────┬────────────────────────────────┬───────┬───────────────────────┐
 │ date       ┆ prefecture ┆ category ┆ disease                        ┆ count ┆ source                │
 │ ---        ┆ ---        ┆ ---      ┆ ---                            ┆ ---   ┆ ---                   │
@@ -50,11 +50,11 @@ shape: (6_186_093, 6)
 │ 1999-04-05 ┆ Aichi      ┆ total    ┆ Acute poliomyelitis            ┆ 0.0   ┆ Confirmed cases       │
 │ 1999-04-05 ┆ Aichi      ┆ total    ┆ Acute viral hepatitis          ┆ 4.0   ┆ Confirmed cases       │
 │ …          ┆ …          ┆ …        ┆ …                              ┆ …     ┆ …                     │
-│ 2026-08-31 ┆ Yamanashi  ┆ total    ┆ Viral hepatitis(excluding hep… ┆ 0.0   ┆ All-case reporting    │
-│ 2026-08-31 ┆ Yamanashi  ┆ total    ┆ West Nile fever                ┆ 0.0   ┆ All-case reporting    │
-│ 2026-08-31 ┆ Yamanashi  ┆ total    ┆ Western equine encephalitis    ┆ 0.0   ┆ All-case reporting    │
-│ 2026-08-31 ┆ Yamanashi  ┆ total    ┆ Yellow fever                   ┆ 0.0   ┆ All-case reporting    │
-│ 2026-08-31 ┆ Yamanashi  ┆ total    ┆ Zika virus infection           ┆ 0.0   ┆ All-case reporting    │
+│ 2026-09-07 ┆ Yamanashi  ┆ total    ┆ Viral hepatitis(excluding hep… ┆ 0.0   ┆ All-case reporting    │
+│ 2026-09-07 ┆ Yamanashi  ┆ total    ┆ West Nile fever                ┆ 0.0   ┆ All-case reporting    │
+│ 2026-09-07 ┆ Yamanashi  ┆ total    ┆ Western equine encephalitis    ┆ 0.0   ┆ All-case reporting    │
+│ 2026-09-07 ┆ Yamanashi  ┆ total    ┆ Yellow fever                   ┆ 0.0   ┆ All-case reporting    │
+│ 2026-09-07 ┆ Yamanashi  ┆ total    ┆ Zika virus infection           ┆ 0.0   ┆ All-case reporting    │
 └────────────┴────────────┴──────────┴────────────────────────────────┴───────┴───────────────────────┘
 ```
 <!-- END GENERATED UNIFIED SNAPSHOT -->
@@ -149,7 +149,7 @@ The source archive has changed over time:
 * preliminary sentinel reports (`teitenrui`) are published weekly as `.csv`
 
 Source: [JIHS IDWR Surveillance Data Tables](https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/),
-accessed 2026-09-27 for release `v2026.9.16`.
+accessed 2026-09-30 for release `v2026.9.30`.
 
 The underlying IDWR surveillance data are weekly. `jp-idwr-db` refreshes its published release approximately every two weeks, incorporating newly available reports into a new versioned snapshot.
 

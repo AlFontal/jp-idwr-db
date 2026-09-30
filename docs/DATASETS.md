@@ -3,7 +3,7 @@
 This document describes the parquet datasets published as GitHub Release assets.
 At runtime they are cached under `~/.cache/jp_idwr_db/data/<version>/` (OS-specific via `platformdirs`).
 
-All figures below reflect the repository snapshot on **2026-09-27**.
+All figures below reflect the repository snapshot on **2026-09-30**.
 
 The `date` column is the Monday at the start of the ISO surveillance week in
 every published dataset. Use `year` and `week` as the canonical surveillance
@@ -140,7 +140,7 @@ November 2003).
 
 ### `bullet.parquet`
 
-- Rows: `573,494`
+- Rows: `577,630`
 - Columns: `prefecture, disease, count, year, week, date, source`
 - Years: `2024-2026`
 - Prefectures: `47`
@@ -148,16 +148,16 @@ November 2003).
 
 ### `sentinel.parquet`
 
-- Rows: `1,288,176`
+- Rows: `1,289,069`
 - Columns: `prefecture, disease, year, week, date, count, per_sentinel, source, count_status`
 - Years: `1999-2026`
 - Prefectures: `47`
 - Diseases: `27`
-- Null `count` rows: `344` (`0.03%`), reasons in `count_status`
+- Null `count` rows: `346` (`0.03%`), reasons in `count_status`
 
 ### `unified.parquet`
 
-- Rows: `6,186,093`
+- Rows: `6,191,122`
 - Columns: `prefecture, year, week, date, count, category, disease, source, per_sentinel, count_status`
 - Years: `1999-2026`
 - Prefectures: `47`
