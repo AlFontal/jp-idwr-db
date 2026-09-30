@@ -538,10 +538,14 @@ def prepend_changelog_entry(
         )
         + "- Automated weekly data refresh release.\n\n"
     )
-    changelog_path.write_text(
-        original.replace("# Changelog\n\n", f"# Changelog\n\n{entry}", 1),
-        encoding="utf-8",
-    )
+    body = original.replace("# Changelog\n\n", "", 1)
+    unreleased_header = "## Unreleased\n\n"
+    if body.startswith(unreleased_header):
+        # Ship pending notes with this release instead of leaving them stranded below it.
+        notes, separator, rest = body[len(unreleased_header) :].partition("\n## ")
+        entry += notes.strip("\n") + "\n\n"
+        body = f"## {rest}" if separator else ""
+    changelog_path.write_text(f"# Changelog\n\n{entry}{body}", encoding="utf-8")
 
 
 def prepare_refresh_release(
