@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## 2026.10.7 - 2026-10-07
+
+- Refreshed bullet release assets through 2026-W39 and sentinel assets through 2026-W39.
+- Automated weekly data refresh release.
 
 - Datasets are published only as release assets; `data/parquet` is no longer
   committed. `scripts/fetch_release_data.py` seeds it from the release that
