@@ -207,6 +207,47 @@ def test_prepend_changelog_entry_folds_unreleased_notes(tmp_path: Path) -> None:
     )
 
 
+def test_prepend_changelog_entry_announces_annual_switches(tmp_path: Path) -> None:
+    (tmp_path / "CHANGELOG.md").write_text(
+        "# Changelog\n\n## 2026.3.12 - 2026-03-12\n\n- Old.\n", encoding="utf-8"
+    )
+
+    refresh_release.prepend_changelog_entry(
+        tmp_path,
+        "2027.3.10",
+        "2027-W08",
+        "2027-W08",
+        date(2027, 3, 10),
+        annual_switches={(2025, "sentinel"), (2025, "confirmed")},
+    )
+
+    changelog = (tmp_path / "CHANGELOG.md").read_text(encoding="utf-8")
+    assert (
+        "- 2025 notifiable-disease and sentinel data now come from the final annual IDWR "
+        "tables. Previously published 2025 rows from the preliminary weekly reports were "
+        "replaced; confirmed totals include late reports.\n"
+    ) in changelog
+    assert changelog.index("2025 notifiable-disease") < changelog.index("## 2026.3.12")
+
+
+def test_prepare_refresh_release_writes_annual_switches_to_changelog(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo_root = tmp_path / "repo"
+    _write_refresh_repo(repo_root)
+    monkeypatch.setattr(refresh_release, "rebuild_release_outputs", _write_extended_refresh_outputs)
+    monkeypatch.setattr(
+        refresh_release,
+        "_validate_release_preservation",
+        lambda *args, **kwargs: {(2025, "sentinel")},
+    )
+
+    refresh_release.prepare_refresh_release(repo_root=repo_root, release_date=date(2027, 3, 10))
+
+    changelog = (repo_root / "CHANGELOG.md").read_text(encoding="utf-8")
+    assert "- 2025 sentinel data now come from the final annual IDWR tables." in changelog
+
+
 def test_prepare_refresh_release_validates_outputs(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -476,7 +517,9 @@ def test_validate_release_preservation_allows_switch_to_annual_tables(tmp_path: 
         ],
     )
 
-    refresh_release._validate_release_preservation(repo_root, backup_root)
+    switched = refresh_release._validate_release_preservation(repo_root, backup_root)
+
+    assert switched == {(2024, "confirmed"), (2024, "sentinel")}
 
 
 def test_validate_release_preservation_keeps_annual_years_frozen(tmp_path: Path) -> None:

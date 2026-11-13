@@ -396,12 +396,17 @@ def _period_row_counts(path: Path) -> dict[tuple[int, int], int]:
 
 def _validate_release_preservation(
     repo_root: Path, backup_root: Path, *, allow_historical_changes: bool = False
-) -> None:
+) -> set[tuple[int, str]]:
     """Reject refreshes that regress recency or alter stable historical data.
 
     ``allow_historical_changes`` skips the lost-rows and frozen-rows checks for a
     deliberate, reviewed correction; the recency check still applies.
+
+    Returns:
+        ``(year, family)`` pairs that switched from preliminary reports to final
+        annual tables in this refresh. Their published rows may have changed.
     """
+    all_switched: set[tuple[int, str]] = set()
     for rel_path in VALIDATED_OUTPUTS:
         previous = backup_root / rel_path
         rebuilt = repo_root / rel_path
@@ -418,6 +423,7 @@ def _validate_release_preservation(
         # A year whose data switches from preliminary reports to a final annual
         # table may legitimately change; years already annual stay frozen.
         switched = _annual_year_families(rebuilt) - _annual_year_families(previous)
+        all_switched |= switched
         switched_years = {year for year, _ in switched}
         previous_counts = _period_row_counts(previous)
         rebuilt_counts = _period_row_counts(rebuilt)
@@ -453,6 +459,26 @@ def _validate_release_preservation(
             and not allow_historical_changes
         ):
             raise ValueError(f"Stable historical rows changed in {rel_path}")
+    return all_switched
+
+
+_FAMILY_LABELS = {"confirmed": "notifiable-disease", "sentinel": "sentinel"}
+
+
+def _annual_switch_notes(annual_switches: set[tuple[int, str]]) -> str:
+    """Return changelog lines announcing years that switched to annual tables."""
+    by_year: dict[int, set[str]] = {}
+    for year, family in annual_switches:
+        by_year.setdefault(year, set()).add(family)
+    lines = []
+    for year in sorted(by_year):
+        families = " and ".join(_FAMILY_LABELS[f] for f in sorted(by_year[year]))
+        lines.append(
+            f"- {year} {families} data now come from the final annual IDWR tables. "
+            f"Previously published {year} rows from the preliminary weekly reports were "
+            "replaced; confirmed totals include late reports.\n"
+        )
+    return "".join(lines)
 
 
 def _format_year_week(path: Path) -> str:
@@ -520,8 +546,13 @@ def prepend_changelog_entry(
     latest_sentinel_week: str,
     release_date: date,
     historical_changes: bool = False,
+    annual_switches: set[tuple[int, str]] | None = None,
 ) -> None:
-    """Prepend a refresh-release entry to ``CHANGELOG.md``."""
+    """Prepend a refresh-release entry to ``CHANGELOG.md``.
+
+    ``annual_switches`` lists ``(year, family)`` pairs whose published rows were
+    replaced by final annual tables; each year gets its own line.
+    """
     changelog_path = repo_root / CHANGELOG_PATH
     original = changelog_path.read_text(encoding="utf-8")
     if not original.startswith("# Changelog\n"):
@@ -531,6 +562,7 @@ def prepend_changelog_entry(
         f"## {version} - {release_date.isoformat()}\n\n"
         f"- Refreshed bullet release assets through {latest_bullet_week} and sentinel assets through "
         f"{latest_sentinel_week}.\n"
+        + _annual_switch_notes(annual_switches or set())
         + (
             "- Rebuilt previously published historical rows (explicit override).\n"
             if historical_changes
@@ -591,7 +623,7 @@ def prepare_refresh_release(
                 _remove_for_full_rebuild(resolved_root)
             rebuild_release_outputs(resolved_root)
             _validate_release_outputs(resolved_root)
-            _validate_release_preservation(
+            annual_switches = _validate_release_preservation(
                 resolved_root, backup_root, allow_historical_changes=allow_historical_changes
             )
             if keep_outputs is not None:
@@ -599,8 +631,10 @@ def prepare_refresh_release(
                 for rel_path in (*VALIDATED_OUTPUTS, PREFECTURE_EN_PATH):
                     if (resolved_root / rel_path).exists():
                         shutil.copy2(resolved_root / rel_path, keep_outputs / rel_path.name)
+                switch_notes = _annual_switch_notes(annual_switches)
                 (keep_outputs / "summary.md").write_text(
-                    summarize_changes(backup_root / "data" / "parquet", keep_outputs),
+                    (f"Historical revisions:\n\n{switch_notes}\n" if switch_notes else "")
+                    + summarize_changes(backup_root / "data" / "parquet", keep_outputs),
                     encoding="utf-8",
                 )
             after = _snapshot_paths(resolved_root)
@@ -627,6 +661,7 @@ def prepare_refresh_release(
                     latest_sentinel_week=latest_sentinel_week,
                     release_date=resolved_release_date,
                     historical_changes=allow_historical_changes,
+                    annual_switches=annual_switches,
                 )
 
             completed = True
