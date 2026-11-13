@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from .api import get_data, get_latest_week, list_diseases, list_prefectures
 from .config import Config, configure, get_config
-from .data_manager import ensure_data
+from .data_manager import ensure_data, prune_data_cache
 from .datasets import load_dataset as load
 from .datasets import load_prefecture_en
 from .transform import merge, pivot
@@ -25,6 +25,7 @@ __all__ = [
     "merge",
     "pivot",
     "prefecture_map",
+    "prune_data_cache",
 ]
 
 __version__ = "2026.11.11"

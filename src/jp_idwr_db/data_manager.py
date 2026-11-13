@@ -31,6 +31,8 @@ EXPECTED_DATASETS = {
     "unified.parquet",
     "prefecture_en.parquet",
 }
+# Complete data releases kept in the cache after a new one is downloaded.
+DEFAULT_CACHE_KEEP = 3
 
 
 def get_cache_dir() -> Path:
@@ -83,6 +85,48 @@ def _cached_release_tags(cache_dir: Path) -> list[str]:
         return tuple(int(part) for part in re.findall(r"\d+", tag))
 
     return sorted(tags, key=version_key, reverse=True)
+
+
+def _resolve_cache_keep(keep: int | None) -> int:
+    """Resolve how many cached releases to keep (``<= 0`` keeps all)."""
+    if keep is not None:
+        return keep
+    configured = configured_value("CACHE_KEEP")
+    if configured is None or not configured.strip():
+        return DEFAULT_CACHE_KEEP
+    try:
+        return int(configured)
+    except ValueError as exc:
+        raise ValueError(f"JP_IDWR_DB_CACHE_KEEP must be an integer, got {configured!r}") from exc
+
+
+def prune_data_cache(keep: int | None = None, *, current: str | None = None) -> list[Path]:
+    """Remove older cached data releases.
+
+    Keeps the ``keep`` newest complete releases (default ``JP_IDWR_DB_CACHE_KEEP``
+    or 3) plus ``current``. A value of 0 or less keeps everything. Partial
+    downloads (no ``.complete`` marker) are left alone, since another process may
+    be writing them.
+
+    Args:
+        keep: Number of newest complete releases to keep.
+        current: Release tag that is never removed (the one in use).
+
+    Returns:
+        The directories that were removed.
+    """
+    resolved_keep = _resolve_cache_keep(keep)
+    if resolved_keep <= 0:
+        return []
+    cache_dir = get_cache_dir()
+    removed = []
+    for tag in _cached_release_tags(cache_dir)[resolved_keep:]:
+        if tag == current:
+            continue
+        path = cache_dir / "data" / tag
+        shutil.rmtree(path)
+        removed.append(path)
+    return removed
 
 
 def _resolve_base_url(version: str) -> str:
@@ -298,4 +342,12 @@ def ensure_data(version: str | None = None, force: bool = False) -> Path:
 
     marker.write_text("ok\n", encoding="utf-8")
     print("[jp_idwr_db] Data cache ready.", file=sys.stderr)
+    try:
+        removed = prune_data_cache(current=resolved)
+    except OSError as exc:  # pruning must never break data loading
+        print(f"[jp_idwr_db] Could not prune old cached releases: {exc}", file=sys.stderr)
+    else:
+        if removed:
+            names = ", ".join(path.name for path in removed)
+            print(f"[jp_idwr_db] Removed older cached releases: {names}.", file=sys.stderr)
     return data_dir

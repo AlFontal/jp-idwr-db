@@ -112,3 +112,94 @@ def test_ensure_data_latest_offline_without_cache_raises(
 
     with pytest.raises(data_manager.httpx.ConnectError):
         data_manager.ensure_data(version="latest")
+
+
+def _cache_releases(root: Path, complete: list[str], partial: tuple[str, ...] = ()) -> None:
+    for tag in (*complete, *partial):
+        (root / "data" / tag).mkdir(parents=True)
+    for tag in complete:
+        (root / "data" / tag / ".complete").write_text("ok\n")
+
+
+def test_prune_data_cache_keeps_newest_current_and_partial(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    tmp_path = tmp_path / "cache"
+    monkeypatch.setenv("JP_IDWR_DB_CACHE_DIR", str(tmp_path))
+    monkeypatch.delenv("JP_IDWR_DB_CACHE_KEEP", raising=False)
+    _cache_releases(
+        tmp_path,
+        ["v2026.3.26", "v2026.9.2", "v2026.9.16", "v2026.9.30", "v2026.10.7", "v2026.11.11"],
+        partial=("v2026.1.1",),
+    )
+
+    removed = data_manager.prune_data_cache(current="v2026.3.26")
+
+    assert sorted(path.name for path in removed) == ["v2026.9.16", "v2026.9.2"]
+    assert sorted(path.name for path in (tmp_path / "data").iterdir()) == [
+        "v2026.1.1",
+        "v2026.10.7",
+        "v2026.11.11",
+        "v2026.3.26",
+        "v2026.9.30",
+    ]
+
+
+def test_prune_data_cache_respects_keep_setting(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    tmp_path = tmp_path / "cache"
+    monkeypatch.setenv("JP_IDWR_DB_CACHE_DIR", str(tmp_path))
+    _cache_releases(tmp_path, ["v2026.9.2", "v2026.9.16", "v2026.9.30"])
+
+    monkeypatch.setenv("JP_IDWR_DB_CACHE_KEEP", "0")
+    assert data_manager.prune_data_cache() == []
+
+    monkeypatch.setenv("JP_IDWR_DB_CACHE_KEEP", "1")
+    removed = data_manager.prune_data_cache()
+    assert sorted(path.name for path in removed) == ["v2026.9.16", "v2026.9.2"]
+
+    monkeypatch.setenv("JP_IDWR_DB_CACHE_KEEP", "many")
+    with pytest.raises(ValueError, match="JP_IDWR_DB_CACHE_KEEP"):
+        data_manager.prune_data_cache()
+
+
+def test_ensure_data_prunes_older_releases_after_download(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    tmp_path = tmp_path / "cache"
+    monkeypatch.setenv("JP_IDWR_DB_CACHE_DIR", str(tmp_path))
+    monkeypatch.setenv("JP_IDWR_DB_CACHE_KEEP", "2")
+    _cache_releases(tmp_path, ["v2026.9.2", "v2026.9.16", "v2026.9.30"])
+
+    def fake_download_manifest(version: str, dest_dir: Path) -> tuple[Path, bool]:
+        path = dest_dir / data_manager.MANIFEST_NAME
+        path.write_text("{}", encoding="utf-8")
+        return path, False
+
+    def fake_sync(base_url: str, data_dir: Path, manifest: dict[str, object]) -> None:
+        for name in data_manager.EXPECTED_DATASETS:
+            (data_dir / name).write_bytes(b"")
+
+    monkeypatch.setattr(data_manager, "_download_manifest", fake_download_manifest)
+    monkeypatch.setattr(data_manager, "_sync_from_manifest", fake_sync)
+
+    data_manager.ensure_data(version="v2026.10.7")
+
+    assert sorted(path.name for path in (tmp_path / "data").iterdir()) == [
+        "v2026.10.7",
+        "v2026.9.30",
+    ]
+
+
+def test_ensure_data_with_cached_release_does_not_prune(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    tmp_path = tmp_path / "cache"
+    monkeypatch.setenv("JP_IDWR_DB_CACHE_DIR", str(tmp_path))
+    monkeypatch.setenv("JP_IDWR_DB_CACHE_KEEP", "1")
+    _cache_releases(tmp_path, ["v2026.9.2", "v2026.9.16", "v2026.9.30"])
+
+    data_manager.ensure_data(version="v2026.9.2")
+
+    assert len(list((tmp_path / "data").iterdir())) == 3
