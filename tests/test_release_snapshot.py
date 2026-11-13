@@ -1,17 +1,13 @@
 from __future__ import annotations
 
 import re
+import tomllib
 from pathlib import Path
 
 import pyarrow.parquet as pq
 import pytest
 
 import jp_idwr_db as jp
-
-try:
-    import tomllib
-except ModuleNotFoundError:  # pragma: no cover - exercised on Python 3.10
-    import tomli as tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
 
