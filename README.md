@@ -86,6 +86,11 @@ Cache and release resolution can be configured with `JP_IDWR_DB_CACHE_DIR`,
 `JP_IDWR_DB_DATA_VERSION`, and `JP_IDWR_DB_DATA_BASE_URL`. The former
 `JPINFECT_*` names remain accepted as compatibility aliases.
 
+Each release is cached in its own directory. After downloading a new release,
+the package keeps the three newest cached releases plus the one in use and
+removes the rest. Set `JP_IDWR_DB_CACHE_KEEP` to change the number (`0` keeps
+everything), or call `jp.prune_data_cache()` to prune by hand.
+
 ## Datasets
 
 | Dataset    | Contents                                                                        |
