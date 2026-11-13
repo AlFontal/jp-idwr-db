@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- Requires Python 3.11 or later, polars 1.0 or later and pyarrow 16 or later.
+  CI now also tests the lowest declared dependency versions.
+- When a year switches to the final annual tables, the refresh release says so
+  in the changelog. GitHub release notes now show the changelog entry.
+- The release manifest lists both sources: the final annual tables and the
+  preliminary weekly reports.
+- Older cached data releases are removed after a new one is downloaded; the
+  three newest plus the one in use are kept. Configure with
+  `JP_IDWR_DB_CACHE_KEEP` or prune by hand with `jp.prune_data_cache()`.
+- The README overview diagram is now an SVG.
+
 ## 2026.11.11 - 2026-11-11
 
 - Refreshed bullet release assets through 2026-W44 and sentinel assets through 2026-W44.
