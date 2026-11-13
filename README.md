@@ -10,7 +10,7 @@
 It collects the official NIID/JIHS files, cleans and combines data published across different formats and archives, and releases analysis-ready weekly data as Parquet. You can use it through the Python package or read the release files directly with DuckDB, R, Arrow, Spark, or any other tool that supports Parquet.
 
 <p align="center">
-  <img src="docs/assets/jp-idwr-db-overview.png" alt="jp-idwr-db data pipeline" width="100%">
+  <img src="docs/assets/jp-idwr-db-overview.svg" alt="jp-idwr-db data pipeline" width="100%">
 </p>
 
 IDWR reports are published weekly. `jp-idwr-db` checks for new data every week and publishes an updated, versioned snapshot via GitHub Actions and releases.
