@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import importlib
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from ._internal.release_utils import configured_value, installed_release_tag, quote_identifier
@@ -22,10 +22,7 @@ def _resolve_data_version() -> str:
 def _built_at_utc() -> str:
     """Return UTC ISO-8601 build timestamp, honoring SOURCE_DATE_EPOCH."""
     epoch = os.getenv("SOURCE_DATE_EPOCH")
-    if epoch is not None:
-        dt = datetime.fromtimestamp(int(epoch), tz=timezone.utc)
-    else:
-        dt = datetime.now(timezone.utc)
+    dt = datetime.fromtimestamp(int(epoch), tz=UTC) if epoch is not None else datetime.now(UTC)
     return dt.replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 

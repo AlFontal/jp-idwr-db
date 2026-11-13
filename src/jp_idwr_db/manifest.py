@@ -6,7 +6,7 @@ import importlib
 import json
 import os
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -36,10 +36,7 @@ class _TableEntry:
 def _published_at_utc() -> str:
     """Return UTC ISO-8601 timestamp, honoring SOURCE_DATE_EPOCH when provided."""
     epoch = os.getenv("SOURCE_DATE_EPOCH")
-    if epoch is not None:
-        dt = datetime.fromtimestamp(int(epoch), tz=timezone.utc)
-    else:
-        dt = datetime.now(timezone.utc)
+    dt = datetime.fromtimestamp(int(epoch), tz=UTC) if epoch is not None else datetime.now(UTC)
     return dt.replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
