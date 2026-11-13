@@ -22,6 +22,7 @@ MANIFEST_NAME = "manifest.json"
 DEFAULT_LICENSE = "GPL-3.0-or-later"
 DEFAULT_HOMEPAGE = "https://github.com/AlFontal/jp-idwr-db"
 UPSTREAM_SOURCE_URL = "https://id-info.jihs.go.jp/en/surveillance/idwr/rapid/"
+UPSTREAM_ANNUAL_URL = "https://id-info.jihs.go.jp/surveillance/idwr/annual/"
 UPSTREAM_TERMS_URL = "https://id-info.jihs.go.jp/en/term_of_use.pdf"
 
 
@@ -334,16 +335,30 @@ def build_manifest(
         "assets_base_url": base_url.rstrip("/"),
         "sources": [
             {
-                "name": "Japan Institute for Health Security IDWR surveillance data",
+                "name": "JIHS IDWR annual reports (final tables)",
+                "url": UPSTREAM_ANNUAL_URL,
+                "terms_url": UPSTREAM_TERMS_URL,
+                "accessed_at": published_at[:10],
+                "transformation_notice": (
+                    "Created by editing JIHS IDWR annual tables: weekly counts by prefecture "
+                    "(notifiable diseases by sex and place of infection, sentinel diseases "
+                    "with cases per sentinel) are parsed and normalized. Used for every year "
+                    "a final table has been published; 1999-2020 tables are read from the "
+                    "NIID archives."
+                ),
+            },
+            {
+                "name": "JIHS IDWR weekly reports (preliminary)",
                 "url": UPSTREAM_SOURCE_URL,
                 "terms_url": UPSTREAM_TERMS_URL,
                 "accessed_at": published_at[:10],
                 "transformation_notice": (
-                    "Created by editing JIHS IDWR surveillance data: source files are parsed, "
-                    "normalized, and preliminary cumulative sentinel counts are converted to "
-                    "weekly incidence."
+                    "Created by editing JIHS IDWR weekly report data: source files are parsed "
+                    "and normalized, and cumulative sentinel counts are converted to weekly "
+                    "incidence. Used for the bullet dataset and for years without a final "
+                    "annual table."
                 ),
-            }
+            },
         ],
         "tables": ordered_tables,
     }
