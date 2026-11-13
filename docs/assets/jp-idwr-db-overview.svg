@@ -1,0 +1,166 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="700" viewBox="0 0 960 700" role="img" aria-labelledby="t d">
+<title id="t">jp-idwr-db data pipeline</title>
+<desc id="d">IDWR annual tables and weekly reports are parsed, converted from cumulative to weekly counts, merged and validated with Python and Polars into six Parquet tables, released every Wednesday on GitHub and PyPI, and read from Python, DuckDB or any Parquet reader.</desc>
+<style>
+  .serif { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Hiragino Mincho ProN", "Yu Mincho", serif; }
+  .sans { font-family: "Space Grotesk", "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif; }
+  .mono, .mono tspan { font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  .panel { fill: #f4f2ed; stroke: rgba(73, 63, 48, 0.18); stroke-width: 1; }
+  .hair { stroke: rgba(73, 63, 48, 0.2); stroke-width: 1; }
+  .ink { fill: #1f252c; }
+  .soft { fill: #555c55; }
+  .accent { fill: #94450a; }
+  .teal { fill: #006b5e; }
+  .sun { fill: #c2410c; }
+  .code { fill: #1f252c; }
+  .code-text { fill: #f4f2ed; }
+  .kw { fill: #ffb86c; }
+  .str { fill: #8ccdba; }
+  .curve { fill: none; stroke: #94450a; stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; }
+  .bar { fill: #006b5e; }
+  .base { stroke: rgba(73, 63, 48, 0.35); stroke-width: 1; }
+  .hl { fill: rgba(148, 69, 10, 0.1); }
+
+  .title { font-size: 36px; font-weight: 700; letter-spacing: -0.01em; }
+  .jp { font-size: 16px; }
+  .lede { font-size: 15.5px; }
+  .label { font-size: 13px; font-weight: 600; }
+  .h { font-size: 21px; font-weight: 600; }
+  .item { font-size: 15px; font-weight: 600; }
+  .row { font-size: 14.5px; }
+  .meta { font-size: 12.5px; }
+  .note { font-size: 13px; }
+  .codeline { font-size: 14px; }
+  .arrow { font-size: 20px; font-weight: 600; }
+
+  @media (prefers-color-scheme: dark) {
+    .panel { fill: #474544; stroke: rgba(247, 219, 197, 0.16); }
+    .hair { stroke: rgba(247, 219, 197, 0.18); }
+    .ink { fill: #f7dbc5; }
+    .soft { fill: #d3beac; }
+    .accent { fill: #ff9d3b; }
+    .teal { fill: #8ccdba; }
+    .sun { fill: #ff7a45; }
+    .code { fill: #2c2a29; }
+    .code-text { fill: #f6dcc8; }
+    .curve { stroke: #ff9d3b; }
+    .bar { fill: #8ccdba; }
+    .base { stroke: rgba(247, 219, 197, 0.35); }
+    .hl { fill: rgba(255, 157, 59, 0.14); }
+  }
+</style>
+
+
+<!-- Header -->
+<circle cx="46" cy="52" r="15" class="sun"/>
+<text x="74" y="64" class="serif title ink">jp-idwr-db<tspan dx="16" dy="-2" class="serif jp soft">感染症発生動向調査週報</tspan></text>
+<text x="32" y="104" class="sans lede soft">Japan's infectious disease surveillance (IDWR) cleaned and released as Parquet files every week.</text>
+
+<!-- 01 Sources -->
+<rect x="28" y="140" width="210" height="330" rx="14" class="panel"/>
+<text x="46" y="170" class="mono label accent">1. Sources</text>
+<text x="46" y="198" class="serif h ink">IDWR files</text>
+<line x1="46" y1="214" x2="220" y2="214" class="hair"/>
+<text x="46" y="246" class="mono item accent">&gt;</text>
+<text x="62" y="246" class="sans item ink">Annual tables</text>
+<text x="62" y="266" class="mono meta teal">xls files since 1999</text>
+<text x="46" y="304" class="mono item accent">&gt;</text>
+<text x="62" y="304" class="sans item ink">Weekly reports</text>
+<text x="62" y="324" class="mono meta teal">preliminary csv</text>
+<line x1="46" y1="352" x2="220" y2="352" class="hair"/>
+<text x="46" y="380" class="sans note soft">Final tables replace the</text>
+<text x="46" y="399" class="sans note soft">weekly data about 15</text>
+<text x="46" y="418" class="sans note soft">months after year end.</text>
+
+<!-- 02 Build -->
+<rect x="260" y="140" width="210" height="330" rx="14" class="panel"/>
+<text x="278" y="170" class="mono label accent">2. Build</text>
+<text x="278" y="198" class="serif h ink">Python + Polars</text>
+<line x1="278" y1="214" x2="452" y2="214" class="hair"/>
+<text x="278" y="244" class="mono item accent">&gt;</text>
+<text x="294" y="244" class="sans row ink">parse and normalise</text>
+<text x="278" y="272" class="mono item accent">&gt;</text>
+<text x="294" y="272" class="sans row ink">cumulative → weekly</text>
+<text x="278" y="300" class="mono item accent">&gt;</text>
+<text x="294" y="300" class="sans row ink">merge, no overlap</text>
+<text x="278" y="328" class="mono item accent">&gt;</text>
+<text x="294" y="328" class="sans row ink">validate history</text>
+<line x1="278" y1="352" x2="452" y2="352" class="hair"/>
+<!-- mini chart: year-to-date total vs weekly counts -->
+<line x1="278" y1="430" x2="350" y2="430" class="base"/>
+<polyline points="280,428 290,426 300,421 310,410 320,392 330,380 340,375 348,373" class="curve"/>
+<text x="365" y="414" class="mono arrow accent">→</text>
+<line x1="386" y1="430" x2="452" y2="430" class="base"/>
+<rect x="388" y="424" width="6" height="6" class="bar"/>
+<rect x="397" y="416" width="6" height="14" class="bar"/>
+<rect x="406" y="400" width="6" height="30" class="bar"/>
+<rect x="415" y="384" width="6" height="46" class="bar"/>
+<rect x="424" y="396" width="6" height="34" class="bar"/>
+<rect x="433" y="414" width="6" height="16" class="bar"/>
+<rect x="442" y="424" width="6" height="6" class="bar"/>
+<text x="278" y="452" class="mono meta soft">to date</text>
+<text x="386" y="452" class="mono meta soft">weekly</text>
+
+<!-- 03 Datasets -->
+<rect x="492" y="140" width="210" height="330" rx="14" class="panel"/>
+<text x="510" y="170" class="mono label accent">3. Datasets</text>
+<text x="510" y="198" class="serif h ink">Parquet tables</text>
+<line x1="510" y1="214" x2="684" y2="214" class="hair"/>
+<rect x="502" y="226" width="190" height="30" rx="7" class="hl"/>
+<text x="512" y="246" class="mono row accent" font-weight="600">unified</text>
+<text x="684" y="246" text-anchor="end" class="sans meta teal">← start here</text>
+<text x="512" y="280" class="mono row ink">sentinel</text>
+<text x="512" y="308" class="mono row ink">bullet</text>
+<text x="512" y="336" class="mono row ink">sex_prefecture</text>
+<text x="512" y="364" class="mono row ink">place_prefecture</text>
+<text x="512" y="392" class="mono row ink">prefecture_en</text>
+<line x1="510" y1="412" x2="684" y2="412" class="hair"/>
+<text x="510" y="438" class="sans note soft">One row per prefecture,</text>
+<text x="510" y="457" class="sans note soft">disease and ISO week.</text>
+
+<!-- 04 Release -->
+<rect x="724" y="140" width="210" height="330" rx="14" class="panel"/>
+<text x="742" y="170" class="mono label accent">4. Release</text>
+<text x="742" y="198" class="serif h ink">Every Wednesday</text>
+<line x1="742" y1="214" x2="916" y2="214" class="hair"/>
+<text x="742" y="246" class="mono item accent">&gt;</text>
+<text x="758" y="246" class="sans item ink">GitHub release</text>
+<text x="758" y="266" class="mono meta teal">vYYYY.M.D</text>
+<text x="742" y="302" class="mono item accent">&gt;</text>
+<text x="758" y="302" class="mono row ink">manifest.json</text>
+<text x="758" y="322" class="sans meta soft">sizes and sha256</text>
+<text x="742" y="358" class="mono item accent">&gt;</text>
+<text x="758" y="358" class="mono row ink">jp_idwr_db.duckdb</text>
+<text x="758" y="378" class="sans meta soft">views over the tables</text>
+<text x="742" y="414" class="mono item accent">&gt;</text>
+<text x="758" y="414" class="sans item ink">PyPI package</text>
+<text x="758" y="434" class="mono meta teal" style="font-size:12px">pip install jp-idwr-db</text>
+
+<!-- Flow -->
+<text x="249" y="312" text-anchor="middle" class="mono arrow accent">→</text>
+<text x="481" y="312" text-anchor="middle" class="mono arrow accent">→</text>
+<text x="713" y="312" text-anchor="middle" class="mono arrow accent">→</text>
+<text x="829" y="490" text-anchor="middle" class="mono arrow accent">↓</text>
+
+<!-- 05 Use -->
+<rect x="28" y="498" width="906" height="178" rx="14" class="panel"/>
+<text x="46" y="528" class="mono label accent">5. Use it</text>
+<text x="46" y="556" class="serif h ink">Read it from anywhere</text>
+
+<text x="46" y="590" class="sans item ink">Python</text>
+<rect x="46" y="602" width="326" height="58" rx="8" class="code"/>
+<text x="62" y="626" class="mono codeline code-text"><tspan class="kw">import</tspan> jp_idwr_db <tspan class="kw">as</tspan> jp</text>
+<text x="62" y="648" class="mono codeline code-text">jp.get_data(disease=<tspan class="str">"Measles"</tspan>)</text>
+
+<line x1="392" y1="578" x2="392" y2="660" class="hair"/>
+<text x="412" y="590" class="sans item ink">DuckDB</text>
+<rect x="412" y="602" width="300" height="58" rx="8" class="code"/>
+<text x="428" y="626" class="mono codeline code-text"><tspan class="kw">SELECT</tspan> * <tspan class="kw">FROM</tspan></text>
+<text x="428" y="648" class="mono codeline code-text">read_parquet(<tspan class="str">'unified.parquet'</tspan>)</text>
+
+<line x1="732" y1="578" x2="732" y2="660" class="hair"/>
+<text x="752" y="590" class="sans item ink">Anything else</text>
+<text x="752" y="626" class="sans row soft">R, Spark, pandas or</text>
+<text x="752" y="648" class="sans row soft">any Parquet reader</text>
+</svg>
