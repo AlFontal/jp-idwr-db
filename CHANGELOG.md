@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## 2026.11.18 - 2026-11-18
+
+- Refreshed bullet release assets through 2026-W45 and sentinel assets through 2026-W45.
+- Automated weekly data refresh release.
 
 - Requires Python 3.11 or later, polars 1.0 or later and pyarrow 16 or later.
   CI now also tests the lowest declared dependency versions.
