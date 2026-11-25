@@ -28,5 +28,5 @@ __all__ = [
     "prune_data_cache",
 ]
 
-__version__ = "2026.11.18"
+__version__ = "2026.11.25"
 __data_version__ = __version__
